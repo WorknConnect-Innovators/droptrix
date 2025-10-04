@@ -25,7 +25,7 @@ SECRET_KEY = "django-insecure-5u!b5%uy4snzj9t9tk-f#!m0e60qd7s0$1y7!ixq0g3w8npk3b
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['localhost']
 
 
 # Application definition
@@ -37,6 +37,7 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "backend_app"
 ]
 
 MIDDLEWARE = [
@@ -54,7 +55,7 @@ ROOT_URLCONF = "backend.urls"
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [],
+        "DIRS": [BASE_DIR],
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
@@ -75,8 +76,12 @@ WSGI_APPLICATION = "backend.wsgi.application"
 
 DATABASES = {
     "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
+        "ENGINE": "django.db.backends.mysql",
+        "NAME": "u647796282_droptrix_test",
+        "USER": "u647796282_droptrix_test",
+        "PASSWORD": "Sherlocked21239@",
+        "HOST": "82.197.82.65",  # e.g. mysql.hostinger.com
+        "PORT": "3306",
     }
 }
 
