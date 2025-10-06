@@ -21,6 +21,7 @@ from backend_app import views
 
 urlpatterns = [
     path("admin/", admin.site.urls),
+    path('', views.home, name='home'),
     path('api/post-feedback/', views.send_feedback, name='send_feedback'),
     path('api/feedback-published/', views.get_published_feedback, name='get_published_feedback'),
     path('api/feedback-unpublished/', views.get_unpublished_feedback, name='get_unpublished_feedback'),

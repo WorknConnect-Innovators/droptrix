@@ -10,7 +10,7 @@ from django.conf import settings
 
 @csrf_exempt
 def home(request):
-    HttpResponse('Server is running....')
+    return HttpResponse('Server is running....')
 
 
 @csrf_exempt
