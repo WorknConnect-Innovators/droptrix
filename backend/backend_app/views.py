@@ -9,6 +9,11 @@ from django.conf import settings
 
 
 @csrf_exempt
+def home(request):
+    HttpResponse('Server is running....')
+
+
+@csrf_exempt
 def send_feedback(request):
     if request.method == 'POST':
         try:
