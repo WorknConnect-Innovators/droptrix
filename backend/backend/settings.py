@@ -28,6 +28,15 @@ DEBUG = True
 ALLOWED_HOSTS = ['localhost']
 
 
+EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+EMAIL_HOST = "smtp.hostinger.com"
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = "abc@xyz.com"
+EMAIL_HOST_PASSWORD = "abc123"
+DEFAULT_FROM_EMAIL = "No Reply WorknConnect Innovators <noreply@wncinnovators.com>"
+
+
 # Application definition
 
 INSTALLED_APPS = [
