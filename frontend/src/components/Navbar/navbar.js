@@ -30,7 +30,7 @@ export default function Navbar() {
   return (
     <>
       {/* NAVBAR */}
-      <nav className="py-4 lg:px-36 md:px-16 sm:px-8 px-6 flex justify-between items-center shadow-sm sticky top-0 bg-white z-50">
+      <nav className="py-4 lg:px-36 md:px-16 sm:px-8 px-6 flex justify-between items-center shadow-sm border-b border-2 sticky top-0 bg-white z-50">
         {/* Left: Logo + Nav (Desktop) */}
         <div className="flex items-center gap-x-6">
           <img src="logo.jpg" alt="Logo" className="lg:h-16 md:h-14 h-12" />

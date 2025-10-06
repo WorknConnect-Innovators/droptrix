@@ -29,7 +29,7 @@ function HomePage() {
                         </div>
 
                         {/* Icon Row */}
-                        <div className="flex flex-col sm:flex-row sm:gap-y-0 gap-y-4 w-1/3">
+                        <div className="flex flex-col sm:flex-row sm:gap-y-0 gap-y-4 lg:w-2/5 md:w-3/5 sm:w-4/5 w-full justify-between">
                             {/* carriers  */}
                             <div className="flex flex-col items-center w-full">
                                 <div className="w-16 h-16 flex items-center justify-center bg-blue-600 rounded-full text-white shadow-md">
@@ -111,6 +111,24 @@ function HomePage() {
 
             <WriteReviewSection />
             {/* <ReviewsCarousel /> */}
+            <div className="bg-blue-50 py-12 px-6 lg:px-32">
+                <div className="max-w-4xl mx-auto text-center space-y-5">
+                    <h2 className="text-3xl font-semibold text-gray-800">
+                        Subscribe to our Newsletter
+                    </h2>
+
+                    <div className="flex flex-col sm:flex-row items-center justify-center gap-2">
+                        <input
+                            type="email"
+                            placeholder="Enter your email"
+                            className="w-full sm:w-2/3 border border-gray-300 rounded-md py-3 px-4 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+                        />
+                        <button className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-md py-3 px-6 transition">
+                            Subscribe
+                        </button>
+                    </div>
+                </div>
+            </div>
             <Footer />
         </>
     )
