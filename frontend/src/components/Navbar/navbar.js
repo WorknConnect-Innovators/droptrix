@@ -10,6 +10,7 @@ import {
   Info,
   Phone,
 } from "lucide-react";
+import { Link } from "react-router-dom";
 
 export default function Navbar() {
   const [open, setOpen] = useState(false);
@@ -55,14 +56,14 @@ export default function Navbar() {
             </button>
             {open && (
               <div className="absolute right-0 mt-2 w-40 bg-white rounded-lg shadow-lg border">
-                <ul className="py-1 text-sm font-medium text-gray-700">
-                  <li className="flex items-center gap-2 px-4 py-2 hover:bg-gray-100 cursor-pointer">
+                <div className="py-1 text-sm font-medium text-gray-700">
+                  <Link to="/login" className="flex items-center gap-2 px-4 py-2 hover:bg-gray-100 cursor-pointer">
                     <LogIn className="w-4 h-4 text-blue-600" /> Login
-                  </li>
-                  <li className="flex items-center gap-2 px-4 py-2 hover:bg-gray-100 cursor-pointer">
+                  </Link>
+                  <Link to="/signup" className="flex items-center gap-2 px-4 py-2 hover:bg-gray-100 cursor-pointer">
                     <UserPlus className="w-4 h-4 text-green-600" /> Sign Up
-                  </li>
-                </ul>
+                  </Link>
+                </div>
               </div>
             )}
           </div>
