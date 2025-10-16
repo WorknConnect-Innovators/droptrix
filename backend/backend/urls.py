@@ -17,7 +17,17 @@ Including another URLconf
 
 from django.contrib import admin
 from django.urls import path
+from backend_app import views
 
 urlpatterns = [
     path("admin/", admin.site.urls),
+    path('', views.home, name='home'),
+    path('api/post-feedback/', views.send_feedback, name='send_feedback'),
+    path('api/feedback-published/', views.get_published_feedback, name='get_published_feedback'),
+    path('api/feedback-unpublished/', views.get_unpublished_feedback, name='get_unpublished_feedback'),
+    path('api/make-feedback-publish/', views.make_published, name='make_published'),
+    path('api/make-feedback-unpublish/', views.make_unpublished, name='make_unpublished'),
+    path('api/add-newsletter/', views.add_newsletter, name='add_newsletter'),
+    path('api/get-newsletter-email/', views.get_newsletter_emails, name='get_newsletter_emails'),
+    path('api/unsub-newsletter-email/', views.unsub_newsletter, name='unsub_newsletter'),
 ]
