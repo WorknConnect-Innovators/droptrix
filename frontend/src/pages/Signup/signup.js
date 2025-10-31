@@ -7,7 +7,7 @@ function SignupPage() {
             author: "– Sarah Williams",
         },
         {
-            text: "Amazing network coverage and simple setup process. Highly recommended!",
+            text: "Amazing network coverage and simple setup process. Best service ever. Highly recommended!",
             author: "– Ahmed Raza",
         },
         {
@@ -27,7 +27,7 @@ function SignupPage() {
 
     return (
         <div className="bg-blue-100 min-h-screen flex items-center justify-center p-4 sm:p-10 lg:p-20">
-            <div className="w-full max-w-6xl bg-white rounded-xl flex flex-col md:flex-row overflow-hidden">
+            <div className="w-full max-w-6xl bg-white rounded-xl flex flex-col-reverse md:flex-row overflow-hidden">
                 {/* Left Side – Signup Form */}
                 <div className="w-full md:w-2/3 flex flex-col">
                     {/* Header Section */}

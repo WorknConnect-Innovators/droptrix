@@ -6,18 +6,18 @@ import ChoiceSection from '../../components/Home/choiceSection'
 import WhyUs from '../../components/Home/whyUs'
 import FAQSection from '../../components/Home/FAQSection'
 import WriteReviewSection from '../../components/Home/writeReview'
-import ReviewsCarousel from '../../components/Home/ReviewCarasoul'
 import Footer from '../../components/footer'
+import HeroSection from '../../components/Home/heroSect'
 
 function HomePage() {
     return (
         <>
-            <Navbar />
-            <HeroSlider />
+            <HeroSection />
+            {/* <HeroSlider /> */}
 
             {/* Call to Action Section */}
             <div className='bg-blue-50 lg:px-40 md:px-20 sm:px-10 px-6 '>
-                <div className="relative bottom-24">
+                <div className="relative bottom-20 ">
                     <div className="bg-white space-y-8 shadow-xl rounded-xl py-10 px-6 flex flex-col justify-center items-center text-center">
                         <div className='space-y-3'>
                             <h2 className="text-2xl md:text-3xl font-bold text-gray-900">
@@ -129,7 +129,6 @@ function HomePage() {
                     </div>
                 </div>
             </div>
-            <Footer />
         </>
     )
 }
