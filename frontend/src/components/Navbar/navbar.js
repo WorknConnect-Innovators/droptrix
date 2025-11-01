@@ -55,7 +55,9 @@ export default function Navbar() {
     <nav className="py-4 lg:px-36 md:px-16 sm:px-8 px-6 flex justify-between items-center shadow-sm border-b sticky top-0 bg-white z-50">
       {/* Left: Logo + Nav */}
       <div className="flex items-center gap-x-6 relative">
-        <img src="logo.jpg" alt="Logo" className="lg:h-16 md:h-14 h-12" />
+        <Link to="/">
+          <img src="logo.jpg" alt="Logo" className="lg:h-16 md:h-14 h-12" />
+        </Link>
 
         <ul className="hidden lg:flex gap-x-6 font-semibold text-lg text-blue-900 relative">
           <li
@@ -75,9 +77,10 @@ export default function Navbar() {
           <li className="cursor-pointer hover:text-blue-600 transition">
             How it works
           </li>
-          <li className="cursor-pointer hover:text-blue-600 transition">
+
+          <Link to={'/contact'} className="cursor-pointer hover:text-blue-600 transition">
             Contact
-          </li>
+          </Link>
         </ul>
       </div>
 

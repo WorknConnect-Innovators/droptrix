@@ -1,4 +1,5 @@
 import { ArrowRight } from "lucide-react";
+import { Link } from "react-router-dom";
 
 function ChoiceSection() {
   const features = [
@@ -6,11 +7,13 @@ function ChoiceSection() {
       title: "Top Carriers",
       desc: "Connect with the most reliable USA networks, all in one SIM.",
       img: "https://images.unsplash.com/photo-1599940824399-b87987ceb72a?auto=format&fit=crop&w=1600&q=80",
+      link: "/carriers",
     },
     {
       title: "30 Days Plans",
       desc: "Affordable monthly packages tailored to your needs.",
       img: "https://images.unsplash.com/photo-1502920917128-1aa500764b3a?auto=format&fit=crop&w=1600&q=80",
+      link: "/30-days-plans",
     },
     {
       title: "International Plans",
@@ -27,7 +30,7 @@ function ChoiceSection() {
           Choose a Carrier Plan Today
         </h2>
         <p className="text-gray-600">
-          Want flexibility with international calling benefits? Explore our 
+          Want flexibility with international calling benefits? Explore our
           carriers, 30-day packages, and worldwide plans.
         </p>
       </div>
@@ -35,6 +38,7 @@ function ChoiceSection() {
       {/* Feature Grid */}
       <div className="w-full flex flex-col lg:flex-row gap-6 h-auto lg:h-[80vh]">
         {/* Left Large Card */}
+
         <div className="relative rounded-2xl w-full lg:w-1/2 h-[60vh] lg:h-full overflow-hidden group cursor-pointer transform transition duration-500 hover:scale-[1.02]">
           <img
             src={features[0].img}
@@ -49,10 +53,12 @@ function ChoiceSection() {
             <p className="text-gray-200 text-lg font-medium leading-relaxed">
               {features[0].desc}
             </p>
-            <span className="inline-flex items-center gap-2 text-blue-200 font-semibold text-lg group-hover:text-white transition">
-              Explore More
-              <ArrowRight className="w-5 h-5 transition-transform duration-300 group-hover:translate-x-2" />
-            </span>
+            <Link to={features[0].link}>
+              <span className="inline-flex items-center gap-2 text-blue-200 font-semibold text-lg group-hover:text-white transition">
+                Explore More
+                <ArrowRight className="w-5 h-5 transition-transform duration-300 group-hover:translate-x-2" />
+              </span>
+            </Link>
           </div>
         </div>
 
@@ -85,7 +91,7 @@ function ChoiceSection() {
           ))}
         </div>
       </div>
-    </div>
+    </div >
   );
 }
 

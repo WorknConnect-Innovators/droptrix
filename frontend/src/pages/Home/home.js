@@ -1,14 +1,12 @@
 import React from 'react'
-import Navbar from '../../components/Navbar/navbar'
-import HeroSlider from '../../components/Home/HeroSlider'
 import { CardSim, Power, Cloud, BadgeDollarSign, ArrowRight, Users } from "lucide-react"  // lucide icons
 import ChoiceSection from '../../components/Home/choiceSection'
 import WhyUs from '../../components/Home/whyUs'
 import FAQSection from '../../components/Home/FAQSection'
 import WriteReviewSection from '../../components/Home/writeReview'
-import Footer from '../../components/footer'
 import HeroSection from '../../components/Home/heroSect'
-
+import { motion } from "framer-motion";
+import { Link } from 'react-router-dom'
 function HomePage() {
     return (
         <>
@@ -17,7 +15,16 @@ function HomePage() {
 
             {/* Call to Action Section */}
             <div className='bg-blue-50 lg:px-40 md:px-20 sm:px-10 px-6 '>
-                <div className="relative bottom-20 ">
+                <motion.div
+                    className="relative bottom-14"
+                    initial={{ y: 100, opacity: 0 }}   // start from below & invisible
+                    animate={{ y: 0, opacity: 1 }}     // move to normal position
+                    transition={{
+                        delay: 1,
+                        duration: 0.8,
+                        ease: "easeOut",
+                    }}
+                >
                     <div className="bg-white space-y-8 shadow-xl rounded-xl py-10 px-6 flex flex-col justify-center items-center text-center">
                         <div className='space-y-3'>
                             <h2 className="text-2xl md:text-3xl font-bold text-gray-900">
@@ -32,9 +39,12 @@ function HomePage() {
                         <div className="flex flex-col sm:flex-row sm:gap-y-0 gap-y-4 lg:w-2/5 md:w-3/5 sm:w-4/5 w-full justify-between">
                             {/* carriers  */}
                             <div className="flex flex-col items-center w-full">
-                                <div className="w-16 h-16 flex items-center justify-center bg-blue-600 rounded-full text-white shadow-md">
-                                    <Cloud className="w-8 h-8" />
-                                </div>
+                                <Link to="/carriers">
+                                    <div className="w-16 h-16 flex items-center justify-center bg-blue-600 rounded-full text-white shadow-md">
+
+                                        <Cloud className="w-8 h-8" />
+                                    </div>
+                                </Link>
                                 <span className="mt-3 font-medium text-gray-800">Carriers</span>
                             </div>
                             {/* Plans */}
@@ -60,7 +70,7 @@ function HomePage() {
                             <div className='sm:text-base text-sm'>
                                 <span>Already part of <span className="font-bold text-blue-700">Droptrix?</span></span>
                                 <a
-                                    href="/"
+                                    href="/login"
                                     className="text-blue-600 font-semibold hover:underline hover:text-blue-800 transition"
                                 >
                                     Log in
@@ -69,7 +79,8 @@ function HomePage() {
                         </p>
 
                     </div>
-                </div>
+                </motion.div>
+
             </div>
 
             <ChoiceSection />
