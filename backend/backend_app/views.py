@@ -2,9 +2,16 @@ from django.shortcuts import render
 from django.http import JsonResponse, HttpResponse
 import json
 from django.views.decorators.csrf import csrf_exempt
-from backend_app.models import Feedback, Newsletter
+from backend_app.models import Feedback, Newsletter, Signup
 from django.core.mail import send_mail
 from django.conf import settings
+import random
+import string
+import smtplib
+import jwt
+from datetime import datetime, timedelta
+from django.conf import settings
+from backend.settings import SECRET_KEY
 
 
 @csrf_exempt
@@ -137,6 +144,105 @@ def unsub_newsletter(request):
             email_data.subscribed = False
             email_data.save()
             return JsonResponse({'status': 'success', 'data_received': email_data.id})
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+    return JsonResponse({'status': 'error', 'message': 'Invalid request method'}, status=400)
+
+
+@csrf_exempt
+def signup(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            email = data['email']
+            full_name = data['full_name']
+            password = data['password']
+            signup_data = Signup(
+                email=email,
+                full_name=full_name,
+                password=password
+            )
+            signup_data.save()
+            return JsonResponse({'status': 'success', 'data_received': signup_data.id})
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+    return JsonResponse({'status': 'error', 'message': 'Invalid request method'}, status=400)
+
+
+def ver_code():
+    letters_and_digits = string.ascii_letters + string.digits
+    code = ''.join(random.choice(letters_and_digits) for i in range(6))
+    return code
+
+
+@csrf_exempt
+def receive_verify_email(request):
+    if request.method == 'POST':
+        ver_email = json.loads(request.body)
+        global code
+        code = ver_code()
+        with smtplib.SMTP('smtp.hostinger.com', 587) as smtp:
+            smtp.ehlo()
+            smtp.starttls()
+            smtp.ehlo()
+            smtp.login('no-reply@worknconnect.com', 'Sherlocked21239@')
+            subject = 'Droptrix Email Verification Code'
+            body = f"""
+Hello,
+
+Welcome to Droptrix!
+
+To complete your registration, please use the verification code below:
+
+********************************
+        {code}
+********************************
+
+This code is valid for 10 minutes. If you did not request this, please ignore this email.
+
+Best regards,
+The Droptrix Team
+"""
+            msg = f'Subject: {subject}\n\n{body}'
+            smtp.sendmail('no-reply@worknconnect.com', ver_email, msg)
+    return JsonResponse({'status': 'success', 'code': code})
+
+
+@csrf_exempt
+def verify_code(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            input_code = data['code']
+            org_code = code
+            if org_code != input_code:
+                return JsonResponse({'status': 'error', 'message': 'Code Unmatched'}, status=200)
+            return JsonResponse({'status': 'success', 'data_received': True})
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+    return JsonResponse({'status': 'error', 'message': 'Invalid request method'}, status=400)
+
+
+@csrf_exempt
+def login(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            email = data['email']
+            password = data['password']
+            signup_data = Signup.objects.filter(email=email).first()
+            if signup_data:
+                if signup_data.email == email and signup_data.password == password:
+                    token_payload = {
+                        'user_id': signup_data.id,
+                        'email': signup_data.email,
+                        'exp': datetime.utcnow() + timedelta(hours=1)
+                    }
+                    token = jwt.encode(token_payload, SECRET_KEY, algorithm='HS256')
+                    return JsonResponse({'status': 'success', 'message': 'login successful', 'login_status': True, 'token': token})
+                else:
+                    return JsonResponse({'status': 'Fail', 'message': 'Email or Password Incorrect', 'login_status': False})
+            return JsonResponse({'status': 'Fail', 'message': 'User not found', 'login_status': False}, status=404)
         except Exception as e:
             return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
     return JsonResponse({'status': 'error', 'message': 'Invalid request method'}, status=400)
