@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Eye, EyeOff, RefreshCcw } from "lucide-react";
+import { message } from "antd";
 
 function SignupPage() {
   const testimonials = [
@@ -25,6 +26,7 @@ function SignupPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
 
+  // rotate testimonials
   useEffect(() => {
     const interval = setInterval(() => {
       setCurrent((prev) => (prev + 1) % testimonials.length);
@@ -49,27 +51,77 @@ function SignupPage() {
     return Object.keys(tempErrors).length === 0;
   };
 
-  const handleSubmit = (e) => {
+  // ✅ handle form submit (send data to backend)
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (validateForm()) {
-      setIsVerifiedStep(true);
+    if (!validateForm()) return;
+
+    try {
+      const response = await fetch("http://127.0.0.1:8000/api/signup/", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(formData),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        message.success("Verification code sent to your email!");
+        setIsVerifiedStep(true);
+      } else {
+        message.error(data.error || "Signup failed. Please try again.");
+      }
+    } catch (error) {
+      console.error(error);
+      message.error("Server error. Please try again later.");
     }
   };
 
+  const sendVerificationCode = async (e) => {
+    e.preventDefault();
+    if (!validateForm()) return;
+    try {
+      const response = await fetch("http://127.0.0.1:8000/api/verify-email/", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ ver_email: formData.email }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        message.success("Verification code sent to your email!");
+        setIsVerifiedStep(true);
+      } else {
+        message.error(data.error || "Failed to send verification code. Please try again.");
+      }
+    } catch (error) {
+      console.error(error);
+      message.error("Server error. Please try again later.");
+    }
+  };
+
+  // ✅ handle verification
   const handleVerification = (e) => {
     e.preventDefault();
+
     if (verificationCode === "1234") {
-      alert("✅ Account verified successfully!");
+      message.success("Account verified successfully!");
       setIsVerifiedStep(false);
       setFormData({ name: "", email: "", password: "" });
       setVerificationCode("");
     } else {
-      alert("❌ Invalid verification code. Try again!");
+      message.error("Invalid verification code. Try again!");
     }
   };
 
   const handleResendEmail = () => {
     setEmailSent(true);
+    message.info("Verification email resent!");
     setTimeout(() => setEmailSent(false), 3000);
   };
 
@@ -80,11 +132,7 @@ function SignupPage() {
         <div className="w-full md:w-2/3 flex flex-col">
           {/* Header */}
           <div className="flex justify-between items-center p-6 sm:p-8 border-b border-gray-100">
-            <img
-              src="logo.jpg"
-              alt="logo"
-              className="h-10 sm:h-14 object-contain"
-            />
+            <img src="logo.jpg" alt="logo" className="h-10 sm:h-14 object-contain" />
             <p className="text-sm sm:text-base text-gray-700">
               Already have an account?{" "}
               <a href="/login" className="text-blue-600 hover:underline font-medium">
@@ -100,7 +148,7 @@ function SignupPage() {
                 <h2 className="text-2xl sm:text-3xl font-semibold text-gray-800 mb-6">
                   Create your Account
                 </h2>
-                <form className="space-y-5" onSubmit={handleSubmit}>
+                <form className="space-y-5" onSubmit={sendVerificationCode}>
                   <div>
                     <input
                       type="text"
@@ -109,9 +157,8 @@ function SignupPage() {
                       onChange={(e) =>
                         setFormData({ ...formData, name: e.target.value })
                       }
-                      className={`w-full border ${
-                        errors.name ? "border-red-400" : "border-gray-300"
-                      } rounded-md px-4 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none`}
+                      className={`w-full border ${errors.name ? "border-red-400" : "border-gray-300"
+                        } rounded-md px-4 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none`}
                       required
                     />
                     {errors.name && (
@@ -127,9 +174,8 @@ function SignupPage() {
                       onChange={(e) =>
                         setFormData({ ...formData, email: e.target.value })
                       }
-                      className={`w-full border ${
-                        errors.email ? "border-red-400" : "border-gray-300"
-                      } rounded-md px-4 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none`}
+                      className={`w-full border ${errors.email ? "border-red-400" : "border-gray-300"
+                        } rounded-md px-4 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none`}
                       required
                     />
                     {errors.email && (
@@ -145,9 +191,8 @@ function SignupPage() {
                       onChange={(e) =>
                         setFormData({ ...formData, password: e.target.value })
                       }
-                      className={`w-full border ${
-                        errors.password ? "border-red-400" : "border-gray-300"
-                      } rounded-md px-4 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none pr-10`}
+                      className={`w-full border ${errors.password ? "border-red-400" : "border-gray-300"
+                        } rounded-md px-4 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none pr-10`}
                       required
                     />
                     <button
@@ -182,8 +227,7 @@ function SignupPage() {
                   Verify Your Account
                 </h2>
                 <p className="text-gray-600 mb-4 text-sm">
-                  We’ve sent a verification code to your email. Please enter it
-                  below to complete your signup.
+                  We’ve sent a verification code to your email. Please enter it below to complete your signup.
                 </p>
                 <form onSubmit={handleVerification} className="space-y-4">
                   <input
@@ -237,14 +281,12 @@ function SignupPage() {
               {testimonials[current].author}
             </span>
 
-            {/* Dots */}
             <div className="flex justify-center mt-4 gap-2">
               {testimonials.map((_, index) => (
                 <span
                   key={index}
-                  className={`w-2.5 h-2.5 rounded-full transition-all ${
-                    current === index ? "bg-white" : "bg-white/50"
-                  }`}
+                  className={`w-2.5 h-2.5 rounded-full transition-all ${current === index ? "bg-white" : "bg-white/50"
+                    }`}
                 ></span>
               ))}
             </div>
