@@ -28,14 +28,21 @@ DEBUG = True
 
 ALLOWED_HOSTS = ['localhost', '.vercel.app', '127.0.0.1']
 
-
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
 EMAIL_HOST = "smtp.hostinger.com"
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
-EMAIL_HOST_USER = "abc@xyz.com"
-EMAIL_HOST_PASSWORD = "abc123"
-DEFAULT_FROM_EMAIL = "No Reply WorknConnect Innovators <noreply@wncinnovators.com>"
+EMAIL_HOST_USER = "noreply@wncinnovators.com"
+EMAIL_HOST_PASSWORD = "Sherlocked21239@"
+DEFAULT_FROM_EMAIL = "No Reply Droptrix <noreply@wncinnovators.com>"
+
+# EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+# EMAIL_HOST = "smtp.hostinger.com"
+# EMAIL_PORT = 587
+# EMAIL_USE_TLS = True
+# EMAIL_HOST_USER = "abc@xyz.com"
+# EMAIL_HOST_PASSWORD = "abc123"
+# DEFAULT_FROM_EMAIL = "No Reply WorknConnect Innovators <noreply@wncinnovators.com>"
 
 
 # Application definition
@@ -47,10 +54,13 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-    "backend_app"
+    "backend_app",
+    "rest_framework",
+    "corsheaders"
 ]
 
 MIDDLEWARE = [
+    "corsheaders.middleware.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -62,6 +72,14 @@ MIDDLEWARE = [
 ]
 
 ROOT_URLCONF = "backend.urls"
+
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000",
+]
+# CORS_ALLOW_CREDENTIALS = True
+CSRF_TRUSTED_ORIGINS = [
+    "http://localhost:3000",
+]
 
 TEMPLATES = [
     {

@@ -109,7 +109,7 @@ function SignupPage() {
   const handleVerification = (e) => {
     e.preventDefault();
 
-    if (verificationCode === "1234") {
+    if (verificationCode === '1234') {
       message.success("Account verified successfully!");
       setIsVerifiedStep(false);
       setFormData({ name: "", email: "", password: "" });

@@ -4,14 +4,14 @@ import json
 from django.views.decorators.csrf import csrf_exempt
 from backend_app.models import Feedback, Newsletter, Signup
 from django.core.mail import send_mail
-from django.conf import settings
 import random
 import string
-import smtplib
 import jwt
 from datetime import datetime, timedelta
 from django.conf import settings
 from backend.settings import SECRET_KEY
+from django.core.mail import EmailMessage
+from django.core.mail import EmailMultiAlternatives
 
 
 @csrf_exempt
@@ -178,16 +178,10 @@ def ver_code():
 @csrf_exempt
 def receive_verify_email(request):
     if request.method == 'POST':
-        ver_email = json.loads(request.body)
-        global code
+        ver_email = json.loads(request.body).get('ver_email')
         code = ver_code()
-        with smtplib.SMTP('smtp.hostinger.com', 587) as smtp:
-            smtp.ehlo()
-            smtp.starttls()
-            smtp.ehlo()
-            smtp.login('no-reply@worknconnect.com', 'Sherlocked21239@')
-            subject = 'Droptrix Email Verification Code'
-            body = f"""
+        subject = 'Droptrix Email Verification Code'
+        body = f"""
 Hello,
 
 Welcome to Droptrix!
@@ -203,24 +197,30 @@ This code is valid for 10 minutes. If you did not request this, please ignore th
 Best regards,
 The Droptrix Team
 """
-            msg = f'Subject: {subject}\n\n{body}'
-            smtp.sendmail('no-reply@worknconnect.com', ver_email, msg)
-    return JsonResponse({'status': 'success', 'code': code})
-
-
-@csrf_exempt
-def verify_code(request):
-    if request.method == 'POST':
-        try:
-            data = json.loads(request.body)
-            input_code = data['code']
-            org_code = code
-            if org_code != input_code:
-                return JsonResponse({'status': 'error', 'message': 'Code Unmatched'}, status=200)
-            return JsonResponse({'status': 'success', 'data_received': True})
-        except Exception as e:
-            return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+        send_mail(
+            subject,
+            body,
+            settings.DEFAULT_FROM_EMAIL,
+            [ver_email],
+            fail_silently=False,
+        )
+        return JsonResponse({'status': 'success', 'code': code})
     return JsonResponse({'status': 'error', 'message': 'Invalid request method'}, status=400)
+
+
+# @csrf_exempt
+# def verify_code(request):
+#     if request.method == 'POST':
+#         try:
+#             data = json.loads(request.body)
+#             input_code = data['code']
+#             org_code = code
+#             if org_code != input_code:
+#                 return JsonResponse({'status': 'error', 'message': 'Code Unmatched'}, status=200)
+#             return JsonResponse({'status': 'success', 'data_received': True})
+#         except Exception as e:
+#             return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+#     return JsonResponse({'status': 'error', 'message': 'Invalid request method'}, status=400)
 
 
 @csrf_exempt
