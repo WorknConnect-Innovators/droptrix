@@ -16,7 +16,7 @@ from django.core.mail import EmailMultiAlternatives
 
 @csrf_exempt
 def home(request):
-    return HttpResponse('Server is running....')
+    return HttpResponse('Server is running again....')
 
 
 @csrf_exempt
