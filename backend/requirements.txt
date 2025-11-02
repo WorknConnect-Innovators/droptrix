@@ -4,3 +4,5 @@ whitenoise
 PyMySQL
 djangorestframework
 django-cors-headers
+PyJWT
+jwt
