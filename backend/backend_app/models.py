@@ -47,3 +47,28 @@ class Message(models.Model):
 
     class Meta:
         ordering = ["timestamp"]
+
+
+class Careers(models.Model):
+    name = models.CharField(max_length=200)
+    description = models.TextField()
+    logo_url = models.CharField(max_length=2000)
+    company_id = models.CharField(max_length=200, unique=True)
+
+    def __str__(self):
+        return self.name
+    
+
+class Plans(models.Model):
+    company_id = models.ForeignKey(Careers, to_field='company_id', on_delete=models.CASCADE)
+    plan_name = models.CharField(max_length=200)
+    popularity = models.CharField(max_length=200)
+    plan_type = models.CharField(max_length=200)
+    plan_price = models.CharField(max_length=200)
+    previous_price = models.CharField(max_length=200)
+    plan_duration = models.CharField(max_length=200)
+    plan_feature = models.JSONField(default=list)
+    off_percentage = models.CharField(max_length=200)
+
+    def __str__(self):
+        return self.plan_name
