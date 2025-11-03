@@ -67,13 +67,11 @@ export default function Navbar() {
           >
             Plans
           </li>
-          <li
+          <Link to={"/carriers"}
             className="cursor-pointer hover:text-blue-600 transition"
-            onMouseEnter={() => handleMouseEnter("companies")}
-            onMouseLeave={handleMouseLeave}
           >
-            Companies
-          </li>
+            Carriers
+          </Link>
           <li className="cursor-pointer hover:text-blue-600 transition">
             How it works
           </li>
@@ -86,9 +84,9 @@ export default function Navbar() {
 
       {/* Right Section */}
       <div className="flex items-center gap-x-2 md:gap-x-4">
-        <button className=" bg-blue-900 text-white md:text-sm text-xs py-2 px-6 rounded-full hover:bg-blue-700 hover:shadow-md transition">
+        <Link to={'/carriers'} state={{ clickedButton: "PayAsYouGo" }} className=" bg-blue-900 text-white md:text-sm text-xs py-2 px-6 rounded-full hover:bg-blue-700 hover:shadow-md transition">
           Pay as you go
-        </button>
+        </Link>
         <div className="relative">
           <button
             onClick={() => setOpen((v) => !v)}

@@ -1,8 +1,18 @@
 import React, { useState } from 'react';
 import { CircleCheck, CircleQuestionMark, X } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
-const PlansCards = ({ PlansData }) => {
+const PlansCards = ({ PlansData, clickedButton }) => {
   const [selectedPlan, setSelectedPlan] = useState(null);
+  const navigate = useNavigate();
+
+  const handleActivate = () => {
+    if (clickedButton === "PayAsYouGo") {
+      navigate('/paymentForm');
+    } else {
+      return;
+    }
+  }
 
   return (
     <>
@@ -53,14 +63,14 @@ const PlansCards = ({ PlansData }) => {
                 <div className="flex flex-col gap-2 text-sm text-gray-700">
                   {plan.features && plan.features.length > 0
                     ? plan.features.map((feature, fIndex) => (
-                        <p className="flex gap-x-1" key={fIndex}>
-                          <CircleCheck fill="blue" color="white" />
-                          <span className="my-auto">{feature?.text}</span>
-                          {feature?.info?.length !== 0 && (
-                            <CircleQuestionMark className="fill-gray-500 text-white" />
-                          )}
-                        </p>
-                      ))
+                      <p className="flex gap-x-1" key={fIndex}>
+                        <CircleCheck fill="blue" color="white" />
+                        <span className="my-auto">{feature?.text}</span>
+                        {feature?.info?.length !== 0 && (
+                          <CircleQuestionMark className="fill-gray-500 text-white" />
+                        )}
+                      </p>
+                    ))
                     : null}
                 </div>
               </div>
@@ -122,7 +132,7 @@ const PlansCards = ({ PlansData }) => {
 
             {/* CTA */}
             <div className="flex justify-center mt-6">
-              <button className="bg-gradient-to-r from-blue-500 to-green-400 text-white px-8 py-3 rounded-xl font-semibold shadow-md hover:scale-105 transition-transform">
+              <button onClick={handleActivate} className="bg-gradient-to-r from-blue-500 to-green-400 text-white px-8 py-3 rounded-xl font-semibold shadow-md hover:scale-105 transition-transform">
                 Activate Now
               </button>
             </div>

@@ -1,5 +1,5 @@
 import React from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 
 const carriers = [
     {
@@ -25,6 +25,10 @@ const carriers = [
 ];
 
 export default function CarrierPage() {
+
+    const location = useLocation();
+    const clickedButton = location.state?.clickedButton || "None";
+
     return (
         <div className="pb-20">
             {/* Header */}
@@ -53,7 +57,7 @@ export default function CarrierPage() {
                             {carrier.name}
                         </h2>
                         <p className="text-sm text-gray-600 mb-4">{carrier.description}</p>
-                        <Link to={`/companies/${carrier.name}`} className="mt-auto bg-blue-600 text-white py-2 px-6 rounded-lg font-medium hover:bg-blue-700 transition">
+                        <Link to={`/companies/${carrier.name}`} state={{ clickedButton: clickedButton }} className="mt-auto bg-blue-600 text-white py-2 px-6 rounded-lg font-medium hover:bg-blue-700 transition">
                             Explore Plans
                         </Link>
                     </div>

@@ -1,8 +1,12 @@
 import React, { useState, useEffect } from "react";
 import { Eye, EyeOff, RefreshCcw } from "lucide-react";
 import { message } from "antd";
+import { useNavigate } from "react-router-dom";
 
 function SignupPage() {
+
+  const navigate = useNavigate();
+
   const testimonials = [
     {
       text: "You are the best company! Your plans are affordable and customer service is top-notch.",
@@ -19,12 +23,14 @@ function SignupPage() {
   ];
 
   const [current, setCurrent] = useState(0);
-  const [formData, setFormData] = useState({ name: "", email: "", password: "" });
+  const [formData, setFormData] = useState({ full_name: "", email: "", password: "" });
   const [errors, setErrors] = useState({});
   const [isVerifiedStep, setIsVerifiedStep] = useState(false);
   const [verificationCode, setVerificationCode] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [originalCode, setOriginalCode] = useState("");
 
   // rotate testimonials
   useEffect(() => {
@@ -36,7 +42,7 @@ function SignupPage() {
 
   const validateForm = () => {
     let tempErrors = {};
-    if (!formData.name.trim()) tempErrors.name = "Full name is required.";
+    if (!formData.full_name.trim()) tempErrors.full_name = "Full name is required.";
     if (!formData.email.trim()) {
       tempErrors.email = "Email is required.";
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
@@ -52,12 +58,10 @@ function SignupPage() {
   };
 
   // ✅ handle form submit (send data to backend)
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!validateForm()) return;
+  const handleSubmit = async () => {
 
     try {
-      const response = await fetch("http://127.0.0.1:8000/api/signup/", {
+      const response = await fetch("https://droptrix.vercel.app/api/signup/", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -68,22 +72,27 @@ function SignupPage() {
       const data = await response.json();
 
       if (response.ok) {
-        message.success("Verification code sent to your email!");
-        setIsVerifiedStep(true);
+        message.success("Signup Completed");
       } else {
         message.error(data.error || "Signup failed. Please try again.");
       }
     } catch (error) {
       console.error(error);
       message.error("Server error. Please try again later.");
+    } finally {
+      setLoading(false);
+      setVerificationCode("");
+      setOriginalCode("");
+      navigate("/login");
     }
   };
 
   const sendVerificationCode = async (e) => {
     e.preventDefault();
+    setLoading(true);
     if (!validateForm()) return;
     try {
-      const response = await fetch("http://127.0.0.1:8000/api/verify-email/", {
+      const response = await fetch("https://droptrix.vercel.app/api/verify-email/", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -95,6 +104,7 @@ function SignupPage() {
 
       if (response.ok) {
         message.success("Verification code sent to your email!");
+        setOriginalCode(data?.code);
         setIsVerifiedStep(true);
       } else {
         message.error(data.error || "Failed to send verification code. Please try again.");
@@ -102,18 +112,18 @@ function SignupPage() {
     } catch (error) {
       console.error(error);
       message.error("Server error. Please try again later.");
+    } finally {
+      setLoading(false);
     }
   };
 
   // ✅ handle verification
   const handleVerification = (e) => {
     e.preventDefault();
+    setLoading(true);
 
-    if (verificationCode === '1234') {
-      message.success("Account verified successfully!");
-      setIsVerifiedStep(false);
-      setFormData({ name: "", email: "", password: "" });
-      setVerificationCode("");
+    if (verificationCode === originalCode) {
+      handleSubmit();
     } else {
       message.error("Invalid verification code. Try again!");
     }
@@ -153,16 +163,17 @@ function SignupPage() {
                     <input
                       type="text"
                       placeholder="Full Name"
-                      value={formData.name}
+                      value={formData.full_name}
+                      autoComplete="false"
                       onChange={(e) =>
-                        setFormData({ ...formData, name: e.target.value })
+                        setFormData({ ...formData, full_name: e.target.value })
                       }
-                      className={`w-full border ${errors.name ? "border-red-400" : "border-gray-300"
+                      className={`w-full border ${errors.full_name ? "border-red-400" : "border-gray-300"
                         } rounded-md px-4 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none`}
                       required
                     />
-                    {errors.name && (
-                      <p className="text-red-500 text-xs mt-1">{errors.name}</p>
+                    {errors.full_name && (
+                      <p className="text-red-500 text-xs mt-1">{errors.full_name}</p>
                     )}
                   </div>
 
@@ -171,6 +182,7 @@ function SignupPage() {
                       type="email"
                       placeholder="Email"
                       value={formData.email}
+                      autoComplete="false"
                       onChange={(e) =>
                         setFormData({ ...formData, email: e.target.value })
                       }
@@ -188,6 +200,7 @@ function SignupPage() {
                       type={showPassword ? "text" : "password"}
                       placeholder="Password"
                       value={formData.password}
+                      autoComplete="false"
                       onChange={(e) =>
                         setFormData({ ...formData, password: e.target.value })
                       }
@@ -217,7 +230,7 @@ function SignupPage() {
                     type="submit"
                     className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 rounded-md transition"
                   >
-                    Sign Up
+                    {loading ? "Processing..." : "Sign Up"}
                   </button>
                 </form>
               </>
@@ -244,7 +257,7 @@ function SignupPage() {
                       type="submit"
                       className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white font-medium px-6 py-2 rounded-md transition"
                     >
-                      Verify
+                      {loading ? "Processing..." : "Verify"}
                     </button>
 
                     <button

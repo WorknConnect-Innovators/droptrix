@@ -1,13 +1,17 @@
 import React, { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useLocation, useParams } from "react-router-dom";
 import PlansCards from "../../components/Plans/plansCards";
 
 function CompanyPage() {
+
+  const location = useLocation();
+  const clickedButton = location.state?.clickedButton || "None";
+
   const { companyName } = useParams();
-  const [selected, setSelected] = useState("12 Months");
+  const [selected, setSelected] = useState("Prepaid Plans");
   const [plans, setPlans] = useState([]);
 
-  const durations = ["24 Months", "12 Months", "1 Month"];
+  const planTypeArr = ["Postpaid Plans", "Prepaid Plans", "Company Plans"];
 
   const rawPlansData = [
     {
@@ -16,7 +20,7 @@ function CompanyPage() {
       discountPercentage: 25,
       price: "$299",
       offPrice: "$399",
-      duration: "12 Months",
+      planType: "Prepaid Plans",
       features: [
         {
           text: "Custom reports and analytics",
@@ -34,7 +38,7 @@ function CompanyPage() {
       discountPercentage: 25,
       price: "$299",
       offPrice: "$399",
-      duration: "12 Months",
+      planType: "Prepaid Plans",
       features: [
         {
           text: "Custom reports and analytics",
@@ -49,7 +53,7 @@ function CompanyPage() {
       discountPercentage: 25,
       price: "$299",
       offPrice: "$399",
-      duration: "12 Months",
+      planType: "12 Months",
       features: [
         {
           text: "Custom reports and analytics",
@@ -64,7 +68,7 @@ function CompanyPage() {
       discountPercentage: 25,
       price: "$299",
       offPrice: "$399",
-      duration: "12 Months",
+      planType: "Postpaid Plans",
       features: [
         {
           text: "Custom reports and analytics",
@@ -80,7 +84,7 @@ function CompanyPage() {
       discountPercentage: 25,
       price: "$299",
       offPrice: "$399",
-      duration: "12 Months",
+      planType: "Prepaid Plans",
       features: [
         {
           text: "Custom reports and analytics",
@@ -95,7 +99,7 @@ function CompanyPage() {
       discountPercentage: null,
       price: "$99",
       offPrice: "",
-      duration: "1 Month",
+      planType: "1 Month",
       features: [
         { text: "Standard support", info: "" },
         { text: "", info: "" }, // remove
@@ -107,7 +111,7 @@ function CompanyPage() {
       discountPercentage: 20,
       price: "$199",
       offPrice: "$249",
-      duration: "24 Months",
+      planType: "24 Months",
       features: [
         { text: "Priority 24/7 Support", info: "Direct line to technical team" },
         { text: "Up to 50 inventory locations", info: "" },
@@ -132,7 +136,7 @@ function CompanyPage() {
           )
         );
       })
-      .filter((plan) => plan.duration === selected);
+      .filter((plan) => plan.planType === selected);
 
     setPlans(cleanedData);
   }, [selected]);
@@ -153,25 +157,25 @@ function CompanyPage() {
       {/* DURATION SELECTOR */}
       <div className="flex justify-center items-center my-6">
         <ul className="bg-gray-50 border rounded-full shadow-inner w-fit p-1 flex gap-x-4">
-          {durations.map((duration) => (
+          {planTypeArr.map((planType) => (
             <li
-              key={duration}
-              onClick={() => setSelected(duration)}
-              className={`cursor-pointer text-sm md:text-base font-medium px-6 py-2 rounded-full transition-all duration-200 
-                ${selected === duration
+              key={planType}
+              onClick={() => setSelected(planType)}
+              className={`cursor-pointer text-sm md:text-base font-medium px-6 py-2 rounded-full transition-all planType-200 
+                ${selected === planType
                   ? "bg-blue-600 text-white shadow-md"
                   : "text-gray-700 hover:bg-blue-100"
                 }`}
             >
-              {duration}
+              {planType}
             </li>
           ))}
         </ul>
       </div>
 
-      {/* ✅ Only show plans that match selected duration */}
+      {/* ✅ Only show plans that match selected planType */}
       {plans.length > 0 ? (
-        <PlansCards PlansData={plans} />
+        <PlansCards PlansData={plans} clickedButton={clickedButton} />
       ) : (
         <div className="text-center text-gray-500 mt-10">
           No plans available for {selected}.

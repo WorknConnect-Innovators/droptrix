@@ -9,6 +9,10 @@ import ContactUs from './pages/Contact/contactus'
 import Login from './pages/Login/login'
 import CarrierPage from './pages/Companies/carrierPage'
 import ScrollToTop from './components/scrolltop'
+import PaymentForm from './pages/PlanActivation/paymentForm'
+import AdminDashboard from './AdminDashnoard/pages/adminDashboard'
+import AdminDashLayout from './layout/adminLayout'
+import AdminCarrierPage from './AdminDashnoard/pages/carriers/carrierPage'
 
 function App() {
   return (
@@ -20,11 +24,17 @@ function App() {
           <Route path='*' element={<h1 className='text-center mt-20 text-3xl'>404 Not Found</h1>} />
           <Route path='/companies/:companyName' element={<CompanyPage />} />
           <Route path='/plans/:choosenPlanType' element={<PlansPage />} />
+          <Route path='/plans/:choosenCarrier' element={<PlansPage />} />
+          <Route path='/paymentForm' element={<PaymentForm />} />
           <Route path='/carriers' element={<CarrierPage />} />
           <Route path='/contact' element={<ContactUs />} />
         </Route>
         <Route path='/signup' element={<SignupPage />} />
         <Route path='/login' element={<Login />} />
+        <Route path='/dashboard' element={<AdminDashLayout />} >
+          <Route index element={<AdminDashboard />} />
+          <Route path='carriers' element={<AdminCarrierPage />} />
+        </Route>
       </Routes>
     </Router>
   )
