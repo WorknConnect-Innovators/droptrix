@@ -13,8 +13,6 @@ function AdminCarrierPage() {
     });
 
     const handleCloudinaryUpload = async (file) => {
-        const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
-        const preset = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET;
 
         const formData = new FormData();
         formData.append("file", file);
@@ -32,6 +30,7 @@ function AdminCarrierPage() {
             );
             const data = await res.json();
             setUploading(false);
+            console.log("Cloudinary upload successful:", data.secure_url);
             return data.secure_url; // ✅ Cloudinary hosted image URL
         } catch (error) {
             console.error("Cloudinary upload failed:", error);
@@ -89,7 +88,7 @@ function AdminCarrierPage() {
     );
 
     return (
-        <div className="bg-gray-50 p-6">
+        <div className="bg-gray-50">
             {/* Header */}
             <div className="flex justify-between items-center mb-6">
                 <h1 className="text-2xl font-semibold text-gray-800">Manage Companies</h1>
