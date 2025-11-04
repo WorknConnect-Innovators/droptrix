@@ -254,7 +254,7 @@ def add_carriers(request):
         try:
             data = json.loads(request.body)
             company_count = int(Carriers.objects.count())+1
-            company_id = f'CMP-{datetime.now().strftime('%Y%m')}-{str(company_count).zfill(4)}'
+            company_id = f"CMP-{datetime.now().strftime('%Y%m')}-{str(company_count).zfill(4)}"
             carriers_data = Carriers(
                 name=data['name'],
                 description=data['description'],
