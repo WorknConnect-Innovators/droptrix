@@ -4,52 +4,95 @@ import { Plus, Search, Edit2, Trash2, X } from "lucide-react";
 function AdminCarrierPage() {
     const [searchTerm, setSearchTerm] = useState("");
     const [showModal, setShowModal] = useState(false);
-    const [companies, setCompanies] = useState([
-        {
-            id: 1,
-            name: "TechCorp",
-            description: "A leading software solutions provider.",
-            logo: "https://via.placeholder.com/50",
-        },
-        {
-            id: 2,
-            name: "InnovaSoft",
-            description: "Innovative IT company with AI products.",
-            logo: "https://via.placeholder.com/50",
-        },
-    ]);
-
+    const [uploading, setUploading] = useState(false);
+    const [companies, setCompanies] = useState([]);
     const [newCompany, setNewCompany] = useState({
         name: "",
         description: "",
         logo: "",
     });
 
-    const handleAddCompany = () => {
-        if (!newCompany.name || !newCompany.description || !newCompany.logo) return;
-        setCompanies([
-            ...companies,
-            { ...newCompany, id: companies.length + 1 },
-        ]);
-        setNewCompany({ name: "", description: "", logo: "" });
-        setShowModal(false);
+    const handleCloudinaryUpload = async (file) => {
+        const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
+        const preset = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET;
+
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("upload_preset", "droptrixCarrierLogos");
+
+        setUploading(true);
+
+        try {
+            const res = await fetch(
+                `https://api.cloudinary.com/v1_1/dyodgkvkr/image/upload`,
+                {
+                    method: "POST",
+                    body: formData,
+                }
+            );
+            const data = await res.json();
+            setUploading(false);
+            return data.secure_url; // ✅ Cloudinary hosted image URL
+        } catch (error) {
+            console.error("Cloudinary upload failed:", error);
+            setUploading(false);
+            return null;
+        }
     };
 
-    const handleDelete = (id) => {
-        setCompanies(companies.filter((company) => company.id !== id));
+    const handleAddCompany = async () => {
+        if (!newCompany.name || !newCompany.description || !newCompany.logo)
+            return;
+
+        try {
+            const res = await fetch("http://127.0.0.1:8000/admin/api/add-carrier/", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    name: newCompany.name,
+                    description: newCompany.description,
+                    logo_url: newCompany.logo,
+                }),
+            });
+
+            const result = await res.json();
+
+            if (result.status === "success") {
+                setCompanies([
+                    ...companies,
+                    { ...newCompany, id: companies.length + 1 },
+                ]);
+                setShowModal(false);
+                setNewCompany({ name: "", description: "", logo: "" });
+            } else {
+                alert("Failed to add company: " + result.message);
+            }
+        } catch (err) {
+            console.error("Backend error:", err);
+        }
     };
+
+    const handleFileChange = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const uploadedUrl = await handleCloudinaryUpload(file);
+        if (uploadedUrl) {
+            setNewCompany({ ...newCompany, logo: uploadedUrl });
+        }
+    };
+
+    const handleDelete = (id) =>
+        setCompanies(companies.filter((c) => c.id !== id));
 
     const filteredCompanies = companies.filter((c) =>
         c.name.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
     return (
-        <div className="bg-gray-50">
+        <div className="bg-gray-50 p-6">
             {/* Header */}
-            <div className="flex flex-wrap justify-between items-center mb-6">
-                <h1 className="text-2xl font-semibold text-gray-800">
-                    Manage Companies
-                </h1>
+            <div className="flex justify-between items-center mb-6">
+                <h1 className="text-2xl font-semibold text-gray-800">Manage Companies</h1>
 
                 <div className="flex items-center gap-3">
                     <div className="relative">
@@ -84,7 +127,7 @@ function AdminCarrierPage() {
                         </tr>
                     </thead>
                     <tbody>
-                        {filteredCompanies.length > 0 ? (
+                        {filteredCompanies.length ? (
                             filteredCompanies.map((company) => (
                                 <tr
                                     key={company.id}
@@ -114,10 +157,7 @@ function AdminCarrierPage() {
                             ))
                         ) : (
                             <tr>
-                                <td
-                                    colSpan="4"
-                                    className="px-6 py-6 text-center text-gray-500 italic"
-                                >
+                                <td colSpan="4" className="px-6 py-6 text-center text-gray-500 italic">
                                     No companies found.
                                 </td>
                             </tr>
@@ -126,7 +166,7 @@ function AdminCarrierPage() {
                 </table>
             </div>
 
-            {/* Add Company Modal */}
+            {/* Modal */}
             {showModal && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex justify-center items-center z-50">
                     <div className="bg-white w-[90%] max-w-lg rounded-2xl shadow-lg p-6 relative">
@@ -164,10 +204,7 @@ function AdminCarrierPage() {
                                 <textarea
                                     value={newCompany.description}
                                     onChange={(e) =>
-                                        setNewCompany({
-                                            ...newCompany,
-                                            description: e.target.value,
-                                        })
+                                        setNewCompany({ ...newCompany, description: e.target.value })
                                     }
                                     rows="3"
                                     className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
@@ -177,30 +214,25 @@ function AdminCarrierPage() {
 
                             <div>
                                 <label className="block text-sm font-medium mb-1">
-                                    Logo URL or Upload
+                                    Company Logo
                                 </label>
-                                <input
-                                    type="text"
-                                    value={newCompany.logo}
-                                    onChange={(e) =>
-                                        setNewCompany({ ...newCompany, logo: e.target.value })
-                                    }
-                                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                    placeholder="Paste image link or upload below"
-                                />
-                                <div className="mt-2">
-                                    <input
-                                        type="file"
-                                        accept="image/*"
-                                        onChange={(e) =>
-                                            setNewCompany({
-                                                ...newCompany,
-                                                logo: URL.createObjectURL(e.target.files[0]),
-                                            })
-                                        }
-                                        className="text-sm text-gray-600"
+
+                                {uploading ? (
+                                    <p className="text-blue-500 text-sm italic">Uploading...</p>
+                                ) : newCompany.logo ? (
+                                    <img
+                                        src={newCompany.logo}
+                                        alt="preview"
+                                        className="h-16 w-16 object-cover rounded-full mb-2"
                                     />
-                                </div>
+                                ) : null}
+
+                                <input
+                                    type="file"
+                                    accept="image/*"
+                                    onChange={handleFileChange}
+                                    className="text-sm text-gray-600"
+                                />
                             </div>
                         </div>
 
@@ -213,9 +245,10 @@ function AdminCarrierPage() {
                             </button>
                             <button
                                 onClick={handleAddCompany}
-                                className="px-5 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+                                disabled={uploading}
+                                className="px-5 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition disabled:bg-gray-400"
                             >
-                                Add Company
+                                {uploading ? "Uploading..." : "Add Company"}
                             </button>
                         </div>
                     </div>
