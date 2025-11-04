@@ -2,7 +2,7 @@ from django.shortcuts import render
 from django.http import JsonResponse, HttpResponse
 import json
 from django.views.decorators.csrf import csrf_exempt
-from backend_app.models import Feedback, Newsletter, Signup, Careers, Plans
+from backend_app.models import Feedback, Newsletter, Signup, Carriers, Plans
 from django.core.mail import send_mail
 import random
 import string
@@ -249,29 +249,29 @@ def login(request):
 
 
 @csrf_exempt
-def add_careers(request):
+def add_carriers(request):
     if request.method == 'POST':
         try:
             data = json.loads(request.body)
-            company_count = int(Careers.objects.count())+1
-            company_id = f'CMP-{datetime.now().strftime('%Y%m')}-{str(company_count).zfill(4)}'
-            careers_data = Careers(
+            company_count = int(Carriers.objects.count())+1
+            company_id = f"CMP-{datetime.now().strftime('%Y%m')}-{str(company_count).zfill(4)}"
+            carriers_data = Carriers(
                 name=data['name'],
                 description=data['description'],
                 logo_url=data['logo_url'],
                 company_id=company_id
             )
-            careers_data.save()
-            return JsonResponse({'status': 'success', 'data_received': careers_data.id})
+            carriers_data.save()
+            return JsonResponse({'status': 'success', 'data_received': carriers_data.id})
         except Exception as e:
             return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
     return JsonResponse({'status': 'error', 'message': 'Invalid request method'}, status=400)
 
 
 @csrf_exempt
-def get_careers(request):
+def get_carriers(request):
     if request.method == 'GET':
-        careers_data = Careers.objects.all()
+        careers_data = Carriers.objects.all()
         careers_all_data = [
             {
                 'name': c.name,

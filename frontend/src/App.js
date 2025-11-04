@@ -13,6 +13,7 @@ import PaymentForm from './pages/PlanActivation/paymentForm'
 import AdminDashboard from './AdminDashnoard/pages/adminDashboard'
 import AdminDashLayout from './layout/adminLayout'
 import AdminCarrierPage from './AdminDashnoard/pages/carriers/carrierPage'
+import AdminPlansPage from './AdminDashnoard/pages/plans/planspage'
 
 function App() {
   return (
@@ -34,6 +35,7 @@ function App() {
         <Route path='/dashboard' element={<AdminDashLayout />} >
           <Route index element={<AdminDashboard />} />
           <Route path='carriers' element={<AdminCarrierPage />} />
+          <Route path='plans' element={<AdminPlansPage />} />
         </Route>
       </Routes>
     </Router>

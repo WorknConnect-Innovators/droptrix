@@ -49,7 +49,7 @@ class Message(models.Model):
         ordering = ["timestamp"]
 
 
-class Careers(models.Model):
+class Carriers(models.Model):
     name = models.CharField(max_length=200)
     description = models.TextField()
     logo_url = models.CharField(max_length=2000)
@@ -60,7 +60,7 @@ class Careers(models.Model):
     
 
 class Plans(models.Model):
-    company_id = models.ForeignKey(Careers, to_field='company_id', on_delete=models.CASCADE)
+    company_id = models.ForeignKey(Carriers, to_field='company_id', on_delete=models.CASCADE)
     plan_name = models.CharField(max_length=200)
     popularity = models.CharField(max_length=200)
     plan_type = models.CharField(max_length=200)

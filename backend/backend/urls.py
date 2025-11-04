@@ -34,4 +34,9 @@ urlpatterns = [
     path('api/verify-email/', views.receive_verify_email, name='receive_verify_email'),
     # path('api/verify-code/', views.verify_code, name='verify_code'),
     path('api/login/', views.login, name='login'),
+    path('api/add-carriers/', views.add_carriers, name='add_carriers'),
+    path('api/get-carriers/', views.get_carriers, name='get_carriers'),
+    path('api/add-plans/', views.add_plans, name='add_plans'),
+    path('api/get-plans/', views.get_plans, name='get_plans'),
+    path('api/update-plans/', views.update_plans, name='update_plans'),
 ]
