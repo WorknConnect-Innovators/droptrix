@@ -69,6 +69,9 @@ class Plans(models.Model):
     plan_duration = models.CharField(max_length=200)
     plan_feature = models.JSONField(default=list)
     off_percentage = models.CharField(max_length=200)
+    tagline1 = models.TextField()
+    tagline2 = models.TextField()
+    details = models.TextField()
 
     def __str__(self):
         return self.plan_name

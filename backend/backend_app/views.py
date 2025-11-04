@@ -299,7 +299,10 @@ def add_plans(request):
                 previous_price=data['previous_price'],
                 plan_duration=data['plan_duration'],
                 plan_feature=data['plan_feature'],
-                off_percentage=data['off_percentage']
+                off_percentage=data['off_percentage'],
+                tagline1=data['tagline1'],
+                tagline2=data['tagline2'],
+                details=data['details']
             )
             plans_data.save()
             return JsonResponse({'status': 'success', 'data_received': plans_data.id})
@@ -323,7 +326,10 @@ def get_plans(request):
                 'previous_price': p.previous_price,
                 'plan_duration': p.plan_duration,
                 'plan_feature': p.plan_feature,
-                'off_percentage': p.off_percentage
+                'off_percentage': p.off_percentage,
+                'tagline1': p.tagline1,
+                'tagline2': p.tagline2,
+                'details': p.details
             }
             for p in plans_data
         ]
@@ -345,6 +351,9 @@ def update_plans(request):
             plans_data.plan_duration = data['plan_duration']
             plans_data.plan_feature = data['plan_feature']
             plans_data.off_percentage = data['off_percentage']
+            plans_data.tagline1 = data['tagline1']
+            plans_data.tagline2 = data['tagline2']
+            plans_data.details = data['details']
             plans_data.save()
             return JsonResponse({'status': 'success', 'data_received': plans_data.id})
         except Exception as e:
