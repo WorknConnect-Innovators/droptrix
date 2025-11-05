@@ -290,7 +290,10 @@ def add_plans(request):
     if request.method == 'POST':
         try:
             data = json.loads(request.body)
+            plans_count = int(Plans.objects.count())+1
+            plan_id = f"PLN-{datetime.now().strftime('%Y%m')}-{str(plans_count).zfill(4)}"
             plans_data = Plans(
+                plan_id=plan_id,
                 company_id=data['company_id'],
                 plan_name=data['plan_name'],
                 popularity=data['popularity'],
@@ -302,7 +305,8 @@ def add_plans(request):
                 off_percentage=data['off_percentage'],
                 tagline1=data['tagline1'],
                 tagline2=data['tagline2'],
-                details=data['details']
+                details=data['details'],
+                live_status=data['live_status']
             )
             plans_data.save()
             return JsonResponse({'status': 'success', 'data_received': plans_data.id})
@@ -317,7 +321,7 @@ def get_plans(request):
         plans_data = Plans.objects.all()
         plans_all_data = [
             {
-                'id': p.id,
+                'plan_id': p.plan_id,
                 'company_id': p.company_id,
                 'plan_name': p.plan_name,
                 'popularity': p.popularity,
@@ -329,7 +333,8 @@ def get_plans(request):
                 'off_percentage': p.off_percentage,
                 'tagline1': p.tagline1,
                 'tagline2': p.tagline2,
-                'details': p.details
+                'details': p.details,
+                'live_status': p.live_status
             }
             for p in plans_data
         ]
@@ -342,7 +347,7 @@ def update_plans(request):
     if request.method == 'POST':
         try:
             data = json.loads(request.body)
-            plans_data = Plans.objects.filter(id=data['id']).first()
+            plans_data = Plans.objects.filter(plan_id=data['plan_id']).first()
             plans_data.plan_name = data['plan_name']
             plans_data.popularity = data['popularity']
             plans_data.plan_type = data['plan_type']
@@ -354,6 +359,7 @@ def update_plans(request):
             plans_data.tagline1 = data['tagline1']
             plans_data.tagline2 = data['tagline2']
             plans_data.details = data['details']
+            plans_data.live_status = data['live_status']
             plans_data.save()
             return JsonResponse({'status': 'success', 'data_received': plans_data.id})
         except Exception as e:

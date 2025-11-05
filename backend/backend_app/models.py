@@ -60,6 +60,7 @@ class Carriers(models.Model):
     
 
 class Plans(models.Model):
+    plan_id = models.CharField(max_length=200)
     company_id = models.ForeignKey(Carriers, to_field='company_id', on_delete=models.CASCADE)
     plan_name = models.CharField(max_length=200)
     popularity = models.CharField(max_length=200)
@@ -72,6 +73,7 @@ class Plans(models.Model):
     tagline1 = models.TextField()
     tagline2 = models.TextField()
     details = models.TextField()
+    live_status = models.BooleanField(default=True)
 
     def __str__(self):
         return self.plan_name
