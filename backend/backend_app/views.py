@@ -2,7 +2,7 @@ from django.shortcuts import render
 from django.http import JsonResponse, HttpResponse
 import json
 from django.views.decorators.csrf import csrf_exempt
-from backend_app.models import Feedback, Newsletter, Signup, Carriers, Plans
+from backend_app.models import Feedback, Newsletter, Signup, Carriers, Plans, Payasyougo
 from django.core.mail import send_mail
 import random
 import string
@@ -365,3 +365,43 @@ def update_plans(request):
         except Exception as e:
             return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
     return JsonResponse({'status': 'error', 'message': 'Invalid request method'}, status=400)
+
+
+@csrf_exempt
+def add_payasyougo(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            payasyougo_data = Payasyougo(
+                zipcode=data['zipcode'],
+                e_id=data['e_id'],
+                plan_id=data['plan_id'],
+                email=data['email'],
+                contact_no=data['contact_no'],
+                sim_type=data['sim_type']
+            )
+            payasyougo_data.save()
+            return JsonResponse({'status': 'success', 'data_received': payasyougo_data.id})
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+    return JsonResponse({'status': 'error', 'message': 'Invalid request method'}, status=400)
+
+
+@csrf_exempt
+def get_payasyougo(request):
+    if request.method == 'GET':
+        payasyougo_data = Payasyougo.objects.all()
+        payasyougo_all_data = [
+            {
+                'id': p.id,
+                'zipcode': p.zipcode,
+                'e_id': p.e_id,
+                'plan_id': p.plan_id,
+                'email': p.email,
+                'contact_no': p.contact_no,
+                'sim_type': p.sim_type
+            }
+            for p in payasyougo_data
+        ]
+        return JsonResponse({'status': 'success', 'data': payasyougo_all_data})
+    return JsonResponse({'status': 'error', 'message': 'Only GET method is allowed'})

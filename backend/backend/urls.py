@@ -39,4 +39,6 @@ urlpatterns = [
     path('api/add-plans/', views.add_plans, name='add_plans'),
     path('api/get-plans/', views.get_plans, name='get_plans'),
     path('api/update-plans/', views.update_plans, name='update_plans'),
+    path('api/add-payasyougo/', views.add_payasyougo, name='add_payasyougo'),
+    path('api/get-payasyougo/', views.get_payasyougo, name='get_payasyougo'),
 ]
