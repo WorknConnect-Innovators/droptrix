@@ -60,7 +60,8 @@ class Carriers(models.Model):
     
 
 class Plans(models.Model):
-    company_id = models.ForeignKey(Carriers, to_field='company_id', on_delete=models.CASCADE)
+    plan_id = models.CharField(max_length=200)
+    company_id = models.CharField(max_length=200)
     plan_name = models.CharField(max_length=200)
     popularity = models.CharField(max_length=200)
     plan_type = models.CharField(max_length=200)
@@ -72,6 +73,19 @@ class Plans(models.Model):
     tagline1 = models.TextField()
     tagline2 = models.TextField()
     details = models.TextField()
+    live_status = models.BooleanField(default=True)
 
     def __str__(self):
         return self.plan_name
+    
+
+class Payasyougo(models.Model):
+    zipcode = models.CharField(max_length=200)
+    e_id = models.CharField(max_length=200)
+    plan_id = models.CharField(max_length=200)
+    email = models.CharField(max_length=200)
+    contact_no = models.CharField(max_length=200)
+    sim_type = models.CharField(max_length=200)
+
+    def __str__(self):
+        return self.email
