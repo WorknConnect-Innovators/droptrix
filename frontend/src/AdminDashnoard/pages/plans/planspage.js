@@ -102,6 +102,7 @@ function AdminPlansPage() {
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
                         company_id,
+                        popularity: 'High',
                         plan_name,
                         plan_type,
                         plan_price,

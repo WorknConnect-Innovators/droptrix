@@ -1,30 +1,37 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 
-const carriers = [
-    {
-        name: "AT & T",
-        logo: "/CarrierLogos/At_logo.png",
-        description: "Stay connected worldwide with AT & T’s reliable global network.",
-    },
-    {
-        name: "LinkUp Mobile",
-        logo: "/CarrierLogos/linkup_logo.png",
-        description: "Experience lightning-fast connectivity with LinkUp Mobile’s international coverage.",
-    },
-    {
-        name: "T-Mobile",
-        logo: "/CarrierLogos/TMobiles_logo.jpg",
-        description: "Flexible international data plans tailored for travelers and businesses.",
-    },
-    {
-        name: "Lyca Mobile",
-        logo: "/CarrierLogos/lyca_logo.webp",
-        description: "Affordable global connectivity powered by Lyca Mobile’s vast network.",
-    },
-];
-
 export default function CarrierPage() {
+
+    const [carriers, setCarriers] = useState([]);
+    const [loading, setLoading] = useState(true);
+
+    // ✅ Fetch Carriers from Backend
+    const getCarriersFromBackend = async () => {
+        setLoading(true);
+        try {
+            const res = await fetch(
+                `${process.env.REACT_APP_API_URL_PRODUCTION}/api/get-carriers/`
+            );
+            const data = await res.json();
+
+            if (data.status === "success") {
+                setCarriers(data?.data);
+            } else {
+                console.error("Invalid data structure:", data);
+                setCarriers([]);
+            }
+        } catch (error) {
+            console.error("Error fetching carriers:", error);
+            setCarriers([]);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        getCarriersFromBackend();
+    }, []);
 
     const location = useLocation();
     const clickedButton = location.state?.clickedButton || "None";
@@ -42,27 +49,39 @@ export default function CarrierPage() {
             </div>
 
             {/* Carrier Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 px-20">
-                {carriers.map((carrier, index) => (
-                    <div
-                        key={index}
-                        className="bg-white border border-gray-100 shadow-md hover:shadow-lg transition-shadow rounded-xl p-6 flex flex-col items-center text-center"
-                    >
-                        <img
-                            src={carrier.logo}
-                            alt={carrier.name}
-                            className="w-20 h-20 object-contain mb-4"
-                        />
-                        <h2 className="text-xl font-semibold text-gray-800 mb-2">
-                            {carrier.name}
-                        </h2>
-                        <p className="text-sm text-gray-600 mb-4">{carrier.description}</p>
-                        <Link to={`/companies/${carrier.name}`} state={{ clickedButton: clickedButton }} className="mt-auto bg-blue-600 text-white py-2 px-6 rounded-lg font-medium hover:bg-blue-700 transition">
-                            Explore Plans
-                        </Link>
-                    </div>
-                ))}
-            </div>
+
+            {loading ? (
+                <div className="flex justify-center items-center h-48">
+                    <div className="loader ease-linear rounded-full border-4 border-t-8 border-gray-200 h-16 w-16"></div>
+                </div>
+            ) : carriers.length === 0 ? (
+                <div className="text-center text-gray-600">
+                    No carriers available at the moment. Please check back later.
+                </div>
+            ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 px-20">
+                    {carriers.map((carrier, index) => (
+                        <div
+                            key={index}
+                            className="bg-white border border-gray-100 shadow-md hover:shadow-lg transition-shadow rounded-xl p-6 flex flex-col items-center text-center"
+                        >
+                            <img
+                                src={carrier.logo_url}
+                                alt={carrier.name}
+                                className="w-20 h-20 object-contain mb-4"
+                            />
+                            <h2 className="text-xl font-semibold text-gray-800 mb-2">
+                                {carrier.name}
+                            </h2>
+                            <p className="text-sm text-gray-600 mb-4">{carrier.description}</p>
+                            <Link to={`/companies/${carrier.name}`} state={{ clickedButton: clickedButton, selectedCarrier: carrier }} className="mt-auto bg-blue-600 text-white py-2 px-6 rounded-lg font-medium hover:bg-blue-700 transition">
+                                Explore Plans
+                            </Link>
+                        </div>
+                    ))}
+                </div>
+            )}
+
         </div>
     );
 }

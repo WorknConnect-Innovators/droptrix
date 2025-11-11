@@ -6,6 +6,7 @@ function CompanyPage() {
 
   const location = useLocation();
   const clickedButton = location.state?.clickedButton || "None";
+  const selectedCarrier = location.state?.selectedCarrier || null;
 
   const { companyName } = useParams();
   const [selected, setSelected] = useState("Prepaid Plans");
@@ -144,14 +145,9 @@ function CompanyPage() {
   return (
     <div className="pb-20">
       {/* HEADER */}
-      <div className="bg-gradient-to-b from-blue-100 to-white h-[30vh] w-full flex flex-col justify-center items-center text-center">
-        <h1 className="text-4xl font-bold text-blue-900 mb-2">{companyName}</h1>
-        <p className="text-lg text-gray-700 max-w-4xl">
-          {companyName} is one of the leading international SIM providers,
-          offering the best connectivity, coverage, and exclusive deals across
-          multiple countries. We’ve partnered with {companyName} to bring you
-          their most reliable plans and unbeatable offers—all in one place.
-        </p>
+      <div className="bg-gradient-to-b from-blue-100 to-white pt-14 pb-6 w-full flex flex-col justify-center items-center text-center">
+        <h1 className="text-4xl font-bold text-blue-900 mb-2">{selectedCarrier?.name}</h1>
+        <p className="text-lg text-gray-700 max-w-4xl">{selectedCarrier?.description}</p>
       </div>
 
       {/* DURATION SELECTOR */}

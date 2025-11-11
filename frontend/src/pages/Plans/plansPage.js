@@ -78,7 +78,7 @@ function PlansPage() {
     return (
         <div>
             {/* HEADER */}
-            <div className="bg-gradient-to-b from-blue-100 to-white h-[30vh] w-full flex flex-col justify-center items-center text-center">
+            <div className="bg-gradient-to-b from-blue-100 to-white pt-14 pb-6 w-full flex flex-col justify-center items-center text-center">
                 <h1 className="text-4xl font-bold text-blue-900 mb-2">
                     {choosenPlanType}
                 </h1>

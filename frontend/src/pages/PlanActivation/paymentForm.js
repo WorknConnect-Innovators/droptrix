@@ -2,11 +2,12 @@ import React, { useState } from "react";
 
 const PaymentForm = () => {
     const [formData, setFormData] = useState({
-        zipCode: "",
+        zipCode: null,
         eid: "",
+        planID: "",
         email: "",
-        contact: "",
-        planType: "",
+        contactNo: null,
+        simType: "",
     });
 
     const [errors, setErrors] = useState({});
@@ -40,7 +41,7 @@ const PaymentForm = () => {
 
     return (
         <div className="pb-20 bg-gradient-to-b from-blue-100 to-white min-h-screen">
-            <div className="text-center mb-12 pt-14 pb-6">
+            <div className="text-center mb-6 pt-14 pb-6">
                 <h1 className="text-4xl font-extrabold text-gray-800 mb-3">
                     Activate Your Plan
                 </h1>
