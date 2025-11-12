@@ -261,7 +261,7 @@ def login(request):
                         'exp': datetime.utcnow() + timedelta(hours=1)
                     }
                     token = jwt.encode(token_payload, SECRET_KEY, algorithm='HS256')
-                    return JsonResponse({'status': 'success', 'message': 'login successful', 'login_status': True, 'token': token, data: {'user_type': signup_data.user_type, 'username': signup_data.username, 'full_name': signup_data.full_name, 'email': signup_data.email}})
+                    return JsonResponse({'status': 'success', 'message': 'login successful', 'login_status': True, 'token': token, 'data': {'user_type': signup_data.user_type, 'username': signup_data.username, 'full_name': signup_data.full_name, 'email': signup_data.email}})
                 else:
                     return JsonResponse({'status': 'Fail', 'message': 'Email or Password Incorrect', 'login_status': False})
             return JsonResponse({'status': 'Fail', 'message': 'User not found', 'login_status': False}, status=404)
