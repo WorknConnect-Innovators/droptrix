@@ -1,180 +1,94 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { useLocation, useParams } from "react-router-dom";
 import PlansCards from "../../components/Plans/plansCards";
+import { getPlansFromBackend } from "../../utilities/getPlans";
 
 function CompanyPage() {
-
   const location = useLocation();
   const clickedButton = location.state?.clickedButton || "None";
   const selectedCarrier = location.state?.selectedCarrier || null;
-
   const { companyName } = useParams();
-  const [selected, setSelected] = useState("Prepaid Plans");
+
+  const [selected, setSelected] = useState("prepaid");
   const [plans, setPlans] = useState([]);
 
-  const planTypeArr = ["Postpaid Plans", "Prepaid Plans", "Company Plans"];
+  // Fetch all plans once
+  useEffect(() => {
+    const fetchData = async () => {
+      const plansData = await getPlansFromBackend();
+      setPlans(plansData);
+    };
+    fetchData();
+  }, []);
 
-  const rawPlansData = [
-    {
-      capsuleHeader: "Most Popular",
-      title: "Advanced Plan",
-      discountPercentage: 25,
-      price: "$299",
-      offPrice: "$399",
-      planType: "Prepaid Plans",
-      features: [
-        {
-          text: "Custom reports and analytics",
-          info: "Get detailed insights with our advanced reporting tools.",
-        },
-        { text: "Hello feature", info: "Invalid empty feature" },
-        { text: "Check feature", info: "" },
-        { text: "Hello feature", info: "Invalid empty feature" },
-        { text: "Check feature", info: "" },
-      ],
-    },
-    {
-      capsuleHeader: "",
-      title: "Advanced Plan",
-      discountPercentage: 25,
-      price: "$299",
-      offPrice: "$399",
-      planType: "Prepaid Plans",
-      features: [
-        {
-          text: "Custom reports and analytics",
-          info: "Get detailed insights with our advanced reporting tools.",
-        },
-        { text: "", info: "Invalid empty feature" }, // should be removed
-      ],
-    },
-    {
-      capsuleHeader: "",
-      title: "Advanced Plan",
-      discountPercentage: 25,
-      price: "$299",
-      offPrice: "$399",
-      planType: "12 Months",
-      features: [
-        {
-          text: "Custom reports and analytics",
-          info: "Get detailed insights with our advanced reporting tools.",
-        },
-        { text: "", info: "Invalid empty feature" }, // should be removed
-      ],
-    },
-    {
-      capsuleHeader: "",
-      title: "Advanced Plan",
-      discountPercentage: 25,
-      price: "$299",
-      offPrice: "$399",
-      planType: "Postpaid Plans",
-      features: [
-        {
-          text: "Custom reports and analytics",
-          info: "Get detailed insights with our advanced reporting tools.",
-        },
-        { text: "Hello feature", info: "Invalid empty feature" },
-        { text: "Check feature", info: "" },
-      ],
-    },
-    {
-      capsuleHeader: "",
-      title: "Advanced Plan",
-      discountPercentage: 25,
-      price: "$299",
-      offPrice: "$399",
-      planType: "Prepaid Plans",
-      features: [
-        {
-          text: "Custom reports and analytics",
-          info: "Get detailed insights with our advanced reporting tools.",
-        },
-        { text: "", info: "Invalid empty feature" }, // should be removed
-      ],
-    },
-    {
-      capsuleHeader: "",
-      title: "Basic Plan",
-      discountPercentage: null,
-      price: "$99",
-      offPrice: "",
-      planType: "1 Month",
-      features: [
-        { text: "Standard support", info: "" },
-        { text: "", info: "" }, // remove
-      ],
-    },
-    {
-      capsuleHeader: "Professional",
-      title: "Pro Plan",
-      discountPercentage: 20,
-      price: "$199",
-      offPrice: "$249",
-      planType: "24 Months",
-      features: [
-        { text: "Priority 24/7 Support", info: "Direct line to technical team" },
-        { text: "Up to 50 inventory locations", info: "" },
-      ],
-    },
+  // Plan type selector mapping
+  const planTypeArr = [
+    { label: "Prepaid Plans", value: "prepaid" },
+    { label: "Postpaid Plans", value: "postpaid" },
+    { label: "Company Plans", value: "company" },
   ];
 
-  useEffect(() => {
-    const cleanedData = rawPlansData
-      .map((plan) => {
-        // remove empty keys and invalid features
-        const validFeatures = Array.isArray(plan.features)
-          ? plan.features.filter(
+  // Clean + filter plans
+  const filteredPlans = useMemo(() => {
+    const cleanedPlans = plans.map((plan) => {
+      const validFeatures = Array.isArray(plan.features)
+        ? plan.features.filter(
             (f) => f.text?.trim() !== "" && f.text !== undefined
           )
-          : [];
+        : [];
 
-        return Object.fromEntries(
-          Object.entries({ ...plan, features: validFeatures }).filter(
-            ([, value]) =>
-              value !== "" && value !== null && value !== undefined
-          )
-        );
-      })
-      .filter((plan) => plan.planType === selected);
+      return {
+        ...plan,
+        features: validFeatures,
+      };
+    });
 
-    setPlans(cleanedData);
-  }, [selected]);
+    return cleanedPlans.filter(
+      (plan) =>
+        plan.company_id === selectedCarrier?.company_id &&
+        plan.plan_type?.toLowerCase().trim() === selected.toLowerCase().trim()
+    );
+  }, [plans, selectedCarrier, selected]);
 
   return (
     <div className="pb-20">
       {/* HEADER */}
       <div className="bg-gradient-to-b from-blue-100 to-white pt-14 pb-6 w-full flex flex-col justify-center items-center text-center">
-        <h1 className="text-4xl font-bold text-blue-900 mb-2">{selectedCarrier?.name}</h1>
-        <p className="text-lg text-gray-700 max-w-4xl">{selectedCarrier?.description}</p>
+        <h1 className="text-4xl font-bold text-blue-900 mb-2">
+          {selectedCarrier?.name || companyName}
+        </h1>
+        <p className="text-lg text-gray-700 max-w-4xl">
+          {selectedCarrier?.description ||
+            `Explore ${companyName}'s exclusive international SIM plans.`}
+        </p>
       </div>
 
-      {/* DURATION SELECTOR */}
+      {/* PLAN TYPE SELECTOR */}
       <div className="flex justify-center items-center my-6">
         <ul className="bg-gray-50 border rounded-full shadow-inner w-fit p-1 flex gap-x-4">
-          {planTypeArr.map((planType) => (
+          {planTypeArr.map(({ label, value }) => (
             <li
-              key={planType}
-              onClick={() => setSelected(planType)}
-              className={`cursor-pointer text-sm md:text-base font-medium px-6 py-2 rounded-full transition-all planType-200 
-                ${selected === planType
-                  ? "bg-blue-600 text-white shadow-md"
-                  : "text-gray-700 hover:bg-blue-100"
+              key={value}
+              onClick={() => setSelected(value)}
+              className={`cursor-pointer text-sm md:text-base font-medium px-6 py-2 rounded-full transition-all duration-200 
+                ${
+                  selected === value
+                    ? "bg-blue-600 text-white shadow-md"
+                    : "text-gray-700 hover:bg-blue-100"
                 }`}
             >
-              {planType}
+              {label}
             </li>
           ))}
         </ul>
       </div>
 
-      {/* ✅ Only show plans that match selected planType */}
-      {plans.length > 0 ? (
-        <PlansCards PlansData={plans} clickedButton={clickedButton} />
+      {/* ✅ Display Filtered Plans */}
+      {filteredPlans.length > 0 ? (
+        <PlansCards PlansData={filteredPlans} clickedButton={clickedButton} />
       ) : (
         <div className="text-center text-gray-500 mt-10">
-          No plans available for {selected}.
+          No {selected} plans available for {companyName}.
         </div>
       )}
     </div>

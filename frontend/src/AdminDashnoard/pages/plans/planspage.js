@@ -29,17 +29,16 @@ function AdminPlansPage() {
                 `${process.env.REACT_APP_API_URL_PRODUCTION}/api/get-carriers/`
             );
             const data = await res.json();
-            console.log("Fetched carriers:", data);
 
             if (data.status === "success") {
                 setCarriers(data?.data);
             } else {
                 console.error("Invalid data structure:", data);
-                setCarriers([]); // fallback
+                setCarriers([]);
             }
         } catch (error) {
             console.error("Error fetching carriers:", error);
-            setCarriers([]); // fallback in case of error
+            setCarriers([]);
         }
     };
 
@@ -54,13 +53,12 @@ function AdminPlansPage() {
                 `${process.env.REACT_APP_API_URL_PRODUCTION}/api/get-plans/`
             );
             const data = await res.json();
-            console.log("Fetched plans:", data);
 
             if (data.status === "success") {
-                setPlans(data?.data);
+                const LivePlans = data.data.filter(plan => plan.live_status === true);
+                setPlans(LivePlans);
             } else {
-                console.error("Invalid data structure:", data);
-                setPlans([]); // fallback
+                setPlans([]);
             }
         } catch (error) {
             console.error("Error fetching plans:", error);
@@ -93,7 +91,6 @@ function AdminPlansPage() {
             alert("Please fill required fields before adding a plan.");
             return;
         }
-        console.log("Adding plan:", newPlan);
         try {
             const res = await fetch(
                 `${process.env.REACT_APP_API_URL_PRODUCTION}/api/add-plans/`,
@@ -113,6 +110,7 @@ function AdminPlansPage() {
                         tagline1,
                         tagline2,
                         details,
+                        live_status: true,
                     }),
                 }
             );
@@ -151,10 +149,9 @@ function AdminPlansPage() {
         }
     };
 
-    // ✅ Defensive filter
     const filteredPlans = Array.isArray(plans)
         ? plans.filter((c) =>
-            c.name?.toLowerCase().includes(searchTerm.toLowerCase())
+            c.plan_name?.toLowerCase().includes(searchTerm.toLowerCase())
         )
         : [];
 
@@ -203,28 +200,22 @@ function AdminPlansPage() {
                     <table className="min-w-full text-sm text-gray-700">
                         <thead className="bg-blue-50 text-gray-600 uppercase text-xs">
                             <tr>
-                                <th className="px-6 py-3 text-left">Logo</th>
-                                <th className="px-6 py-3 text-left">Name</th>
+                                <th className="px-6 py-3 text-left">Plan Name</th>
+                                <th className="px-6 py-3 text-left">Price</th>
                                 <th className="px-6 py-3 text-left">Description</th>
                                 <th className="px-6 py-3 text-center">Actions</th>
                             </tr>
                         </thead>
                         <tbody>
                             {filteredPlans.length > 0 ? (
-                                filteredPlans.map((plan) => (
+                                filteredPlans.map((plan, index) => (
                                     <tr
-                                        key={plan.id || plan.name}
+                                        key={index}
                                         className="border-t hover:bg-gray-50 transition"
                                     >
-                                        <td className="px-6 py-3">
-                                            <img
-                                                src={plan.logo || plan.logo_url}
-                                                alt={plan.name}
-                                                className="h-10 w-10 object-cover rounded-full"
-                                            />
-                                        </td>
-                                        <td className="px-6 py-3 font-medium">{plan.name}</td>
-                                        <td className="px-6 py-3">{plan.description}</td>
+                                        <td className="px-6 py-3 font-medium">{plan.plan_name}</td>
+                                        <td className="px-6 py-3">{plan.plan_price}</td>
+                                        <td className="px-6 py-3">{plan.details}</td>
                                         <td className="px-6 py-3 flex justify-center gap-3">
                                             <button className="text-blue-600 hover:text-blue-800">
                                                 <Edit2 size={18} />
