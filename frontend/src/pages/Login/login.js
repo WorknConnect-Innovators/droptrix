@@ -7,7 +7,7 @@ import { message } from "antd";
 export default function Login() {
     const [showPassword, setShowPassword] = useState(false);
     const [showForgotModal, setShowForgotModal] = useState(false);
-    const [email, setEmail] = useState("");
+    const [username, setusername] = useState("");
     const [password, setPassword] = useState("");
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
@@ -25,16 +25,24 @@ export default function Login() {
                 headers: {
                     "Content-Type": "application/json",
                 },
-                body: JSON.stringify({ email, password }),
+                body: JSON.stringify({ username, password }),
             });
 
             const data = await response.json();
 
             if (response.ok && data.login_status) {
-                // ✅ Save token to localStorage
+                // ✅ Save token & user info to localStorage
                 localStorage.setItem("token", data.token);
+                localStorage.setItem("user", JSON.stringify(data.data));
+
                 message.success("Login Successful!");
-                navigate("/");
+
+                // ✅ Optional: navigate based on user_type
+                if (data.data.user_type === "admin") {
+                    navigate("/admin-dashboard");
+                } else {
+                    navigate("/");
+                }
             } else {
                 setError(data.message || "Login failed. Please try again.");
             }
@@ -45,10 +53,11 @@ export default function Login() {
         }
     };
 
+
     // 🔹 Forgot Password Submit
     const handleForgotSubmit = (e) => {
         e.preventDefault();
-        message.info(`Reset link sent to ${email}`);
+        message.info(`Reset link sent to ${username}`);
         setShowForgotModal(false);
     };
 
@@ -74,18 +83,18 @@ export default function Login() {
                 </p>
 
                 <form onSubmit={handleLogin} className="space-y-6">
-                    {/* Email */}
+                    {/* username */}
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Email
+                            username
                         </label>
                         <div className="relative">
                             <Mail className="absolute left-3 top-3 text-gray-400" size={18} />
                             <input
-                                type="email"
+                                type="username"
                                 placeholder="you@example.com"
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
+                                value={username}
+                                onChange={(e) => setusername(e.target.value)}
                                 required
                                 className="w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-400 outline-none"
                             />
@@ -170,18 +179,18 @@ export default function Login() {
                             Reset Password
                         </h3>
                         <p className="text-gray-600 text-sm mb-5">
-                            Enter your registered email address, and we’ll send you a reset link.
+                            Enter your registered username address, and we’ll send you a reset link.
                         </p>
 
                         <form onSubmit={handleForgotSubmit} className="space-y-4">
                             <div className="relative">
                                 <Mail className="absolute left-3 top-3 text-gray-400" size={18} />
                                 <input
-                                    type="email"
+                                    type="username"
                                     required
                                     placeholder="you@example.com"
-                                    value={email}
-                                    onChange={(e) => setEmail(e.target.value)}
+                                    value={username}
+                                    onChange={(e) => setusername(e.target.value)}
                                     className="w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-400 outline-none"
                                 />
                             </div>
