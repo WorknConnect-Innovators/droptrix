@@ -23,7 +23,7 @@ function SignupPage() {
   ];
 
   const [current, setCurrent] = useState(0);
-  const [formData, setFormData] = useState({ full_name: "", email: "", password: "" });
+  const [formData, setFormData] = useState({ full_name: "", email: "", password: "" , username: "",  user_type:"superadmin"});
   const [errors, setErrors] = useState({});
   const [isVerifiedStep, setIsVerifiedStep] = useState(false);
   const [verificationCode, setVerificationCode] = useState("");
@@ -43,6 +43,7 @@ function SignupPage() {
   const validateForm = () => {
     let tempErrors = {};
     if (!formData.full_name.trim()) tempErrors.full_name = "Full name is required.";
+    if (!formData.username.trim()) tempErrors.username = "Username is required.";
     if (!formData.email.trim()) {
       tempErrors.email = "Email is required.";
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
@@ -159,6 +160,23 @@ function SignupPage() {
                   Create your Account
                 </h2>
                 <form className="space-y-5" onSubmit={sendVerificationCode}>
+                  <div>
+                    <input
+                      type="text"
+                      placeholder="Username"
+                      value={formData.username}
+                      autoComplete="false"
+                      onChange={(e) =>
+                        setFormData({ ...formData, username: e.target.value })
+                      }
+                      className={`w-full border ${errors.username ? "border-red-400" : "border-gray-300"
+                        } rounded-md px-4 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none`}
+                      required
+                    />
+                    {errors.username && (
+                      <p className="text-red-500 text-xs mt-1">{errors.username}</p>
+                    )}
+                  </div>
                   <div>
                     <input
                       type="text"
