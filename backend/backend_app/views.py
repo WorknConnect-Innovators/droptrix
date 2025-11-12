@@ -257,7 +257,7 @@ def login(request):
                 if signup_data.username == username and signup_data.password == password:
                     token_payload = {
                         'user_id': signup_data.id,
-                        'email': signup_data.username,
+                        'email': signup_data.email,
                         'exp': datetime.utcnow() + timedelta(hours=1)
                     }
                     token = jwt.encode(token_payload, SECRET_KEY, algorithm='HS256')
