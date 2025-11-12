@@ -14,15 +14,17 @@ import AdminDashboard from './AdminDashnoard/pages/adminDashboard'
 import AdminDashLayout from './layout/adminLayout'
 import AdminCarrierPage from './AdminDashnoard/pages/carriers/carrierPage'
 import AdminPlansPage from './AdminDashnoard/pages/plans/planspage'
+import TopUp from './UserDashboard/pages/topup'
+import PageNotFound from './components/pageNotFound'
 
 function App() {
   return (
     <Router>
       <ScrollToTop />
       <Routes>
+        <Route path='*' element={<PageNotFound />} />
         <Route path='/' element={<MainLayout />} >
           <Route index element={<HomePage />} />
-          <Route path='*' element={<h1 className='text-center mt-20 text-3xl'>404 Not Found</h1>} />
           <Route path='/companies/:companyName' element={<CompanyPage />} />
           <Route path='/plans/:choosenPlanType' element={<PlansPage />} />
           <Route path='/plans/:choosenCarrier' element={<PlansPage />} />
@@ -36,6 +38,7 @@ function App() {
           <Route index element={<AdminDashboard />} />
           <Route path='carriers' element={<AdminCarrierPage />} />
           <Route path='plans' element={<AdminPlansPage />} />
+          <Route path='topup' element={<TopUp />} />
         </Route>
       </Routes>
     </Router>

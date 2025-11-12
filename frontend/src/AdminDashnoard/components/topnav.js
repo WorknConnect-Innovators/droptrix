@@ -55,12 +55,10 @@ function AdminTopnav() {
                 </div>
 
                 {/* Profile */}
-                <div className="flex items-center space-x-2 cursor-pointer hover:bg-gray-100 p-1 rounded-full transition">
-                    <img
-                        src="https://i.pravatar.cc/40"
-                        alt="Profile"
-                        className="w-9 h-9 rounded-full object-cover"
-                    />
+                <div className="flex items-center space-x-2 cursor-pointer bg-gray-100 shadow-inner hover:bg-gray-200 p-1 rounded-full transition">
+                    <div className="w-9 h-9 rounded-full object-cover flex items-center justify-center bg-blue-500 text-white font-semibold">
+                        A
+                    </div>
                     <User size={18} className="text-gray-500 sm:hidden md:block" />
                 </div>
             </div>

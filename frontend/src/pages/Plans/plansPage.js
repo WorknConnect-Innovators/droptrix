@@ -1,79 +1,42 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { useParams } from "react-router-dom";
 import PlansCards from "../../components/Plans/plansCards";
+import { getPlansFromBackend } from "../../utilities/getPlans";
+import { getCarriersFromBackend } from "../../utilities/getCarriers";
 
 function PlansPage() {
     const { choosenPlanType } = useParams();
     const [selected, setSelected] = useState("All");
     const [plans, setPlans] = useState([]);
+    const [companies, setCompanies] = useState([]);
 
-    const companies = ["AT & T", "Lyca Mobile", "Linkup Mobile", "All", "T-Mobile", "Mobile X", "Trum Mobile"];
-
-    const rawPlansData = [
-        {
-            capsuleHeader: "Most Popular",
-            title: "Advanced Plan",
-            discountPercentage: 25,
-            price: "$299",
-            offPrice: "$399",
-            company: "Company A",
-            duration: "12 Months",
-            features: [
-                {
-                    text: "Custom reports and analytics",
-                    info: "Get detailed insights with our advanced reporting tools.",
-                },
-                { text: "Hello feature", info: "Invalid empty feature" },
-                { text: "Check feature", info: "" },
-            ],
-        },
-        {
-            capsuleHeader: "",
-            title: "Pro Plan",
-            discountPercentage: 20,
-            price: "$199",
-            offPrice: "$249",
-            company: "Company B",
-            duration: "24 Months",
-            features: [
-                { text: "Priority 24/7 Support", info: "Direct line to technical team" },
-                { text: "Up to 50 inventory locations", info: "" },
-            ],
-        },
-        {
-            capsuleHeader: "",
-            title: "Basic Plan",
-            discountPercentage: null,
-            price: "$99",
-            offPrice: "",
-            company: "Company C",
-            duration: "1 Month",
-            features: [
-                { text: "Standard support", info: "" },
-                { text: "", info: "" }, // remove
-            ],
-        },
-    ];
-
+    // ✅ Fetch plans and carriers once
     useEffect(() => {
-        // Clean data and filter based on company
-        const cleanedData = rawPlansData
-            .map((plan) => {
-                const validFeatures = Array.isArray(plan.features)
-                    ? plan.features.filter((f) => f.text?.trim() !== "")
-                    : [];
+        const fetchData = async () => {
+            const carriersData = await getCarriersFromBackend();
+            const plansData = await getPlansFromBackend();
 
-                return {
-                    ...plan,
-                    features: validFeatures,
-                };
-            })
-            .filter((plan) =>
-                selected === "All" ? true : plan.company === selected
-            );
+            setCompanies(carriersData);
+            setPlans(plansData);
+            setSelected("All"); // Default
+        };
 
-        setPlans(cleanedData);
-    }, [selected]);
+        fetchData();
+    }, []);
+
+    // ✅ Filter logic (memoized to prevent re-renders)
+    const filteredPlans = useMemo(() => {
+        if (selected === "All") {
+            return plans;
+        }
+
+        const selectedCompany = companies.find((c) => c.name === selected);
+        if (!selectedCompany) return [];
+
+        return plans.filter(
+            (plan) => plan.company_id === selectedCompany.company_id
+        );
+    }, [selected, plans, companies]);
 
     return (
         <div>
@@ -96,8 +59,8 @@ function PlansPage() {
 
             {/* COMPANY SELECTOR */}
             <div className="flex justify-center items-center my-6">
-                <ul className="bg-gray-50 border rounded-full shadow-inner w-fit p-1 flex gap-x-4">
-                    {companies.map((company) => (
+                <ul className="bg-gray-50 border rounded-full shadow-inner w-fit p-1 flex gap-x-4 overflow-x-auto">
+                    {["All", ...companies.map((c) => c.name)].map((company) => (
                         <li
                             key={company}
                             onClick={() => setSelected(company)}
@@ -113,10 +76,10 @@ function PlansPage() {
                 </ul>
             </div>
 
-            {/* ✅ Render Filtered Plans */}
+            {/* ✅ Filtered Plans */}
             <div className="pb-20">
-                {plans.length > 0 ? (
-                    <PlansCards PlansData={plans} />
+                {filteredPlans.length > 0 ? (
+                    <PlansCards PlansData={filteredPlans} />
                 ) : (
                     <div className="text-center text-gray-500 mt-10">
                         No plans available for {selected}.

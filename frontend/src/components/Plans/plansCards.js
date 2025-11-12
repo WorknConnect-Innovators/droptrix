@@ -21,10 +21,10 @@ const PlansCards = ({ PlansData, clickedButton }) => {
         {PlansData.map((plan, index) => (
           <div className="relative h-full" key={index}>
             {/* Capsule header */}
-            {plan.capsuleHeader && (
+            {plan.tagline1 && (
               <div className="flex justify-center items-center absolute -top-4 left-1/2 -translate-x-1/2">
                 <p className="w-fit bg-blue-500 px-6 py-1 rounded-full text-white">
-                  {plan.capsuleHeader}
+                  {plan.tagline1}
                 </p>
               </div>
             )}
@@ -34,17 +34,19 @@ const PlansCards = ({ PlansData, clickedButton }) => {
               <div className="bg-white border border-blue-400 shadow-lg rounded-xl h-full w-full px-6 py-8 hover:shadow-xl transition-shadow space-y-2">
                 <div className="flex flex-col justify-center items-center gap-y-2">
                   {/* Title */}
-                  <h1 className="text-lg font-semibold">{plan.title}</h1>
+                  <h1 className="text-lg font-semibold">{plan?.plan_name}</h1>
 
                   {/* Price */}
                   <div className="flex flex-col items-center my-3">
                     <p className="text-4xl font-extrabold text-gray-900">
-                      {plan.price}
+                      ${plan?.plan_price}
                     </p>
-                    <p className="text-gray-400 line-through text-sm mb-2">
-                      {plan.offPrice}
-                    </p>
-                    <p className="text-gray-500 text-sm">/{plan.duration}</p>
+                    {plan?.previous_price && (
+                      <p className="text-gray-400 line-through text-sm">
+                        ${plan?.previous_price}
+                      </p>
+                    )}
+                    <p className="text-gray-500 text-sm mt-2">/{plan.plan_duration}</p>
                   </div>
 
                   {/* Button */}
@@ -61,14 +63,11 @@ const PlansCards = ({ PlansData, clickedButton }) => {
 
                 {/* Features */}
                 <div className="flex flex-col gap-2 text-sm text-gray-700">
-                  {plan.features && plan.features.length > 0
-                    ? plan.features.map((feature, fIndex) => (
+                  {plan.plan_feature && plan.plan_feature.length > 0
+                    ? plan?.plan_feature?.map((feature, fIndex) => (
                       <p className="flex gap-x-1" key={fIndex}>
                         <CircleCheck fill="blue" color="white" />
-                        <span className="my-auto">{feature?.text}</span>
-                        {feature?.info?.length !== 0 && (
-                          <CircleQuestionMark className="fill-gray-500 text-white" />
-                        )}
+                        <span className="my-auto">{feature}</span>
                       </p>
                     ))
                     : null}
@@ -77,10 +76,10 @@ const PlansCards = ({ PlansData, clickedButton }) => {
             </div>
 
             {/* Discount Badge */}
-            {plan.discountPercentage && (
+            {plan?.off_percentage && (
               <div className="flex justify-center items-center absolute top-0 right-0">
                 <p className="w-fit bg-blue-500 px-6 py-1 text-sm rounded-tr-xl rounded-bl-xl text-white">
-                  {plan.discountPercentage}% OFF
+                  {plan.off_percentage}% OFF
                 </p>
               </div>
             )}
@@ -102,32 +101,29 @@ const PlansCards = ({ PlansData, clickedButton }) => {
 
             {/* Modal Content */}
             <h2 className="text-2xl font-bold text-blue-600 text-center">
-              {selectedPlan.title}
+              {selectedPlan.plan_name}
             </h2>
             <p className="text-center text-gray-500">
-              {selectedPlan.capsuleHeader || 'Exclusive Plan'}
+              {selectedPlan.tagline1 || 'Exclusive Plan'}
             </p>
 
             <div className="text-center space-y-1">
               <p className="text-4xl font-extrabold text-gray-900">
-                {selectedPlan.price}
+                ${selectedPlan?.plan_price}
               </p>
-              {selectedPlan.offPrice && (
+              {selectedPlan?.previous_price && (
                 <p className="text-gray-400 line-through text-sm">
-                  {selectedPlan.offPrice}
+                  ${selectedPlan?.previous_price}
                 </p>
               )}
-              <p className="text-gray-600 text-sm">/{selectedPlan.duration}</p>
+              <p className="text-gray-600 text-sm">/{selectedPlan?.plan_duration}</p>
             </div>
 
             {/* Features */}
             <div className="mt-6 space-y-2">
-              {selectedPlan.features?.map((feature, i) => (
-                <p key={i} className="flex items-center gap-x-2 text-gray-700">
-                  <CircleCheck fill="blue" color="white" />
-                  {feature.text}
-                </p>
-              ))}
+              <p className="flex items-center gap-x-2 text-gray-700">
+                {selectedPlan?.details}
+              </p>
             </div>
 
             {/* CTA */}

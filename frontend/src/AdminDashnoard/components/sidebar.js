@@ -1,10 +1,10 @@
-import { HomeIcon, LayoutDashboardIcon, LogOutIcon, FolderIcon, UsersIcon, ChevronDown, ChevronRight, CompassIcon } from 'lucide-react'
+import { HomeIcon, LayoutDashboardIcon, LogOutIcon, FolderIcon, UsersIcon, ChevronDown, ChevronRight, CompassIcon, BanknoteArrowUp } from 'lucide-react'
 import React, { useEffect, useState } from 'react'
-import { FaPlaneSlash } from 'react-icons/fa'
+import { FaMoneyBill, FaPlaneSlash } from 'react-icons/fa'
 import { Link } from 'react-router-dom'
 
 function Sidebar() {
-    const user = "Admin"
+    const user = "User"
     const [userNavLinks, setUserNavLinks] = useState([])
     const [isExpanded, setIsExpanded] = useState(false)
     const [selectedLink, setSelectedLink] = useState("Home")
@@ -21,6 +21,12 @@ function Sidebar() {
             icon: <HomeIcon size={26} />,
             hasaccess: ["Admin", "User"],
             route: "/dashboard/carriers"
+        },
+        {
+            label: "Top Up",
+            icon: <BanknoteArrowUp size={26} />,
+            hasaccess: ["User"],
+            route: "/dashboard/topup"
         },
         {
             label: "Manage",
@@ -86,7 +92,7 @@ function Sidebar() {
             <div className={`flex flex-col w-full gap-y-3 ${isExpanded ? 'px-3' : 'items-center'}`}>
                 {userNavLinks.map((link, index) => (
                     <React.Fragment key={index}>
-                        <div
+                        <Link to={link.route}
                             onClick={() => {
                                 if (link.submenu) setOpenSubmenu(!openSubmenu)
                                 else setSelectedLink(link.label)
@@ -95,14 +101,14 @@ function Sidebar() {
                 hover:bg-blue-600 hover:text-white text-gray-700 group
                 ${selectedLink === link.label ? 'bg-blue-600 text-white' : ''}`}
                         >
-                            <Link to={link.route} className="flex items-center gap-x-4">
+                            <div to={link.route} className="flex items-center gap-x-4">
                                 <div className="group-hover:text-white">{link.icon}</div>
                                 {isExpanded && (
                                     <span className={`text-base font-medium ${selectedLink === link.label ? 'text-white' : 'text-gray-800'} group-hover:text-white`}>
                                         {link.label}
                                     </span>
                                 )}
-                            </Link>
+                            </div>
 
                             {/* Chevron Icon */}
                             {isExpanded && link.submenu && (
@@ -112,7 +118,7 @@ function Sidebar() {
                                     <ChevronRight size={20} className="text-gray-500 group-hover:text-white transition" />
                                 )
                             )}
-                        </div>
+                        </Link>
 
                         {/* Submenu */}
                         {link.submenu && openSubmenu && isExpanded && (
