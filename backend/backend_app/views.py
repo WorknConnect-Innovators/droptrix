@@ -2,7 +2,7 @@ from django.shortcuts import render
 from django.http import JsonResponse, HttpResponse
 import json
 from django.views.decorators.csrf import csrf_exempt
-from backend_app.models import Feedback, Newsletter, Signup, Carriers, Plans, Payasyougo
+from backend_app.models import Feedback, Newsletter, Signup, Carriers, Plans, Payasyougo, Topup
 from django.core.mail import send_mail
 import random
 import string
@@ -427,3 +427,68 @@ def get_payasyougo(request):
         ]
         return JsonResponse({'status': 'success', 'data': payasyougo_all_data})
     return JsonResponse({'status': 'error', 'message': 'Only GET method is allowed'})
+
+
+@csrf_exempt
+def add_topup(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            topup_data = Topup(
+                company_id=data['company_id'],
+                amount=data['amount'],
+                phone_no=data['phone_no'],
+                username=data['username'],
+                request_topup=data['request_topup'],
+            )
+            topup_data.save()
+            return JsonResponse({'status': 'success', 'data_received': topup_data.id})
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+    return JsonResponse({'status': 'error', 'message': 'Invalid request method'}, status=400)
+
+
+@csrf_exempt
+def get_topup(request):
+    if request.method == 'GET':
+        topup_data = Topup.objects.all()
+        topup_all_data = [
+            {
+                'company_id': t.company_id,
+                'amount': t.amount,
+                'phone_no': t.phone_no,
+                'username': t.username,
+                'request_topup': t.request_topup,
+                'pending_status': t.pending_status
+            }
+            for t in topup_data
+        ]
+        return JsonResponse({'status': 'success', 'data': topup_all_data})
+    return JsonResponse({'status': 'error', 'message': 'Only GET method is allowed'})
+
+
+@csrf_exempt
+def fetch_topup(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            username = data['username']
+            topup_data = Topup.objects.filter(username=username).first()
+            return JsonResponse({'status': 'success', 'data_received': topup_data})
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+    return JsonResponse({'status': 'error', 'message': 'Invalid request method'}, status=400)
+
+
+@csrf_exempt
+def make_topup_complete(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            topup_id = data['topup_id']
+            topup_data = Topup.objects.filter(id=topup_id).first()
+            topup_data.pending_status = False
+            return JsonResponse({'status': 'success', 'data_received': topup_data.id})
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+    return JsonResponse({'status': 'error', 'message': 'Invalid request method'}, status=400)
