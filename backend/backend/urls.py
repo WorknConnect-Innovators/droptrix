@@ -41,4 +41,5 @@ urlpatterns = [
     path('api/update-plans/', views.update_plans, name='update_plans'),
     path('api/add-payasyougo/', views.add_payasyougo, name='add_payasyougo'),
     path('api/get-payasyougo/', views.get_payasyougo, name='get_payasyougo'),
+    path('api/get-signup-data/', views.get_signup, name='get_signup'),
 ]

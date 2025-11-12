@@ -21,6 +21,8 @@ class Newsletter(models.Model):
 
 class Signup(models.Model):
     full_name = models.CharField(max_length=200)
+    username = models.CharField(max_length=200, unique=True)
+    user_type = models.CharField(max_length=200, default='user')
     email = models.CharField(max_length=200)
     password = models.CharField(max_length=200)
 

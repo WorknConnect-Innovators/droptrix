@@ -157,16 +157,38 @@ def signup(request):
             email = data['email']
             full_name = data['full_name']
             password = data['password']
+            username = data['username']
+            user_type = data['user_type']
             signup_data = Signup(
                 email=email,
                 full_name=full_name,
-                password=password
+                password=password,
+                username=username,
+                user_type=user_type
             )
             signup_data.save()
             return JsonResponse({'status': 'success', 'data_received': signup_data.id})
         except Exception as e:
             return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
     return JsonResponse({'status': 'error', 'message': 'Invalid request method'}, status=400)
+
+
+@csrf_exempt
+def get_signup(request):
+    if request.method == 'POST':
+        signup_data = Signup.objects.all()
+        signup_all_data = [
+            {
+                'email': s.email,
+                'full_name': s.full_name,
+                'password': s.password,
+                'username': s.username,
+                'user_type': s.user_type
+            }
+            for s in signup_data
+        ]
+        return JsonResponse({'status': 'success', 'data': signup_all_data})
+    return JsonResponse({'status': 'error', 'message': 'Only GET method is allowed'})
 
 
 def ver_code():
@@ -228,18 +250,18 @@ def login(request):
     if request.method == 'POST':
         try:
             data = json.loads(request.body)
-            email = data['email']
+            username = data['username']
             password = data['password']
-            signup_data = Signup.objects.filter(email=email).first()
+            signup_data = Signup.objects.filter(username=username).first()
             if signup_data:
-                if signup_data.email == email and signup_data.password == password:
+                if signup_data.username == username and signup_data.password == password:
                     token_payload = {
                         'user_id': signup_data.id,
-                        'email': signup_data.email,
+                        'email': signup_data.username,
                         'exp': datetime.utcnow() + timedelta(hours=1)
                     }
                     token = jwt.encode(token_payload, SECRET_KEY, algorithm='HS256')
-                    return JsonResponse({'status': 'success', 'message': 'login successful', 'login_status': True, 'token': token})
+                    return JsonResponse({'status': 'success', 'message': 'login successful', 'login_status': True, 'token': token, data: {'user_type': signup_data.user_type, 'username': signup_data.username, 'full_name': signup_data.full_name, 'email': signup_data.email}})
                 else:
                     return JsonResponse({'status': 'Fail', 'message': 'Email or Password Incorrect', 'login_status': False})
             return JsonResponse({'status': 'Fail', 'message': 'User not found', 'login_status': False}, status=404)
