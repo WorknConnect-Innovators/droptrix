@@ -42,4 +42,8 @@ urlpatterns = [
     path('api/add-payasyougo/', views.add_payasyougo, name='add_payasyougo'),
     path('api/get-payasyougo/', views.get_payasyougo, name='get_payasyougo'),
     path('api/get-signup-data/', views.get_signup, name='get_signup'),
+    path('api/add-topup/', views.add_topup, name='add_topup'),
+    path('api/get-topup/', views.get_topup, name='get_topup'),
+    path('api/fetch-topup/', views.fetch_topup, name='fetch_topup'),
+    path('api/make-topup-complete/', views.make_topup_complete, name='make_topup_complete'),
 ]
