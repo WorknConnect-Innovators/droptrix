@@ -1,12 +1,16 @@
 import React from "react";
-import { Outlet } from "react-router-dom";
+import { Outlet, useLocation } from "react-router-dom";
 import Sidebar from "../AdminDashnoard/components/sidebar";
 import AdminTopnav from "../AdminDashnoard/components/topnav";
 
 const AdminDashLayout = () => {
+
+    const location = useLocation();
+    const CurrentUser = location?.state?.userData;
+
     return (
         <div className="flex bg-gray-50 min-h-screen">
-            <Sidebar />
+            <Sidebar userType={CurrentUser?.user_type} />
             <main className="flex-1 ml-20 transition-all duration-300">
                 <AdminTopnav />
                 <div className="px-10 py-6">

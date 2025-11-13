@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 
 export default function CarrierPage() {
 
     const [carriers, setCarriers] = useState([]);
     const [loading, setLoading] = useState(true);
+    const navigate = useNavigate();
 
     // ✅ Fetch Carriers from Backend
     const getCarriersFromBackend = async () => {
@@ -35,6 +36,11 @@ export default function CarrierPage() {
 
     const location = useLocation();
     const clickedButton = location.state?.clickedButton || "None";
+
+    const handleCarrierClick = (carrier) => {
+        localStorage.setItem("selectedCarrierID", JSON.stringify(carrier?.company_id));
+        navigate('/login')
+    }
 
     return (
         <div className="pb-20">
@@ -74,9 +80,17 @@ export default function CarrierPage() {
                                 {carrier.name}
                             </h2>
                             <p className="text-sm text-gray-600 mb-4">{carrier.description}</p>
-                            <Link to={`/companies/${carrier.name}`} state={{ clickedButton: clickedButton, selectedCarrier: carrier }} className="mt-auto bg-blue-600 text-white py-2 px-6 rounded-lg font-medium hover:bg-blue-700 transition">
-                                Explore Plans
-                            </Link>
+                            {clickedButton === 'PayAsYouGo' ? (
+                                <button
+                                    onClick={() => handleCarrierClick(carrier)}
+                                    className="mt-auto bg-blue-600 text-white py-2 px-6 rounded-lg font-medium hover:bg-blue-700 transition">
+                                    Make a Top-Up
+                                </button>
+                            ) : (
+                                <Link to={`/companies/${carrier.name}`} state={{ clickedButton: clickedButton, selectedCarrier: carrier }} className="mt-auto bg-blue-600 text-white py-2 px-6 rounded-lg font-medium hover:bg-blue-700 transition">
+                                    Explore Plans
+                                </Link>
+                            )}
                         </div>
                     ))}
                 </div>

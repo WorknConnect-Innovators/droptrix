@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Eye, EyeOff, Mail, Lock, X } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { message } from "antd";
@@ -13,7 +13,6 @@ export default function Login() {
     const [error, setError] = useState("");
     const navigate = useNavigate();
 
-    // 🔹 Login Submit Handler
     const handleLogin = async (e) => {
         e.preventDefault();
         setLoading(true);
@@ -31,18 +30,14 @@ export default function Login() {
             const data = await response.json();
 
             if (response.ok && data.login_status) {
-                // ✅ Save token & user info to localStorage
                 localStorage.setItem("token", data.token);
-                localStorage.setItem("user", JSON.stringify(data.data));
-
-                message.success("Login Successful!");
-
-                // ✅ Optional: navigate based on user_type
-                if (data.data.user_type === "admin") {
-                    navigate("/admin-dashboard");
-                } else {
-                    navigate("/");
+                localStorage.setItem("userData", JSON.stringify(data.data));
+                const carrierID = JSON.parse(localStorage.getItem("selectedCarrierID"));
+                if (carrierID) {
+                    navigate("/dashboard/topup", { state: { userData: data.data } });
+                    return;
                 }
+                navigate("/dashboard", { state: { userData: data.data } });
             } else {
                 setError(data.message || "Login failed. Please try again.");
             }

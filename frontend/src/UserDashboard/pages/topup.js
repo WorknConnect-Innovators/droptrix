@@ -11,6 +11,13 @@ function TopUp() {
     const [availableBalance, setAvailableBalance] = useState(150); // Example user balance (replace with API later)
 
     useEffect(() => {
+        const carrierID = JSON.parse(localStorage.getItem("selectedCarrierID"));
+        if (carrierID) {
+            setSelectedCarrier(carrierID);
+        }
+    }, []);
+
+    useEffect(() => {
         const fetchCarriers = async () => {
             const response = await getCarriersFromBackend();
             setCarriers(response);
@@ -19,7 +26,7 @@ function TopUp() {
     }, []);
 
     const handleSelect = (carrier) => {
-        setSelectedCarrier(carrier.name);
+        setSelectedCarrier(carrier.company_id);
         setError("");
     };
 
@@ -69,6 +76,7 @@ function TopUp() {
             });
 
             alert(`Top-up successful! $${amount} added to ${phoneNumber} (${selectedCarrier})`);
+            localStorage.removeItem("selectedCarrierID");
             setAmount("");
             setPhoneNumber("");
             setSelectedCarrier(null);
@@ -89,7 +97,7 @@ function TopUp() {
             <label className="text-lg font-medium mb-2 block">Choose Your Carrier</label>
             <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6 mt-4 mb-8">
                 {carriers.map((carrier, index) => {
-                    const isSelected = selectedCarrier === carrier.name;
+                    const isSelected = selectedCarrier === carrier.company_id;
                     return (
                         <div
                             key={index}

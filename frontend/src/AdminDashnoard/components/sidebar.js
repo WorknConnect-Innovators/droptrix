@@ -4,34 +4,34 @@ import { FaMoneyBill, FaPlaneSlash } from 'react-icons/fa'
 import { Link } from 'react-router-dom'
 
 function Sidebar() {
-    const user = "User"
+    const userType = localStorage.getItem("userData") ? JSON.parse(localStorage.getItem("userData")).user_type : null;
     const [userNavLinks, setUserNavLinks] = useState([])
     const [isExpanded, setIsExpanded] = useState(false)
     const [selectedLink, setSelectedLink] = useState("Home")
-    const [openSubmenu, setOpenSubmenu] = useState(false) // 👈 for "Manage" toggle
+    const [openSubmenu, setOpenSubmenu] = useState(false)
 
     const navLinks = [
         {
             label: "Dashboard",
             icon: <LayoutDashboardIcon size={26} />,
-            hasaccess: ["Super Admin", "Admin"]
+            hasaccess: ["superadmin", "admin"]
         },
         {
             label: "Home",
             icon: <HomeIcon size={26} />,
-            hasaccess: ["Admin", "User"],
+            hasaccess: ["admin", "user"],
             route: "/dashboard/carriers"
         },
         {
             label: "Top Up",
             icon: <BanknoteArrowUp size={26} />,
-            hasaccess: ["User"],
+            hasaccess: ["user"],
             route: "/dashboard/topup"
         },
         {
             label: "Manage",
             icon: <FolderIcon size={26} />,
-            hasaccess: ["Admin", "Super Admin"],
+            hasaccess: ["admin", "superadmin"],
             submenu: [
                 { label: "Companies", icon: <CompassIcon size={20} />, route: "/dashboard/carriers" },
                 { label: "Plans", icon: <FaPlaneSlash size={20} />, route: "/dashboard/plans" },
@@ -42,9 +42,9 @@ function Sidebar() {
 
     // Filter user-accessible links
     useEffect(() => {
-        const filteredLinks = navLinks.filter(link => link.hasaccess.includes(user))
+        const filteredLinks = navLinks.filter(link => link.hasaccess.includes(userType))
         setUserNavLinks(filteredLinks)
-    }, [user])
+    }, [userType])
 
     // Detect current active route
     useEffect(() => {
@@ -144,6 +144,7 @@ function Sidebar() {
             {/* Footer / Logout */}
             <div className="mt-auto w-full px-3 pb-4">
                 <div
+                    onClick={() => { localStorage.clear(); window.location.href = '/login'; }}
                     className="flex items-center gap-x-4 px-4 py-3 rounded-xl cursor-pointer transition-all duration-200
           hover:bg-red-600 hover:text-white text-gray-700 group"
                 >
