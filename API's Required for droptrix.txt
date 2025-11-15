@@ -1,0 +1,28 @@
+API's Required for droptrix
+
+User side API's
+
+API Route : /account-recharge-user
+User can recharge its account.
+keys: amount, payment screenshot (in the form of url), approval status (pending), username, timestamp, 
+Admin will approve the payment and then mark as approved then add into user account balance.
+post and get API for user account balance.
+
+API Route: /sim-activations
+user can activate sim
+keys: username, planid, phone no, amount charged, offer  ( will be added more later)
+This will reduce the available balance of account by subtracting the plan amount
+Admin will receive inquiry and approve it.
+Post and get API
+
+API Route: Dashboard-summary-user
+Show account data on the dashboard
+calculations: active sims, available balance, recent purchased plan, top-up history, balance history, recent activities, sim details
+
+
+Admin Side API's
+
+1: approve user recharge
+2: all users
+3: approve sim activation
+

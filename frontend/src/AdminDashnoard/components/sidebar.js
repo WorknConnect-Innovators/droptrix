@@ -1,6 +1,6 @@
 import { HomeIcon, LayoutDashboardIcon, LogOutIcon, FolderIcon, UsersIcon, ChevronDown, ChevronRight, CompassIcon, BanknoteArrowUp } from 'lucide-react'
 import React, { useEffect, useState } from 'react'
-import { FaMoneyBill, FaPlaneSlash } from 'react-icons/fa'
+import { FaMoneyBill, FaPlaneSlash, FaSimCard } from 'react-icons/fa'
 import { Link } from 'react-router-dom'
 
 function Sidebar() {
@@ -12,21 +12,22 @@ function Sidebar() {
 
     const navLinks = [
         {
-            label: "Dashboard",
-            icon: <LayoutDashboardIcon size={26} />,
-            hasaccess: ["superadmin", "admin"]
-        },
-        {
             label: "Home",
             icon: <HomeIcon size={26} />,
-            hasaccess: ["admin", "user"],
-            route: "/dashboard/carriers"
+            hasaccess: ["user", "admin"],
+            route: "/dashboard"
         },
         {
             label: "Top Up",
             icon: <BanknoteArrowUp size={26} />,
             hasaccess: ["user"],
             route: "/dashboard/topup"
+        },
+        {
+            label: "Activate Sim",
+            icon: <FaSimCard size={26} />,
+            hasaccess: ["user"],
+            route: "/dashboard/activate-sim"
         },
         {
             label: "Manage",
