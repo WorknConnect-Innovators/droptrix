@@ -19,10 +19,13 @@ API Route: Dashboard-summary-user
 Show account data on the dashboard
 calculations: active sims, available balance, recent purchased plan, top-up history, balance history, recent activities, sim details
 
+Account Balance
+1. Username
+2. Account Balance
+3. Timestamp
 
 Admin Side API's
 
 1: approve user recharge
 2: all users
 3: approve sim activation
-

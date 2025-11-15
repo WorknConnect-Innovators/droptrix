@@ -103,3 +103,38 @@ class Topup(models.Model):
 
     def __str__(self):
         return self.username
+    
+
+class Recharge(models.Model):
+    recharge_id = models.CharField(max_length=200, unique=True)
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    payment_screenshot = models.CharField(max_length=2000)
+    approved = models.BooleanField(default=False)
+    username = models.CharField(max_length=200)
+    timestamp = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.username
+    
+
+class Activate_sim(models.Model):
+    activation_id = models.CharField(max_length=200)
+    username = models.CharField(max_length=200)
+    plan_id = models.CharField(max_length=200)
+    phone_no = models.CharField(max_length=200)
+    amount_charged = models.DecimalField(max_digits=10, decimal_places=2)
+    offer = models.CharField(max_length=2000)
+    pending = models.BooleanField(default=True)
+    timestamp = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.username
+    
+
+class Account_balance(models.Model):
+    username = models.CharField(max_length=200)
+    account_balance_amount = models.DecimalField(max_digits=20, decimal_places=2)
+    last_updated = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.username

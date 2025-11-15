@@ -2,7 +2,7 @@ from django.shortcuts import render
 from django.http import JsonResponse, HttpResponse
 import json
 from django.views.decorators.csrf import csrf_exempt
-from backend_app.models import Feedback, Newsletter, Signup, Carriers, Plans, Payasyougo, Topup
+from backend_app.models import Feedback, Newsletter, Signup, Carriers, Plans, Payasyougo, Topup, Recharge, Activate_sim, Account_balance
 from django.core.mail import send_mail
 import random
 import string
@@ -167,7 +167,12 @@ def signup(request):
                 user_type=user_type
             )
             signup_data.save()
-            return JsonResponse({'status': 'success', 'data_received': signup_data.id})
+            user_balance = Account_balance(
+                username=username,
+                account_balance_amount=0.0,
+            )
+            user_balance.save()
+            return JsonResponse({'status': 'success', 'data_received': signup_data.id, 'account_balance': user_balance.account_balance_amount})
         except Exception as e:
             return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
     return JsonResponse({'status': 'error', 'message': 'Invalid request method'}, status=400)
@@ -473,7 +478,7 @@ def fetch_topup(request):
         try:
             data = json.loads(request.body)
             username = data['username']
-            topup_data = Topup.objects.filter(username=username).first()
+            topup_data = Topup.objects.filter(username=username)
             return JsonResponse({'status': 'success', 'data_received': topup_data})
         except Exception as e:
             return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
@@ -489,6 +494,166 @@ def make_topup_complete(request):
             topup_data = Topup.objects.filter(id=topup_id).first()
             topup_data.pending_status = False
             return JsonResponse({'status': 'success', 'data_received': topup_data.id})
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+    return JsonResponse({'status': 'error', 'message': 'Invalid request method'}, status=400)
+
+
+@csrf_exempt
+def user_recharge_account(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            recharge_count = int(Recharge.objects.count())+1
+            recharge_id = f"RCRG-{datetime.now().strftime('%Y%m%d')}-{str(recharge_count).zfill(4)}"
+            recharge_data = Recharge(
+                recharge_id=recharge_id,
+                amount=data['amount'],
+                payment_screenshot=data['payment_screenshot'],
+                username=data['username']
+            )
+            recharge_data.save()
+            return JsonResponse({'status': 'success', 'data_received': recharge_data.recharge_id})
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+    return JsonResponse({'status': 'error', 'message': 'Invalid request method'}, status=400)
+
+
+def get_recharge_data(request):
+    if request.method == 'GET':
+        recharge_data = Recharge.objects.all()
+        recharge_all_data = [
+            {
+                'recharge_id': r.recharge_id,
+                'amount': r.amount,
+                'payment_screenshot': r.payment_screenshot,
+                'username': r.username,
+                'timestamp': r.timestamp,
+                'approved': r.approved
+            }
+            for r in recharge_data
+        ]
+        return JsonResponse({'status': 'success', 'data': recharge_all_data})
+    return JsonResponse({'status': 'error', 'message': 'Only GET method is allowed'})
+
+
+@csrf_exempt
+def admin_approve_recharge(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            recharge_id = data['recharge_id']
+            username = data['username']
+            recharge_data = Recharge.objects.filter(recharge_id=recharge_id).first()
+            recharge_data.approved = True
+            recharge_data.save()
+            user_balance_data = Account_balance.objects.filter(username=username).first()
+            user_balance_data.account_balance_amount += recharge_data.amount
+            user_balance_data.last_updated = datetime.now()
+            user_balance_data.save()
+            return JsonResponse({'status': 'success', 'data_received': recharge_data.recharge_id, 'account_balance': user_balance_data.account_balance_amount})
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+    return JsonResponse({'status': 'error', 'message': 'Invalid request method'}, status=400)
+
+
+@csrf_exempt
+def user_sim_activation(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            activation_count = int(Recharge.objects.count())+1
+            activation_id = f"ACTSIM-{datetime.now().strftime('%Y%m%d')}-{str(activation_count).zfill(4)}"
+            sim_activation_data = Activate_sim(
+                activation_id=activation_id,
+                username=data['username'],
+                plan_id=data['plan_id'],
+                phone_no=data['phone_no'],
+                amount_charged=data['amount_charged'],
+                offer=data['offer']
+            )
+            balance_data = Account_balance.objects.filter(username=data['username']).first()
+            if balance_data < data['amount_charged']:
+                return JsonResponse({'status': 'success', 'message': 'Insufficient balance. Please recharge your account.'}, status=200)
+            balance_data.account_balance_amount -= data['amount_charged']
+            sim_activation_data.save()
+            balance_data.save()
+            return JsonResponse({'status': 'success', 'data_received': sim_activation_data.id, 'account_balance': balance_data.account_balance_amount})
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+    return JsonResponse({'status': 'error', 'message': 'Invalid request method'}, status=400)
+
+
+@csrf_exempt
+def get_activation_data(request):
+    if request.method == 'GET':
+        activation_data = Activate_sim.objects.all()
+        activation_all_data = [
+            {
+                'activation_id': a.activation_id,
+                'username': a.username,
+                'plan_id': a.plan_id,
+                'phone_no': a.phone_no,
+                'amount_charged': a.amount_charged,
+                'offer': a.offer,
+                'pending': a.pending,
+                'timestamp': a.timestamp
+            }
+            for a in activation_data
+        ]
+        return JsonResponse({'status': 'success', 'data': activation_all_data})
+    return JsonResponse({'status': 'error', 'message': 'Only GET method is allowed'})
+
+
+@csrf_exempt
+def approve_sim_activation(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            activation_id = data['activation_id']
+            activation_data = Activate_sim.objects.filter(activation_id=activation_id).first()
+            activation_data.pending = False
+            activation_data.save()
+            return JsonResponse({'status': 'success', 'data_received': activation_data.activation_id})
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+    return JsonResponse({'status': 'error', 'message': 'Invalid request method'}, status=400)
+
+
+@csrf_exempt
+def dashboard_summary_user(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            username = data['username']
+            active_sims_count = len(Activate_sim.objects.filter(username=username, pending=False))
+            active_sims = Activate_sim.objects.filter(username=username, pending=False)
+            available_balance = Account_balance.objects.filter(username=username).first().account_balance_amount
+            plan_ids_data = Activate_sim.objects.filter(username=username)
+            plan_ids = []
+            for i in plan_ids_data:
+                plan_ids.append(i.plan_id)
+            plan_ids = list(set(plan_ids))
+            perchased_plans = []
+            for j in plan_ids:
+                perchased_plans.append(Plans.objects.filter(plan_id=j).first())
+            topup_history = Topup.objects.filter(username=username)
+            recharge_history = Recharge.objects.filter(username=username)
+            activation_history = Activate_sim.objects.filter(username=username)
+            transaction_history = {'activation_history': activation_history, 'recharge_history': recharge_history}
+            return JsonResponse(
+                {
+                    'status': 'success',
+                    'data_received': {
+                        'active_sims_count': active_sims_count,
+                        'active_sims': active_sims,
+                        'available_balance': available_balance,
+                        'perchased_plans': perchased_plans,
+                        'topup_history': topup_history,
+                        'transaction_history': transaction_history
+                    }
+                }
+            )
         except Exception as e:
             return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
     return JsonResponse({'status': 'error', 'message': 'Invalid request method'}, status=400)

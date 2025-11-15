@@ -46,4 +46,11 @@ urlpatterns = [
     path('api/get-topup/', views.get_topup, name='get_topup'),
     path('api/fetch-topup/', views.fetch_topup, name='fetch_topup'),
     path('api/make-topup-complete/', views.make_topup_complete, name='make_topup_complete'),
+    path('api/user-recharge-account/', views.user_recharge_account, name='user_recharge_account'),
+    path('api/get-all-recharge-data/', views.get_recharge_data, name='get_recharge_data'),
+    path('api/admin/approve-recharge/', views.admin_approve_recharge, name='admin_approve_recharge'),
+    path('api/user-sim-activation/', views.user_sim_activation, name='user_sim_activation'),
+    path('api/get-activation-data/', views.get_activation_data, name='get_activation_data'),
+    path('api/admin/approve-activation/', views.approve_sim_activation, name='approve_sim_activation'),
+    path('api/user-dashboard-summary/', views.dashboard_summary_user, name='dashboard_summary_user')
 ]
