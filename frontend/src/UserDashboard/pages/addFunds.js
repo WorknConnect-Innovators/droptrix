@@ -21,8 +21,14 @@ function AddFunds() {
     // ======================================================
     const loadData = async () => {
         try {
-            const res = await fetch(`${process.env.REACT_APP_API_URL_PRODUCTION}/api/get-all-recharge-data/`);
+            const res = await fetch(`${process.env.REACT_APP_API_URL_PRODUCTION}/api/get-user-recharge-data/`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ username: user?.username }),
+            });
             const data = await res.json();
+
+            console.log("User Data", data)
 
             if (data.status === "success") {
                 setRechargeHistory(data.data);
@@ -178,7 +184,7 @@ function AddFunds() {
                                     <td className="px-6 py-3 font-semibold">{index < 10 ? `0${index + 1}` : index + 1}</td>
                                     <td className="px-6 py-3">{new Date(item.timestamp).toLocaleString()}</td>
                                     <td className="px-6 py-3 text-green-600 font-semibold">
-                                        Rs {item.amount}
+                                        $ {item.amount}
                                     </td>
                                     <td className="px-6 py-3">
                                         <a
@@ -279,17 +285,17 @@ function AddFunds() {
                                     <div className="mt-5 p-3 border rounded-lg bg-gray-50 text-sm">
                                         <p className="flex justify-between">
                                             <span>Amount:</span>
-                                            <span>Rs {newRecharge.amount}</span>
+                                            <span>$ {newRecharge.amount}</span>
                                         </p>
                                         <p className="flex justify-between mt-1">
                                             <span>Tax (5%):</span>
-                                            <span>Rs {(newRecharge.amount * 0.05).toFixed(0)}</span>
+                                            <span>$ {(newRecharge.amount * 0.05).toFixed(0)}</span>
                                         </p>
                                         <hr className="my-2" />
                                         <p className="flex justify-between font-semibold">
                                             <span>Total Payable:</span>
                                             <span>
-                                                Rs {(newRecharge.amount * 1.05).toFixed(0)}
+                                                $ {(newRecharge.amount * 1.05).toFixed(0)}
                                             </span>
                                         </p>
                                     </div>

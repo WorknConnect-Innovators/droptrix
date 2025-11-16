@@ -104,7 +104,7 @@ function AdminFunds() {
                                     <td className="px-6 py-3">{index + 1}</td>
                                     <td className="px-6 py-3 font-semibold">{item.username}</td>
                                     <td className="px-6 py-3">{new Date(item.timestamp).toLocaleString()}</td>
-                                    <td className="px-6 py-3 text-green-600 font-semibold">Rs {item.amount}</td>
+                                    <td className="px-6 py-3 text-green-600 font-semibold">$ {item.amount}</td>
                                     <td className="px-6 py-3">
                                         <a
                                             href={item.payment_screenshot}
@@ -172,7 +172,7 @@ function AdminFunds() {
                         <div className="space-y-3 text-sm">
                             <p><b>Username:</b> {selectedRecharge.username}</p>
                             <p><b>Recharge ID:</b> {selectedRecharge.recharge_id}</p>
-                            <p><b>Amount:</b> Rs {selectedRecharge.amount}</p>
+                            <p><b>Amount:</b> $ {selectedRecharge.amount}</p>
 
                             <p><b>Payment Screenshot:</b></p>
                             <img
