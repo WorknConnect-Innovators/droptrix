@@ -449,10 +449,11 @@ def add_topup(request):
                 balance_history=balance_data.account_balance_amount
             )
             topup_data.save()
+            history_message=f'You added a topup of amount {data["amount"]}.'
             history_data = History(
                 username=data['username'],
                 history_type='Topup History',
-                history_message=f'You added a topup of amount {data['amount']}.',
+                history_message=history_message,
                 history_balance=balance_data.account_balance_amount
             )
             history_data.save()
@@ -525,10 +526,11 @@ def user_recharge_account(request):
                 balance_history=balance_data.account_balance_amount
             )
             recharge_data.save()
+            history_message=f'You submitted a request for recharge of amount {data["amount"]}.'
             history_data = History(
                 username=data['username'],
                 history_type='Recharge History',
-                history_message=f'You submitted a request for recharge of amount {data['amount']}.',
+                history_message=history_message,
                 history_balance=balance_data.account_balance_amount
             )
             history_data.save()
@@ -586,10 +588,11 @@ def admin_approve_recharge(request):
             balance_data = Account_balance.objects.filter(username=data['username']).first()
             recharge_data.balance_history = balance_data.account_balance_amount
             recharge_data.save()
+            history_message=f'Admin approved your recharge of amount {data["amount"]}.'
             history_data = History(
                 username=data['username'],
                 history_type='Recharge History',
-                history_message=f'Admin approved your recharge of amount {data['amount']}.',
+                history_message=history_message,
                 history_balance=balance_data.account_balance_amount
             )
             history_data.save()
@@ -621,10 +624,11 @@ def user_sim_activation(request):
             balance_data.account_balance_amount -= data['amount_charged']
             sim_activation_data.save()
             balance_data.save()
+            history_message=f'You sent a request of sim activation for amount of {data["amount"]}.'
             history_data = History(
                 username=data['username'],
                 history_type='Sim Activation History',
-                history_message=f'You sent a request of sim activation for amount of {data['amount']}.',
+                history_message=history_message,
                 history_balance=balance_data.account_balance_amount
             )
             history_data.save()
@@ -669,7 +673,7 @@ def approve_sim_activation(request):
             history_data = History(
                 username=data['username'],
                 history_type='Sim Activation History',
-                history_message=f'Your Sim Activation Approved.',
+                history_message='Your Sim Activation Approved.',
                 history_balance=balance_data.account_balance_amount
             )
             history_data.save()
