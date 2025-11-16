@@ -99,7 +99,7 @@ function AdminFunds() {
 
                     <tbody>
                         {filteredData.length > 0 ? (
-                            filteredData.map((item, index) => (
+                            filteredData.slice().reverse().map((item, index) => (
                                 <tr key={item.recharge_id} className="border-t hover:bg-gray-50">
                                     <td className="px-6 py-3">{index + 1}</td>
                                     <td className="px-6 py-3 font-semibold">{item.username}</td>

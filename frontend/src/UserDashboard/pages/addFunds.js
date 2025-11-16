@@ -21,17 +21,12 @@ function AddFunds() {
     // ======================================================
     const loadData = async () => {
         try {
-            const res = await fetch(`${process.env.REACT_APP_API_URL_PRODUCTION}/api/get-user-recharge-data/`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ username: user?.username }),
-            });
+            const res = await fetch(`${process.env.REACT_APP_API_URL_PRODUCTION}/api/get-all-recharge-data/`);
             const data = await res.json();
 
-            console.log("User Data", data)
-
             if (data.status === "success") {
-                setRechargeHistory(data.data);
+                const filteredUserData = data.data.filter(item => item.username === user?.username);
+                setRechargeHistory(filteredUserData);
             }
         } catch (error) {
             console.error(error);
@@ -176,7 +171,7 @@ function AddFunds() {
 
                     <tbody>
                         {filteredData.length > 0 ? (
-                            filteredData.map((item, index) => (
+                            filteredData.slice().reverse().map((item, index) => (
                                 <tr
                                     key={item.recharge_id}
                                     className="border-t hover:bg-gray-50"
