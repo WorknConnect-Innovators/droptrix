@@ -23,7 +23,7 @@ function SignupPage() {
   ];
 
   const [current, setCurrent] = useState(0);
-  const [formData, setFormData] = useState({ full_name: "", email: "", password: "" , username: "",  user_type: "superadmin"});
+  const [formData, setFormData] = useState({ full_name: "", email: "", password: "" , username: "",  user_type: "user"});
   const [errors, setErrors] = useState({});
   const [isVerifiedStep, setIsVerifiedStep] = useState(false);
   const [verificationCode, setVerificationCode] = useState("");
