@@ -9,6 +9,7 @@ function TopUp() {
     const [selectedCarrier, setSelectedCarrier] = useState(null);
     const [amount, setAmount] = useState("");
     const [phoneNumber, setPhoneNumber] = useState("");
+    const [rephoneNumber, setRephoneNumber] = useState("");
     const [isProcessing, setIsProcessing] = useState(false);
     const [error, setError] = useState("");
     const [availableBalance, setAvailableBalance] = useState(150);
@@ -75,43 +76,93 @@ function TopUp() {
         setPhoneNumber(value);
     };
 
+    const handlerePhoneChange = (e) => {
+        let value = e.target.value.replace(/\D/g, ""); // Remove non-numeric
+        if (value.length > 10) value = value.slice(0, 10); // Limit to 10 digits
+        if (value.startsWith("0")) setError("Phone number cannot start with 0.");
+        if (value !== phoneNumber) setError("Phone numbers do not match.");
+        else setError("");
+        setRephoneNumber(value);
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-        // ✅ Validation checks
-        if (!selectedCarrier) return setError("Please select a carrier.");
+        // ---------------- VALIDATION ----------------
+        if (!selectedCarrier)
+            return setError("Please select a carrier.");
+
         if (!amount || amount % 5 !== 0 || amount < 5 || amount > 200)
             return setError("Enter a valid amount (5–200 in multiples of 5).");
+
         if (!phoneNumber || phoneNumber.length !== 10 || phoneNumber.startsWith("0"))
             return setError("Enter a valid 10-digit phone number (cannot start with 0).");
+
         if (amount > availableBalance)
             return setError("Insufficient balance for this top-up.");
 
-        // ✅ Start process
+        if (phoneNumber !== rephoneNumber)
+            return setError("Phone numbers do not match.");
+
+        // Start process
         setIsProcessing(true);
         setError("");
 
         try {
-            // Simulate API request
-            await new Promise((resolve) => setTimeout(resolve, 1500));
+            const payload = {
+                company_id: selectedCarrier,
+                amount: amount,
+                phone_no: phoneNumber,
+                username: JSON.parse(localStorage.getItem("userData")).username,
+                request_topup: true,
+            };
 
-            console.log("Top-Up Details:", {
-                carrier: selectedCarrier,
-                amount,
-                phoneNumber,
-            });
+            const res = await fetch(
+                `${process.env.REACT_APP_API_URL_PRODUCTION}/api/add-topup/`,
+                {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(payload),
+                }
+            );
 
-            alert(`Top-up successful! $${amount} added to ${phoneNumber} (${selectedCarrier})`);
+            // ---------------- RESPONSE HANDLING ----------------
+
+            // Parse JSON safely
+            let data = {};
+            try {
+                data = await res.json();
+            } catch {
+                data = {};
+            }
+
+            if (!res.ok) {
+                // API returned an error status
+                return setError(
+                    data.error ||
+                    data.message ||
+                    "Top-up failed. Please try again."
+                );
+            }
+
+            // SUCCESS
+            alert(`Top-up successful! ${amount} PKR added to ${phoneNumber}.`);
+
+            // Cleanup
             localStorage.removeItem("selectedCarrierID");
             setAmount("");
             setPhoneNumber("");
+            setRephoneNumber("");
             setSelectedCarrier(null);
+
         } catch (err) {
-            setError("Something went wrong during top-up. Please try again.");
+            console.error("Top-up error:", err);
+            setError("Something went wrong during the top-up. Please try again.");
         } finally {
             setIsProcessing(false);
         }
     };
+
 
 
 
@@ -227,6 +278,17 @@ function TopUp() {
                                 type="tel"
                                 value={phoneNumber}
                                 onChange={handlePhoneChange}
+                                className="w-full border rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                                placeholder="Enter 10-digit number"
+                            />
+                        </div>
+
+                        <div>
+                            <label className="block font-medium mb-2 text-gray-700">Re-enter Phone Number</label>
+                            <input
+                                type="tel"
+                                value={rephoneNumber}
+                                onChange={handlerePhoneChange}
                                 className="w-full border rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
                                 placeholder="Enter 10-digit number"
                             />

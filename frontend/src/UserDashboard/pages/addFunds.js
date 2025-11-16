@@ -21,12 +21,15 @@ function AddFunds() {
     // ======================================================
     const loadData = async () => {
         try {
-            const res = await fetch(`${process.env.REACT_APP_API_URL_PRODUCTION}/api/get-all-recharge-data/`);
+            const res = await fetch(`${process.env.REACT_APP_API_URL_PRODUCTION}/api/get-user-recharge-data/`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ username: user?.username }),
+            });
             const data = await res.json();
 
             if (data.status === "success") {
-                const filteredUserData = data.data.filter(item => item.username === user?.username);
-                setRechargeHistory(filteredUserData);
+                setRechargeHistory(data.data_received);
             }
         } catch (error) {
             console.error(error);
