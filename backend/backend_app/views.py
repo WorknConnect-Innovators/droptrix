@@ -488,7 +488,7 @@ def fetch_topup(request):
         try:
             data = json.loads(request.body)
             username = data['username']
-            topup_data = Topup.objects.filter(username=username)
+            topup_data = list(Topup.objects.filter(username=username).values())
             return JsonResponse({'status': 'success', 'data_received': topup_data})
         except Exception as e:
             return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
@@ -563,7 +563,7 @@ def get_user_recharge(request):
         try:
             data = json.loads(request.body)
             username = data['username']
-            recharge_data = Recharge.objects.filter(username=username)
+            recharge_data = list(Recharge.objects.filter(username=username).values())
             return JsonResponse({'status': 'success', 'data_received': recharge_data})
         except Exception as e:
             return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
@@ -685,7 +685,7 @@ def get_user_activation_data(request):
         try:
             data = json.loads(request.body)
             username = data['username']
-            activation_data = Activate_sim.objects.filter(username=username)
+            activation_data = list(Activate_sim.objects.filter(username=username).values())
             return JsonResponse({'status': 'success', 'data_received': activation_data})
         except Exception as e:
             return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
