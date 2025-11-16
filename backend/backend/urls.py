@@ -52,5 +52,6 @@ urlpatterns = [
     path('api/user-sim-activation/', views.user_sim_activation, name='user_sim_activation'),
     path('api/get-activation-data/', views.get_activation_data, name='get_activation_data'),
     path('api/admin/approve-activation/', views.approve_sim_activation, name='approve_sim_activation'),
-    path('api/user-dashboard-summary/', views.dashboard_summary_user, name='dashboard_summary_user')
+    path('api/user-dashboard-summary/', views.dashboard_summary_user, name='dashboard_summary_user'),
+    path('api/get-user-recharge-data/', views.get_user_recharge, name='get_user_recharge')
 ]

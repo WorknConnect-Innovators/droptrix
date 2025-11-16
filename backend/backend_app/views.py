@@ -439,12 +439,14 @@ def add_topup(request):
     if request.method == 'POST':
         try:
             data = json.loads(request.body)
+            balance_data = Account_balance.objects.filter(username=data['username']).first()
             topup_data = Topup(
                 company_id=data['company_id'],
                 amount=data['amount'],
                 phone_no=data['phone_no'],
                 username=data['username'],
                 request_topup=data['request_topup'],
+                balance_history=balance_data.account_balance_amount
             )
             topup_data.save()
             return JsonResponse({'status': 'success', 'data_received': topup_data.id})
@@ -464,7 +466,8 @@ def get_topup(request):
                 'phone_no': t.phone_no,
                 'username': t.username,
                 'request_topup': t.request_topup,
-                'pending_status': t.pending_status
+                'pending_status': t.pending_status,
+                'balance_history': t.balance_history
             }
             for t in topup_data
         ]
@@ -506,11 +509,13 @@ def user_recharge_account(request):
             data = json.loads(request.body)
             recharge_count = int(Recharge.objects.count())+1
             recharge_id = f"RCRG-{datetime.now().strftime('%Y%m%d')}-{str(recharge_count).zfill(4)}"
+            balance_data = Account_balance.objects.filter(username=data['username']).first()
             recharge_data = Recharge(
                 recharge_id=recharge_id,
                 amount=data['amount'],
                 payment_screenshot=data['payment_screenshot'],
-                username=data['username']
+                username=data['username'],
+                balance_history=balance_data.account_balance_amount
             )
             recharge_data.save()
             return JsonResponse({'status': 'success', 'data_received': recharge_data.recharge_id})
@@ -529,12 +534,26 @@ def get_recharge_data(request):
                 'payment_screenshot': r.payment_screenshot,
                 'username': r.username,
                 'timestamp': r.timestamp,
-                'approved': r.approved
+                'approved': r.approved,
+                'balance_history': r.balance_history
             }
             for r in recharge_data
         ]
         return JsonResponse({'status': 'success', 'data': recharge_all_data})
     return JsonResponse({'status': 'error', 'message': 'Only GET method is allowed'})
+
+
+@csrf_exempt
+def get_user_recharge(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            username = data['username']
+            recharge_data = Recharge.objects.filter(username=username)
+            return JsonResponse({'status': 'success', 'data_received': recharge_data})
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+    return JsonResponse({'status': 'error', 'message': 'Invalid request method'}, status=400)
 
 
 @csrf_exempt
@@ -546,11 +565,13 @@ def admin_approve_recharge(request):
             username = data['username']
             recharge_data = Recharge.objects.filter(recharge_id=recharge_id).first()
             recharge_data.approved = True
-            recharge_data.save()
             user_balance_data = Account_balance.objects.filter(username=username).first()
             user_balance_data.account_balance_amount += recharge_data.amount
             user_balance_data.last_updated = datetime.now()
             user_balance_data.save()
+            balance_data = Account_balance.objects.filter(username=data['username']).first()
+            recharge_data.balance_history = balance_data.account_balance_amount
+            recharge_data.save()
             return JsonResponse({'status': 'success', 'data_received': recharge_data.recharge_id, 'account_balance': user_balance_data.account_balance_amount})
         except Exception as e:
             return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
@@ -564,15 +585,16 @@ def user_sim_activation(request):
             data = json.loads(request.body)
             activation_count = int(Recharge.objects.count())+1
             activation_id = f"ACTSIM-{datetime.now().strftime('%Y%m%d')}-{str(activation_count).zfill(4)}"
+            balance_data = Account_balance.objects.filter(username=data['username']).first()
             sim_activation_data = Activate_sim(
                 activation_id=activation_id,
                 username=data['username'],
                 plan_id=data['plan_id'],
                 phone_no=data['phone_no'],
                 amount_charged=data['amount_charged'],
-                offer=data['offer']
+                offer=data['offer'],
+                balance_history=balance_data.account_balance_amount
             )
-            balance_data = Account_balance.objects.filter(username=data['username']).first()
             if balance_data < data['amount_charged']:
                 return JsonResponse({'status': 'success', 'message': 'Insufficient balance. Please recharge your account.'}, status=200)
             balance_data.account_balance_amount -= data['amount_charged']
@@ -597,7 +619,8 @@ def get_activation_data(request):
                 'amount_charged': a.amount_charged,
                 'offer': a.offer,
                 'pending': a.pending,
-                'timestamp': a.timestamp
+                'timestamp': a.timestamp,
+                'balance_history': a.balance_history
             }
             for a in activation_data
         ]
@@ -615,6 +638,19 @@ def approve_sim_activation(request):
             activation_data.pending = False
             activation_data.save()
             return JsonResponse({'status': 'success', 'data_received': activation_data.activation_id})
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+    return JsonResponse({'status': 'error', 'message': 'Invalid request method'}, status=400)
+
+
+@csrf_exempt
+def get_user_activation_data(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            username = data['username']
+            activation_data = Activate_sim.objects.filter(username=username)
+            return JsonResponse({'status': 'success', 'data_received': activation_data})
         except Exception as e:
             return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
     return JsonResponse({'status': 'error', 'message': 'Invalid request method'}, status=400)

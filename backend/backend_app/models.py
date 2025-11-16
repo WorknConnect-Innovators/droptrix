@@ -100,6 +100,7 @@ class Topup(models.Model):
     username = models.CharField(max_length=200)
     request_topup = models.CharField(max_length=200)
     pending_status = models.BooleanField(default=True)
+    balance_history = models.DecimalField(max_digits=10, decimal_places=2)
 
     def __str__(self):
         return self.username
@@ -112,6 +113,7 @@ class Recharge(models.Model):
     approved = models.BooleanField(default=False)
     username = models.CharField(max_length=200)
     timestamp = models.DateTimeField(auto_now_add=True)
+    balance_history = models.DecimalField(max_digits=10, decimal_places=2)
 
     def __str__(self):
         return self.username
@@ -126,6 +128,7 @@ class Activate_sim(models.Model):
     offer = models.CharField(max_length=2000)
     pending = models.BooleanField(default=True)
     timestamp = models.DateTimeField(auto_now_add=True)
+    balance_history = models.DecimalField(max_digits=10, decimal_places=2)
 
     def __str__(self):
         return self.username
