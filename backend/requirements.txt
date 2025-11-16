@@ -5,7 +5,6 @@ PyMySQL
 djangorestframework
 django-cors-headers
 PyJWT
-jwt
 channels
 channels-redis
 daphne
