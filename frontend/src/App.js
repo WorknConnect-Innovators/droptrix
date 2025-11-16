@@ -15,15 +15,12 @@ import AdminCarrierPage from './AdminDashnoard/pages/carriers/carrierPage'
 import AdminPlansPage from './AdminDashnoard/pages/plans/planspage'
 import TopUp from './UserDashboard/pages/topup'
 import PageNotFound from './components/pageNotFound'
-import UserDashboard from './UserDashboard/pages/userDashboard'
 import Dashboard from './pages/Dashboard'
 import ActivateSim from './UserDashboard/pages/ActivateSim'
 import AddFunds from './UserDashboard/pages/addFunds'
+import AdminFunds from './AdminDashnoard/pages/AccountFunds/adminFunds'
 
 function App() {
-
-  const user = {user_type: 'superadmin', username: 'superadmin'};
-  localStorage.setItem('userData', JSON.stringify(user));
 
   return (
     <Router>
@@ -52,6 +49,7 @@ function App() {
           <Route path="topup" element={<TopUp />} />
           <Route path="activate-sim" element={<ActivateSim />} />
           <Route path="add-funds" element={<AddFunds />} />
+          <Route path="user-funds" element={<AdminFunds />} />
         </Route>
       </Routes>
     </Router>

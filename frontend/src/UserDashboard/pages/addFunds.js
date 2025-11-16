@@ -42,7 +42,7 @@ function AddFunds() {
     const handleCloudinaryUpload = async (file) => {
         const formData = new FormData();
         formData.append("file", file);
-        formData.append("upload_preset", "droptrixCarrierLogos");
+        formData.append("upload_preset", "droptrixAccountsPayments");
 
         setUploading(true);
 
@@ -160,24 +160,23 @@ function AddFunds() {
                 <table className="min-w-full text-sm text-gray-700">
                     <thead className="bg-blue-50 text-gray-600 uppercase text-xs">
                         <tr>
-                            <th className="px-6 py-3 text-left">Recharge ID</th>
-                            <th className="px-6 py-3 text-left">Username</th>
+                            <th className="px-6 py-3 text-left">No</th>
+                            <th className="px-6 py-3 text-left">Time</th>
                             <th className="px-6 py-3 text-left">Amount</th>
                             <th className="px-6 py-3 text-left">Screenshot</th>
                             <th className="px-6 py-3 text-left">Status</th>
-                            <th className="px-6 py-3 text-left">Time</th>
                         </tr>
                     </thead>
 
                     <tbody>
                         {filteredData.length > 0 ? (
-                            filteredData.map((item) => (
+                            filteredData.map((item, index) => (
                                 <tr
                                     key={item.recharge_id}
                                     className="border-t hover:bg-gray-50"
                                 >
-                                    <td className="px-6 py-3">{item.recharge_id}</td>
-                                    <td className="px-6 py-3">{item.username}</td>
+                                    <td className="px-6 py-3 font-semibold">{index < 10 ? `0${index + 1}` : index + 1}</td>
+                                    <td className="px-6 py-3">{new Date(item.timestamp).toLocaleString()}</td>
                                     <td className="px-6 py-3 text-green-600 font-semibold">
                                         Rs {item.amount}
                                     </td>
@@ -202,7 +201,7 @@ function AddFunds() {
                                             </span>
                                         )}
                                     </td>
-                                    <td className="px-6 py-3">{item.timestamp}</td>
+
                                 </tr>
                             ))
                         ) : (
@@ -214,6 +213,9 @@ function AddFunds() {
                         )}
                     </tbody>
                 </table>
+                <div className="py-4 px-6 text-gray-600 text-sm border-t text-end ">
+                    Available Balance: {rechargeHistory.length}
+                </div>
             </div>
 
             {/* Add Recharge Modal */}

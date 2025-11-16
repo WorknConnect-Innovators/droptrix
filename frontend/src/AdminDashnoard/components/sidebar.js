@@ -36,6 +36,12 @@ function Sidebar() {
             route: "/dashboard/add-funds"
         },
         {
+            label: "User Funds",
+            icon: <CircleDollarSign size={26} />,
+            hasaccess: ["superadmin", "admin"],
+            route: "/dashboard/user-funds"
+        },
+        {
             label: "Manage",
             icon: <FolderIcon size={26} />,
             hasaccess: ["admin", "superadmin"],
