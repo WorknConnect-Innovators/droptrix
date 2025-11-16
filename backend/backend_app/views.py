@@ -2,7 +2,7 @@ from django.shortcuts import render
 from django.http import JsonResponse, HttpResponse
 import json
 from django.views.decorators.csrf import csrf_exempt
-from backend_app.models import Feedback, Newsletter, Signup, Carriers, Plans, Payasyougo, Topup, Recharge, Activate_sim, Account_balance
+from backend_app.models import Feedback, Newsletter, Signup, Carriers, Plans, Payasyougo, Topup, Recharge, Activate_sim, Account_balance, History
 from django.core.mail import send_mail
 import random
 import string
@@ -449,7 +449,14 @@ def add_topup(request):
                 balance_history=balance_data.account_balance_amount
             )
             topup_data.save()
-            return JsonResponse({'status': 'success', 'data_received': topup_data.id})
+            history_data = History(
+                username=data['username'],
+                history_type='Topup History',
+                history_message=f'You added a topup of amount {data['amount']}.',
+                history_balance=balance_data.account_balance_amount
+            )
+            history_data.save()
+            return JsonResponse({'status': 'success', 'data_received': topup_data.id, 'history_added': history_data.id})
         except Exception as e:
             return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
     return JsonResponse({'status': 'error', 'message': 'Invalid request method'}, status=400)
@@ -518,6 +525,13 @@ def user_recharge_account(request):
                 balance_history=balance_data.account_balance_amount
             )
             recharge_data.save()
+            history_data = History(
+                username=data['username'],
+                history_type='Recharge History',
+                history_message=f'You submitted a request for recharge of amount {data['amount']}.',
+                history_balance=balance_data.account_balance_amount
+            )
+            history_data.save()
             return JsonResponse({'status': 'success', 'data_received': recharge_data.recharge_id})
         except Exception as e:
             return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
@@ -572,6 +586,13 @@ def admin_approve_recharge(request):
             balance_data = Account_balance.objects.filter(username=data['username']).first()
             recharge_data.balance_history = balance_data.account_balance_amount
             recharge_data.save()
+            history_data = History(
+                username=data['username'],
+                history_type='Recharge History',
+                history_message=f'Admin approved your recharge of amount {data['amount']}.',
+                history_balance=balance_data.account_balance_amount
+            )
+            history_data.save()
             return JsonResponse({'status': 'success', 'data_received': recharge_data.recharge_id, 'account_balance': user_balance_data.account_balance_amount})
         except Exception as e:
             return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
@@ -600,6 +621,13 @@ def user_sim_activation(request):
             balance_data.account_balance_amount -= data['amount_charged']
             sim_activation_data.save()
             balance_data.save()
+            history_data = History(
+                username=data['username'],
+                history_type='Sim Activation History',
+                history_message=f'You sent a request of sim activation for amount of {data['amount']}.',
+                history_balance=balance_data.account_balance_amount
+            )
+            history_data.save()
             return JsonResponse({'status': 'success', 'data_received': sim_activation_data.id, 'account_balance': balance_data.account_balance_amount})
         except Exception as e:
             return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
@@ -635,8 +663,16 @@ def approve_sim_activation(request):
             data = json.loads(request.body)
             activation_id = data['activation_id']
             activation_data = Activate_sim.objects.filter(activation_id=activation_id).first()
+            balance_data = Account_balance.objects.filter(username=data['username']).first()
             activation_data.pending = False
             activation_data.save()
+            history_data = History(
+                username=data['username'],
+                history_type='Sim Activation History',
+                history_message=f'Your Sim Activation Approved.',
+                history_balance=balance_data.account_balance_amount
+            )
+            history_data.save()
             return JsonResponse({'status': 'success', 'data_received': activation_data.activation_id})
         except Exception as e:
             return JsonResponse({'status': 'error', 'message': str(e)}, status=500)

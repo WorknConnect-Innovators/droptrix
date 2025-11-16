@@ -141,3 +141,14 @@ class Account_balance(models.Model):
 
     def __str__(self):
         return self.username
+    
+
+class History(models.Model):
+    username = models.CharField(max_length=200)
+    history_type = models.CharField(max_length=200)
+    timestamp = models.DateTimeField(auto_now_add=True)
+    history_message = models.TextField()
+    history_balance = models.DecimalField(max_digits=10, decimal_places=2)
+
+    def __str__(self):
+        return self.username
