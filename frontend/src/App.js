@@ -18,8 +18,12 @@ import PageNotFound from './components/pageNotFound'
 import UserDashboard from './UserDashboard/pages/userDashboard'
 import Dashboard from './pages/Dashboard'
 import ActivateSim from './UserDashboard/pages/ActivateSim'
+import AddFunds from './UserDashboard/pages/addFunds'
 
 function App() {
+
+  const user = {user_type: 'superadmin', username: 'superadmin'};
+  localStorage.setItem('userData', JSON.stringify(user));
 
   return (
     <Router>
@@ -47,6 +51,7 @@ function App() {
           <Route path="plans" element={<AdminPlansPage />} />
           <Route path="topup" element={<TopUp />} />
           <Route path="activate-sim" element={<ActivateSim />} />
+          <Route path="add-funds" element={<AddFunds />} />
         </Route>
       </Routes>
     </Router>

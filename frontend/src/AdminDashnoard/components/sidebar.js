@@ -1,4 +1,4 @@
-import { HomeIcon, LayoutDashboardIcon, LogOutIcon, FolderIcon, UsersIcon, ChevronDown, ChevronRight, CompassIcon, BanknoteArrowUp } from 'lucide-react'
+import { HomeIcon, LayoutDashboardIcon, LogOutIcon, FolderIcon, UsersIcon, ChevronDown, ChevronRight, CompassIcon, BanknoteArrowUp, CircleDollarSign } from 'lucide-react'
 import React, { useEffect, useState } from 'react'
 import { FaMoneyBill, FaPlaneSlash, FaSimCard } from 'react-icons/fa'
 import { Link } from 'react-router-dom'
@@ -28,6 +28,12 @@ function Sidebar() {
             icon: <FaSimCard size={26} />,
             hasaccess: ["user"],
             route: "/dashboard/activate-sim"
+        },
+        {
+            label: "Add Funds",
+            icon: <CircleDollarSign size={26} />,
+            hasaccess: ["user"],
+            route: "/dashboard/add-funds"
         },
         {
             label: "Manage",
