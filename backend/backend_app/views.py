@@ -504,6 +504,12 @@ def make_topup_complete(request):
             topup_id = data['topup_id']
             topup_data = Topup.objects.filter(id=topup_id).first()
             topup_data.pending_status = False
+            user_balance_data = Account_balance.objects.filter(username=data['username']).first()
+            user_balance_data.account_balance_amount += topup_data.amount
+            user_balance_data.last_updated = datetime.now()
+            user_balance_data.save()
+            topup_data.balance_history = user_balance_data.account_balance_amount
+            topup_data.save()
             return JsonResponse({'status': 'success', 'data_received': topup_data.id})
         except Exception as e:
             return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
@@ -730,6 +736,19 @@ def dashboard_summary_user(request):
                     }
                 }
             )
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+    return JsonResponse({'status': 'error', 'message': 'Invalid request method'}, status=400)
+
+
+@csrf_exempt
+def get_user_account_balance(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            username = data['username']
+            balance_data = Account_balance.objects.filter(username=username).first()
+            return JsonResponse({'status': 'success', 'data_received': balance_data})
         except Exception as e:
             return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
     return JsonResponse({'status': 'error', 'message': 'Invalid request method'}, status=400)
