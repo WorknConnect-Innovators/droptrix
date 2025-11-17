@@ -49,7 +49,7 @@ function TopUp() {
     }, []);
 
     const filteredData = topUpHistory.filter((item) =>
-        item.recharge_id.toLowerCase().includes(searchTerm.toLowerCase())
+        item?.recharge_id?.toLowerCase()?.includes(searchTerm?.toLowerCase())
     );
 
     const handleSelect = (carrier) => {
