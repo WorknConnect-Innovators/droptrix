@@ -2,7 +2,7 @@ from django.shortcuts import render
 from django.http import JsonResponse, HttpResponse
 import json
 from django.views.decorators.csrf import csrf_exempt
-from backend_app.models import Feedback, Newsletter, Signup, Carriers, Plans, Payasyougo, Topup, Recharge, Activate_sim, Account_balance, History
+from backend_app.models import Feedback, Newsletter, Signup, Carriers, Plans, Payasyougo, Topup, Recharge, Activate_sim, Account_balance, History, Charges_and_Discount
 from django.core.mail import send_mail
 import random
 import string
@@ -172,6 +172,13 @@ def signup(request):
                 account_balance_amount=0.0,
             )
             user_balance.save()
+            charges_add = Charges_and_Discount(
+                username=username,
+                topup_charges=0.0,
+                recharge_charges=0.0,
+                sim_activation_charges=0.0
+            )
+            charges_add.save()
             return JsonResponse({'status': 'success', 'data_received': signup_data.id, 'account_balance': user_balance.account_balance_amount})
         except Exception as e:
             return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
