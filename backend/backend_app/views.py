@@ -2,7 +2,7 @@ from django.shortcuts import render
 from django.http import JsonResponse, HttpResponse
 import json
 from django.views.decorators.csrf import csrf_exempt
-from backend_app.models import Feedback, Newsletter, Signup, Carriers, Plans, Payasyougo, Topup, Recharge, Activate_sim, Account_balance, History
+from backend_app.models import Feedback, Newsletter, Signup, Carriers, Plans, Payasyougo, Topup, Recharge, Activate_sim, Account_balance, History, Charges_and_Discount
 from django.core.mail import send_mail
 import random
 import string
@@ -172,6 +172,13 @@ def signup(request):
                 account_balance_amount=0.0,
             )
             user_balance.save()
+            charges_add = Charges_and_Discount(
+                username=username,
+                topup_charges=0.0,
+                recharge_charges=0.0,
+                sim_activation_charges=0.0
+            )
+            charges_add.save()
             return JsonResponse({'status': 'success', 'data_received': signup_data.id, 'account_balance': user_balance.account_balance_amount})
         except Exception as e:
             return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
@@ -504,6 +511,12 @@ def make_topup_complete(request):
             topup_id = data['topup_id']
             topup_data = Topup.objects.filter(id=topup_id).first()
             topup_data.pending_status = False
+            user_balance_data = Account_balance.objects.filter(username=data['username']).first()
+            user_balance_data.account_balance_amount += topup_data.amount
+            user_balance_data.last_updated = datetime.now()
+            user_balance_data.save()
+            topup_data.balance_history = user_balance_data.account_balance_amount
+            topup_data.save()
             return JsonResponse({'status': 'success', 'data_received': topup_data.id})
         except Exception as e:
             return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
@@ -733,3 +746,38 @@ def dashboard_summary_user(request):
         except Exception as e:
             return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
     return JsonResponse({'status': 'error', 'message': 'Invalid request method'}, status=400)
+
+
+@csrf_exempt
+def get_user_account_balance(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            username = data['username']
+            balance_data = Account_balance.objects.filter(username=username).first()
+            return JsonResponse({'status': 'success', 'data_received': balance_data})
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+    return JsonResponse({'status': 'error', 'message': 'Invalid request method'}, status=400)
+
+
+@csrf_exempt
+def update_charges_discount(request):
+    if request.method == "POST":
+        try:
+            data = json.loads(request.body)
+            usernames = data.get('usernames', [])
+            topup_charges = data.get('topup_charges')
+            recharge_charges = data.get('recharge_charges')
+            sim_activation_charges = data.get('sim_activation_charges')
+            if not usernames or topup_charges is None or recharge_charges is None or sim_activation_charges is None:
+                return JsonResponse({"status": "fail", "message": "Missing data"})
+            updated_count = Charges_and_Discount.objects.filter(username__in=usernames).update(
+                topup_charges=topup_charges,
+                recharge_charges=recharge_charges,
+                sim_activation_charges=sim_activation_charges
+            )
+            return JsonResponse({"status": "success", "updated_count": updated_count})
+        except Exception as e:
+            return JsonResponse({"status": "error", "message": str(e)})
+    return JsonResponse({"status": "fail", "message": "Only POST method allowed"})
