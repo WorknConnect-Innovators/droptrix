@@ -152,3 +152,13 @@ class History(models.Model):
 
     def __str__(self):
         return self.username
+    
+
+class Charges_and_Discount(models.Model):
+    username = models.CharField(max_length=200)
+    topup_charges = models.DecimalField(max_digits=10, decimal_places=2)
+    recharge_charges = models.DecimalField(max_digits=10, decimal_places=2)
+    sim_activation_charges = models.DecimalField(max_digits=10, decimal_places=2)
+
+    def __str__(self):
+        return self.username
