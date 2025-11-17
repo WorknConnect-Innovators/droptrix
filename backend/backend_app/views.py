@@ -759,3 +759,25 @@ def get_user_account_balance(request):
         except Exception as e:
             return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
     return JsonResponse({'status': 'error', 'message': 'Invalid request method'}, status=400)
+
+
+@csrf_exempt
+def update_charges_discount(request):
+    if request.method == "POST":
+        try:
+            data = json.loads(request.body)
+            usernames = data.get('usernames', [])
+            topup_charges = data.get('topup_charges')
+            recharge_charges = data.get('recharge_charges')
+            sim_activation_charges = data.get('sim_activation_charges')
+            if not usernames or topup_charges is None or recharge_charges is None or sim_activation_charges is None:
+                return JsonResponse({"status": "fail", "message": "Missing data"})
+            updated_count = Charges_and_Discount.objects.filter(username__in=usernames).update(
+                topup_charges=topup_charges,
+                recharge_charges=recharge_charges,
+                sim_activation_charges=sim_activation_charges
+            )
+            return JsonResponse({"status": "success", "updated_count": updated_count})
+        except Exception as e:
+            return JsonResponse({"status": "error", "message": str(e)})
+    return JsonResponse({"status": "fail", "message": "Only POST method allowed"})

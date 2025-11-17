@@ -54,5 +54,6 @@ urlpatterns = [
     path('api/admin/approve-activation/', views.approve_sim_activation, name='approve_sim_activation'),
     path('api/user-dashboard-summary/', views.dashboard_summary_user, name='dashboard_summary_user'),
     path('api/get-user-recharge-data/', views.get_user_recharge, name='get_user_recharge'),
-    path('api/get-user-account-balance/', views.get_user_account_balance, name='get_user_account_balance')
+    path('api/get-user-account-balance/', views.get_user_account_balance, name='get_user_account_balance'),
+    path('api/update-charges-discount/', views.update_charges_discount, name='update_charges_discount')
 ]
