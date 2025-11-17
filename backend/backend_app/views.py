@@ -12,6 +12,7 @@ from django.conf import settings
 from backend.settings import SECRET_KEY
 from django.core.mail import EmailMessage
 from django.core.mail import EmailMultiAlternatives
+from django.forms.models import model_to_dict
 
 
 @csrf_exempt
@@ -755,7 +756,8 @@ def get_user_account_balance(request):
             data = json.loads(request.body)
             username = data['username']
             balance_data = Account_balance.objects.filter(username=username).first()
-            return JsonResponse({'status': 'success', 'data_received': balance_data})
+            balance_json = model_to_dict(balance_data)
+            return JsonResponse({'status': 'success', 'data_received': balance_json})
         except Exception as e:
             return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
     return JsonResponse({'status': 'error', 'message': 'Invalid request method'}, status=400)
