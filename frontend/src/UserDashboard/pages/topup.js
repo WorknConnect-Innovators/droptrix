@@ -12,7 +12,7 @@ function TopUp() {
     const [rephoneNumber, setRephoneNumber] = useState("");
     const [isProcessing, setIsProcessing] = useState(false);
     const [error, setError] = useState("");
-    const [availableBalance, setAvailableBalance] = useState(150);
+    const [availableBalance, setAvailableBalance] = useState(0);
 
     useEffect(() => {
         const carrierID = JSON.parse(localStorage.getItem("selectedCarrierID"));
@@ -30,6 +30,27 @@ function TopUp() {
         fetchCarriers();
     }, []);
 
+    const loadBalance = async () => {
+        try {
+            const res = await fetch(
+                `${process.env.REACT_APP_API_URL_PRODUCTION}/api/get-user-account-balance/`,
+                {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ username: JSON.parse(localStorage.getItem("userData")).username }),
+                }
+            );
+            const data = await res.json();
+
+            console.log(data)
+
+            if (data.status === "success") {
+                setAvailableBalance(data.data);
+            }
+        } catch (error) {
+            console.error(error);
+        }
+    };
 
     const loadData = async () => {
         try {
@@ -46,6 +67,7 @@ function TopUp() {
 
     useEffect(() => {
         loadData();
+        loadBalance()
     }, []);
 
     const filteredData = topUpHistory.filter((item) =>
