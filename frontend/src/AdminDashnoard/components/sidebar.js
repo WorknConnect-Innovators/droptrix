@@ -18,6 +18,12 @@ function Sidebar() {
             route: "/dashboard"
         },
         {
+            label: "Add Funds",
+            icon: <CircleDollarSign size={26} />,
+            hasaccess: ["user"],
+            route: "/dashboard/add-funds"
+        },
+        {
             label: "Top Up",
             icon: <BanknoteArrowUp size={26} />,
             hasaccess: ["user"],
@@ -28,12 +34,6 @@ function Sidebar() {
             icon: <FaSimCard size={26} />,
             hasaccess: ["user"],
             route: "/dashboard/activate-sim"
-        },
-        {
-            label: "Add Funds",
-            icon: <CircleDollarSign size={26} />,
-            hasaccess: ["user"],
-            route: "/dashboard/add-funds"
         },
         {
             label: "User Funds",
@@ -95,7 +95,7 @@ function Sidebar() {
             {/* Logo */}
             <div className="flex items-center justify-center w-full mb-8">
                 <img
-                    src="logo.jpg"
+                    src="/logo.jpg"
                     alt="logo"
                     className="h-16 transition-all duration-300"
                 />

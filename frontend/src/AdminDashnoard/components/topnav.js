@@ -1,5 +1,5 @@
 import React from "react";
-import { Bell, MessageSquare, ChevronRight, Home, User } from "lucide-react";
+import { Bell, MessageSquare, ChevronRight, Home, User, MenuSquare } from "lucide-react";
 import { useLocation, Link } from "react-router-dom";
 
 function AdminTopnav() {
@@ -9,9 +9,12 @@ function AdminTopnav() {
     const pathSegments = location.pathname.split("/").filter(Boolean);
 
     return (
-        <div className="w-full bg-white shadow-md px-10 py-3 flex items-center justify-between sticky top-0 z-40">
+        <div className="w-full bg-white shadow-md md:px-10 md:py-3 p-4 flex items-center justify-between sticky top-0 z-40">
+
+            <img src="/dropLogo.png" alt="logo" className="h-12 md:hidden block" />
+
             {/* Breadcrumb Section */}
-            <div className="flex items-center space-x-2 text-gray-600 text-sm font-medium">
+            <div className="md:flex hidden items-center space-x-2 text-gray-600 text-sm font-medium">
                 <Link to="/home" className="flex items-center hover:text-blue-600">
                     <Home size={18} className="mr-1" />
                     Home
@@ -37,7 +40,7 @@ function AdminTopnav() {
             </div>
 
             {/* Right Side Icons */}
-            <div className="flex items-center space-x-5">
+            <div className="items-center space-x-5 flex">
                 {/* Messages */}
                 <div className="relative cursor-pointer hover:text-blue-600 transition">
                     <MessageSquare size={22} />
@@ -60,6 +63,10 @@ function AdminTopnav() {
                         A
                     </div>
                     <User size={18} className="text-gray-500 sm:hidden md:block" />
+                </div>
+
+                <div className="md:hidden block">
+                    <MenuSquare size={28} className="md:hidden block cursor-pointer" />
                 </div>
             </div>
         </div>

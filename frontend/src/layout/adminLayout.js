@@ -10,10 +10,12 @@ const AdminDashLayout = () => {
 
     return (
         <div className="flex bg-gray-50 min-h-screen">
-            <Sidebar userType={CurrentUser?.user_type} />
-            <main className="flex-1 ml-20 transition-all duration-300">
+            <div className="md:block hidden">
+                <Sidebar userType={CurrentUser?.user_type} />
+            </div>
+            <main className="flex-1 md:ml-20 ml-0 transition-all duration-300">
                 <AdminTopnav />
-                <div className="px-10 py-6">
+                <div className="md:px-10 px-4 py-6">
                     <Outlet />
                 </div>
             </main>

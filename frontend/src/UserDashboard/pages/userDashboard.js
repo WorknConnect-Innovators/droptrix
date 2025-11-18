@@ -80,7 +80,7 @@ function UserDashboard() {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
 
                 {/* Left Panel — SIM Actions */}
-                <div className="bg-white shadow-lg rounded-2xl p-6 space-y-5 h-fit">
+                <div className="w-full bg-white shadow-lg rounded-2xl p-6 space-y-5 h-fit">
 
                     <h3 className="text-lg font-semibold mb-2">SIM Controls</h3>
 
