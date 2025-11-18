@@ -99,7 +99,7 @@ class Topup(models.Model):
     phone_no = models.CharField(max_length=200)
     username = models.CharField(max_length=200)
     request_topup = models.CharField(max_length=200)
-    pending_status = models.BooleanField(default=True)
+    status = models.CharField(max_length=200, default='Pending')
     balance_history = models.DecimalField(max_digits=10, decimal_places=3)
     timestamp = models.DateTimeField(auto_now_add=True)
 
