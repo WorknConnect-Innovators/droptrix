@@ -729,34 +729,30 @@ def dashboard_summary_user(request):
         try:
             data = json.loads(request.body)
             username = data['username']
-            active_sims_count = len(Activate_sim.objects.filter(username=username, pending=False))
-            active_sims = Activate_sim.objects.filter(username=username, pending=False)
-            available_balance = Account_balance.objects.filter(username=username).first().account_balance_amount
-            plan_ids_data = Activate_sim.objects.filter(username=username)
-            plan_ids = []
-            for i in plan_ids_data:
-                plan_ids.append(i.plan_id)
-            plan_ids = list(set(plan_ids))
-            perchased_plans = []
-            for j in plan_ids:
-                perchased_plans.append(Plans.objects.filter(plan_id=j).first())
-            topup_history = Topup.objects.filter(username=username)
-            recharge_history = Recharge.objects.filter(username=username)
-            activation_history = Activate_sim.objects.filter(username=username)
-            transaction_history = {'activation_history': activation_history, 'recharge_history': recharge_history}
-            return JsonResponse(
-                {
-                    'status': 'success',
-                    'data_received': {
-                        'active_sims_count': active_sims_count,
-                        'active_sims': active_sims,
-                        'available_balance': available_balance,
-                        'perchased_plans': perchased_plans,
-                        'topup_history': topup_history,
-                        'transaction_history': transaction_history
+            active_sims_qs = Activate_sim.objects.filter(username=username, pending=False)
+            active_sims_count = active_sims_qs.count()
+            active_sims = list(active_sims_qs.values())
+            account_balance_obj = Account_balance.objects.filter(username=username).first()
+            available_balance = account_balance_obj.account_balance_amount if account_balance_obj else 0
+            plan_ids = Activate_sim.objects.filter(username=username).values_list('plan_id', flat=True).distinct()
+            purchased_plans = list(Plans.objects.filter(plan_id__in=plan_ids).values())
+            topup_history = list(Topup.objects.filter(username=username).values())
+            recharge_history = list(Recharge.objects.filter(username=username).values())
+            activation_history = list(Activate_sim.objects.filter(username=username).values())
+            return JsonResponse({
+                'status': 'success',
+                'data_received': {
+                    'active_sims_count': active_sims_count,
+                    'active_sims': active_sims,
+                    'available_balance': available_balance,
+                    'purchased_plans': purchased_plans,
+                    'topup_history': topup_history,
+                    'transaction_history': {
+                        'activation_history': activation_history,
+                        'recharge_history': recharge_history
                     }
                 }
-            )
+            })
         except Exception as e:
             return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
     return JsonResponse({'status': 'error', 'message': 'Invalid request method'}, status=400)
