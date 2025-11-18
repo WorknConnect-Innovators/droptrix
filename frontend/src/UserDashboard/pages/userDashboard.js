@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Plus, Smartphone, Wallet, ShoppingBag, Globe2, CreditCard, ArrowUpRight } from 'lucide-react';
 import {
     LineChart,
@@ -11,6 +11,27 @@ import {
 } from "recharts";
 
 function UserDashboard() {
+
+
+    useEffect(() => {
+        const username = JSON.parse(localStorage.getItem('userData')).username;
+        console.log(username)
+        const loadData = async () => {
+            try {
+                const res = await fetch(`${process.env.REACT_APP_API_URL_PRODUCTION}/api/user-dashboard-summary/`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ username }),
+                });
+
+                const data = await res.json();
+                console.log("User Recharge Data:", data);
+            } catch (error) {
+                console.error("Error loading data:", error);
+            }
+        }
+        loadData()
+    }, [])
 
     const balanceHistory = [
         { date: "Jan", balance: 3000 },
