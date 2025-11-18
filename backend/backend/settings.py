@@ -75,10 +75,12 @@ MIDDLEWARE = [
 ROOT_URLCONF = "backend.urls"
 
 CORS_ALLOWED_ORIGINS = [
+    "https://droptrix-frontend.vercel.app",
     "http://localhost:3000",
 ]
 # CORS_ALLOW_CREDENTIALS = True
 CSRF_TRUSTED_ORIGINS = [
+    "https://droptrix-frontend.vercel.app",
     "http://localhost:3000",
 ]
 

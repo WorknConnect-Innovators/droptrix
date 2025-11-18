@@ -321,6 +321,19 @@ def get_carriers(request):
 
 
 @csrf_exempt
+def get_company_name(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            company_id = data['company_id']
+            company_name = Carriers.objects.filter(company_id=company_id).first().name
+            return JsonResponse({'status': 'success', 'data_received': company_name})
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+    return JsonResponse({'status': 'error', 'message': 'Invalid request method'}, status=400)
+
+
+@csrf_exempt
 def add_plans(request):
     if request.method == 'POST':
         try:
