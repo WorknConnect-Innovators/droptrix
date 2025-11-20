@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Plus, Smartphone, Wallet, ShoppingBag, Globe2, CreditCard, ArrowUpRight } from 'lucide-react';
 import {
     LineChart,
@@ -9,14 +9,19 @@ import {
     ResponsiveContainer,
     CartesianGrid,
 } from "recharts";
+import { Link } from 'react-router-dom';
 
 function UserDashboard() {
-
+    const [dashboardData, setDashboardData] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState("");
 
     useEffect(() => {
-        const username = JSON.parse(localStorage.getItem('userData')).username;
-        console.log(username)
+        const username = JSON.parse(localStorage.getItem('userData'))?.username;
+        if (!username) return setError("User not found");
+
         const loadData = async () => {
+            setLoading(true);
             try {
                 const res = await fetch(`${process.env.REACT_APP_API_URL_PRODUCTION}/api/user-dashboard-summary/`, {
                     method: "POST",
@@ -24,50 +29,71 @@ function UserDashboard() {
                     body: JSON.stringify({ username }),
                 });
 
+                if (!res.ok) throw new Error("Failed to fetch data");
+
                 const data = await res.json();
-                console.log("User Recharge Data:", data);
-            } catch (error) {
-                console.error("Error loading data:", error);
+                setDashboardData(data.data_received || null);
+            } catch (err) {
+                console.error(err);
+                setError("Error loading dashboard data");
+            } finally {
+                setLoading(false);
             }
-        }
-        loadData()
-    }, [])
+        };
 
-    const balanceHistory = [
-        { date: "Jan", balance: 3000 },
-        { date: "Feb", balance: 3500 },
-        { date: "Mar", balance: 2800 },
-        { date: "Apr", balance: 4200 },
-        { date: "May", balance: 5000 },
-        { date: "Jun", balance: 4700 },
-    ];
+        loadData();
+    }, []);
 
+    if (loading) return <div className="text-center py-20 text-gray-500">Loading dashboard...</div>;
+    if (error) return <div className="text-center py-20 text-red-500">{error}</div>;
+    if (!dashboardData) return <div className="text-center py-20 text-gray-500">No dashboard data available.</div>;
+
+    // Extract values
+    const { active_sims_count, available_balance, purchased_plans, topup_history, transaction_history } = dashboardData;
+
+    // Prepare cards
     const cards = [
         {
             title: "Active SIMs",
-            amount: "3 SIMs",
+            amount: `${active_sims_count || 0} SIMs`,
             icon: <Smartphone className="w-7 h-7 text-blue-600" />,
+            link: "/dashboard/activate-sim",
             bg: "bg-blue-100"
         },
         {
             title: "Total Balance",
-            amount: "$5,000",
+            amount: `$${available_balance || "0.00"}`,
             icon: <Wallet className="w-7 h-7 text-green-600" />,
+            link: '/dashboard/add-funds',
             bg: "bg-green-100"
         },
         {
             title: "Recent Plan Purchased",
-            amount: "Weekly Social Pack",
+            amount: purchased_plans?.length > 0 ? purchased_plans[0]?.plan_name : "No Plans",
             icon: <ShoppingBag className="w-7 h-7 text-purple-600" />,
+            link: '/dashboard/topup',
             bg: "bg-purple-100"
         },
     ];
 
-    const transactions = [
-        { id: 1, desc: "Top-up to UK SIM", amount: "-$10", date: "10 Jun" },
-        { id: 2, desc: "Added Balance", amount: "+$50", date: "08 Jun" },
-        { id: 3, desc: "Activated UAE SIM", amount: "-$15", date: "05 Jun" },
-    ];
+    // Prepare balance history chart
+    const balanceHistory = topup_history
+        ?.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp)) // sort ascending
+        .slice(-10) // take last 10 entries
+        .map(item => ({
+            date: new Date(item.timestamp).toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+            balance: Number(item.amount) // or running balance if needed
+        })) || [];
+
+    // Prepare transaction messages
+    const transactions = transaction_history?.recharge_history?.map((tx) => ({
+        id: tx.id,
+        desc: tx.approved
+            ? `Your account credited with $${tx.amount}`
+            : `Top-up request of $${tx.amount} is pending`,
+        amount: tx.approved ? `+$${tx.amount}` : `-$${tx.amount}`,
+        date: new Date(tx.timestamp).toLocaleDateString("en-US", { day: "numeric", month: "short", year: "numeric" })
+    })) || [];
 
     return (
         <div className="space-y-4">
@@ -89,9 +115,9 @@ function UserDashboard() {
                                 <div className="text-xl font-semibold">{card.amount}</div>
                             </div>
 
-                            <button className="bg-gray-100 p-2 rounded-full hover:bg-gray-200 transition">
+                            <Link to={card.link} state={{ fromDashboardAdd: true }} className="bg-gray-100 p-2 rounded-full hover:bg-gray-200 transition">
                                 <Plus className="w-5 h-5 text-gray-700" />
-                            </button>
+                            </Link>
                         </div>
                     </div>
                 ))}
@@ -101,70 +127,66 @@ function UserDashboard() {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
 
                 {/* Left Panel — SIM Actions */}
-                <div className="w-full bg-white shadow-lg rounded-2xl p-6 space-y-5 h-fit">
-
+                <div className="w-full bg-white shadow-lg rounded-2xl p-6 space-y-5 h-full">
                     <h3 className="text-lg font-semibold mb-2">SIM Controls</h3>
 
                     <div className="space-y-4">
-
-                        <button className="w-full flex items-center gap-3 bg-blue-50 hover:bg-blue-100 p-3 rounded-xl transition">
+                        <Link to={'/dashboard/activate-sim'} className="w-full flex items-center gap-3 bg-blue-50 hover:bg-blue-100 p-3 rounded-xl transition">
                             <Globe2 className="text-blue-600" />
                             <span className="font-medium text-gray-700">Activate International SIM</span>
-                        </button>
-
-                        <button className="w-full flex items-center gap-3 bg-green-50 hover:bg-green-100 p-3 rounded-xl transition">
+                        </Link>
+                        <Link to={'/dashboard/add-funds'} className="w-full flex items-center gap-3 bg-green-50 hover:bg-green-100 p-3 rounded-xl transition">
                             <CreditCard className="text-green-600" />
                             <span className="font-medium text-gray-700">Add Balance</span>
-                        </button>
-
-                        <button className="w-full flex items-center gap-3 bg-purple-50 hover:bg-purple-100 p-3 rounded-xl transition">
+                        </Link>
+                        <Link to={'/dashboard/topup'} className="w-full flex items-center gap-3 bg-purple-50 hover:bg-purple-100 p-3 rounded-xl transition">
                             <ArrowUpRight className="text-purple-600" />
                             <span className="font-medium text-gray-700">Recharge / Top-up SIM</span>
-                        </button>
-
+                        </Link>
                     </div>
 
                     <div className="mt-8">
                         <h4 className="font-medium text-gray-700 mb-3">Active SIMs</h4>
-
                         <div className="space-y-3">
-                            <div className="p-3 rounded-lg border flex justify-between items-center">
-                                <span>UK SIM</span>
-                                <span className="text-xs bg-green-100 text-green-600 px-2 py-1 rounded-lg">Active</span>
-                            </div>
-                            <div className="p-3 rounded-lg border flex justify-between items-center">
-                                <span>UAE SIM</span>
-                                <span className="text-xs bg-green-100 text-green-600 px-2 py-1 rounded-lg">Active</span>
-                            </div>
-                            <div className="p-3 rounded-lg border flex justify-between items-center">
-                                <span>Canada SIM</span>
-                                <span className="text-xs bg-yellow-100 text-yellow-600 px-2 py-1 rounded-lg">Pending</span>
-                            </div>
+                            {dashboardData.active_sims?.length > 0
+                                ? dashboardData.active_sims.map((sim, idx) => (
+                                    <div key={idx} className="p-3 rounded-lg border flex justify-between items-center">
+                                        <span>{sim.phone_no}</span>
+                                        <span className={`text-xs px-2 py-1 rounded-lg ${sim.status === "Pending" ? "bg-yellow-100 text-yellow-600" : "bg-green-100 text-green-600"}`}>
+                                            {sim.status}
+                                        </span>
+                                    </div>
+                                ))
+                                : <div className="text-gray-400 text-sm">No active SIMs</div>
+                            }
                         </div>
                     </div>
-
                 </div>
 
                 {/* Center Panel — Balance Chart */}
                 <div className="bg-white shadow-lg rounded-2xl p-6 col-span-2 h-full">
                     <h2 className="text-xl font-semibold mb-4">Balance History</h2>
-                    <div className="w-full min-h-80 h-full pb-10">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <LineChart data={balanceHistory}>
-                                <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
-                                <XAxis dataKey="date" stroke="#555" />
-                                <YAxis stroke="#555" />
-                                <Tooltip />
-                                <Line
-                                    type="monotone"
-                                    dataKey="balance"
-                                    stroke="#4f46e5"
-                                    strokeWidth={3}
-                                    dot={{ r: 5, fill: "#4f46e5" }}
-                                    activeDot={{ r: 7 }}
-                                />
-                            </LineChart>
-                        </ResponsiveContainer>
+                    <div className="w-full min-h-96 h-full pb-10">
+                        {balanceHistory.length > 0 ? (
+                            <ResponsiveContainer width="100%" height="100%">
+                                <LineChart data={balanceHistory}>
+                                    <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
+                                    <XAxis dataKey="date" stroke="#555" />
+                                    <YAxis stroke="#555" />
+                                    <Tooltip />
+                                    <Line
+                                        type="monotone"
+                                        dataKey="balance"
+                                        stroke="#4f46e5"
+                                        strokeWidth={3}
+                                        dot={{ r: 5, fill: "#4f46e5" }}
+                                        activeDot={{ r: 7 }}
+                                    />
+                                </LineChart>
+                            </ResponsiveContainer>
+                        ) : (
+                            <div className="text-gray-400 text-center py-20">No balance history available</div>
+                        )}
                     </div>
                 </div>
             </div>
@@ -174,15 +196,15 @@ function UserDashboard() {
                 <h3 className="text-lg font-semibold mb-4">Recent Activity</h3>
 
                 <div className="space-y-4">
-                    {transactions.map(tx => (
+                    {transactions.length > 0 ? transactions.slice(-10).reverse().map(tx => (
                         <div key={tx.id} className="p-4 shadow-sm rounded-xl border flex justify-between items-center hover:bg-gray-50 transition">
                             <div>
                                 <div className="font-medium text-gray-800">{tx.desc}</div>
                                 <div className="text-xs text-gray-500">{tx.date}</div>
                             </div>
-                            <div className="font-semibold">{tx.amount}</div>
+                            <div className={`font-semibold ${tx.amount.startsWith('+') ? 'text-green-600' : 'text-red-600'}`}>{tx.amount}</div>
                         </div>
-                    ))}
+                    )) : <div className="text-gray-400 text-center py-10">No recent activity</div>}
                 </div>
             </div>
 

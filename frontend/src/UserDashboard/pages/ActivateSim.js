@@ -3,8 +3,13 @@ import { Search, Edit2, Trash2, Plus, DeleteIcon, CircleDollarSign, ListFilterIc
 import { getCarriersFromBackend } from "../../utilities/getCarriers";
 import { getPlansFromBackend } from "../../utilities/getPlans";
 import { FaQuestion } from "react-icons/fa";
+import { useLocation } from "react-router-dom";
+import { message } from "antd";
 
 function ActivateSim() {
+
+    const location = useLocation()
+    const fromDashboardAdd = location.state?.fromDashboardAdd || false;
     const [searchTerm, setSearchTerm] = useState("");
     const [isAddingSim, setIsAddingSim] = useState(false);
     const [carriers, setCarriers] = useState([]);
@@ -30,17 +35,32 @@ function ActivateSim() {
     const [totalPages, setTotalPages] = useState(1);
 
     const [simNumber, setSimNumber] = useState("");
-    const [EID, setEID] = useState("");
+    const [eid, setEid] = useState("");
+    const [iccid, setIccid] = useState("");
+    const [emi, setEmi] = useState("");
+    const [zipCode, setZipCode] = useState("");
+    const [pinCode, setPinCode] = useState("");
+    const [email, setEmail] = useState("");
+    const [error, setError] = useState("");
 
     const [formData, setFormData] = useState({
-        planType: "Sim",
+        simType: "Sim", // "Sim" or "E-Sim"
     });
 
-    const [error, setError] = useState(""); // For validation errors
-    const [balance, setBalance] = useState(10); // Example account balance, you can fetch it from API
+    const [balance, setBalance] = useState(100);
+
+    useEffect(() => {
+        if (fromDashboardAdd) {
+            setIsAddingSim(true);
+        } else {
+            setIsAddingSim(false);
+        }
+    }, [fromDashboardAdd])
 
     const handleChange = (e) => {
-        setFormData({ ...formData, [e.target.name]: e.target.value });
+        const { name, value } = e.target;
+        setFormData(prev => ({ ...prev, [name]: value }));
+        setError("");
     };
 
     useEffect(() => {
@@ -130,54 +150,145 @@ function ActivateSim() {
         setCurrentPage(1);
     }, [searchTerm, selctedFilter]);
 
+    // ---- helper validators ----
+    const isDigits = (s) => /^\d+$/.test(s || "");
+    const isValidEmail = (s) =>
+        /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test((s || "").trim());
+
+
+    // ---- updated handleActivateSim with full validation ----
     const handleActivateSim = () => {
-        // Validation
-        if (!simNumber || !EID) {
-            setError("Please fill all details!");
+        setError("");
+
+        // Basic required
+        if (!simNumber?.trim()) {
+            setError("Please enter the SIM number.");
             return;
         }
 
-        if (EID.startsWith("0")) {
-            setError("EID cannot start with 0");
+        // ICCID required and exactly 32 digits
+        if (!iccid) {
+            setError("Please enter ICCID (32 digits).");
+            return;
+        }
+        if (!isDigits(iccid) || iccid.length !== 32) {
+            setError("ICCID must be exactly 32 digits.");
             return;
         }
 
-        if (EID.length > 10) {
-            setError("EID cannot be more than 10 digits");
+        // Conditional fields based on SIM type
+        if (formData.simType === "E-Sim") {
+            // EID required, numeric, max 10, cannot start with 0
+            if (!eid) {
+                setError("Please enter EID for E-SIM.");
+                return;
+            }
+            if (!isDigits(eid)) {
+                setError("EID must contain digits only.");
+                return;
+            }
+            if (eid.startsWith("0")) {
+                setError("EID cannot start with 0.");
+                return;
+            }
+            if (eid.length > 10) {
+                setError("EID cannot be more than 10 digits.");
+                return;
+            }
+        } else {
+            // Sim type -> EMI required
+            if (!emi) {
+                setError("Please enter EMI for SIM type.");
+                return;
+            }
+            if (!isDigits(emi)) {
+                setError("EMI must contain digits only.");
+                return;
+            }
+            if (emi.length > 15) {
+                setError("EMI cannot be more than 15 digits.");
+                return;
+            }
+        }
+
+        // Zip / PIN optional but if provided should be digits
+        if (zipCode && !isDigits(zipCode)) {
+            setError("ZIP Code must contain digits only.");
+            return;
+        }
+        if (pinCode && !isDigits(pinCode)) {
+            setError("PIN Code must contain digits only.");
             return;
         }
 
-        if (balance < selectedPlanDetails.plan_price) {
-            setError("Insufficient account balance");
+        // Email optional but if provided must be valid
+        if (email && !isValidEmail(email)) {
+            setError("Please enter a valid email address.");
             return;
         }
 
-        const carrierName = carriers.find((c) => c.company_id === selectedCarrier)?.name;
+        // Example account balance check (keeps your original behavior)
+        if (selectedPlanDetails && typeof selectedPlanDetails.plan_price !== "undefined") {
+            const price = Number(selectedPlanDetails.plan_price);
+            if (!Number.isFinite(price)) {
+                // skip or handle as needed
+            } else if (balance < price) {
+                setError("Insufficient account balance");
+                return;
+            }
+        }
 
         const newSim = {
             id: sims.length + 1,
             simNumber,
-            EID,
-            carrier: carrierName || "Unknown",
+            eid: eid || null,
+            emi: emi || null,
+            iccid,
+            carrier: selectedCarrier || "Unknown",
+            plan: selectedPlan || "Unknown",
             status: "Active",
         };
 
-        setSims([...sims, newSim]);
+        console.log("Activating SIM with data:", newSim);
 
-        // Deduct balance
-        setBalance((prev) => prev - selectedPlanDetails.plan_price);
+        setSims((prev) => [...prev, newSim]);
 
-        // Reset
+        if (selectedPlanDetails && typeof selectedPlanDetails.plan_price !== "undefined") {
+            setBalance((prev) => prev - Number(selectedPlanDetails.plan_price));
+        }
+
+        // Reset fields
         setIsAddingSim(false);
         setSelectedCarrier(null);
         setSelectedPlan(null);
         setAddingDetails(false);
         setSimNumber("");
-        setEID("");
+        setEid("");
+        setIccid("");
+        setEmi("");
+        setZipCode("");
+        setPinCode("");
+        setEmail("");
         setError("");
 
-        alert("SIM Activated Successfully!");
+        message.success("SIM Activated Successfully!");
     };
+
+    const cancelActivation = () => {
+        setIsAddingSim(false);
+        setSelectedCarrier(null);
+        setSelectedPlan(null);
+        setAddingDetails(false);
+        setSimNumber("");
+        setEid("");
+        setIccid("");
+        setEmi("");
+        setZipCode("");
+        setPinCode("");
+        setEmail("");
+        setError("");
+    }
+
 
     return (
         <div className="bg-white shadow-lg rounded-lg py-4 overflow-hidden" >
@@ -200,13 +311,7 @@ function ActivateSim() {
                     </div>
                     {isAddingSim ? (
                         <button
-                            onClick={() => {
-                                setIsAddingSim(false)
-                                setSelectedCarrier(null);
-                                setSelectedPlan(null);
-                                setAddingDetails(false);
-                                setError("");
-                            }}
+                            onClick={cancelActivation}
                             className="w-fit lg:self-auto self-end flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg 
                                    hover:bg-blue-700 transition"
                         >
@@ -448,9 +553,9 @@ function ActivateSim() {
                                                 <label className="flex items-center gap-x-2">
                                                     <input
                                                         type="radio"
-                                                        name="planType"
+                                                        name="simType"
                                                         value="Sim"
-                                                        checked={formData.planType === "Sim"}
+                                                        checked={formData.simType === "Sim"}
                                                         onChange={handleChange}
                                                     />
                                                     Sim
@@ -459,9 +564,9 @@ function ActivateSim() {
                                                 <label className="flex items-center gap-x-2">
                                                     <input
                                                         type="radio"
-                                                        name="planType"
+                                                        name="simType"
                                                         value="E-Sim"
-                                                        checked={formData.planType === "E-Sim"}
+                                                        checked={formData.simType === "E-Sim"}
                                                         onChange={handleChange}
                                                     />
                                                     E-Sim
@@ -480,39 +585,157 @@ function ActivateSim() {
                                             />
                                         </div>
 
+                                        {/* EID (for E-SIM) */}
                                         <div>
-                                            <label className="text-sm font-medium">EID</label>
-                                            <input
-                                                type="text"
-                                                value={EID}
-                                                onChange={(e) => {
-                                                    let value = e.target.value.replace(/\D/g, ""); // digits only
-                                                    if (value.length > 10) value = value.slice(0, 10);
-                                                    setEID(value);
-                                                    setError("");
-                                                }}
-                                                className="w-full border px-4 py-2 rounded-lg mt-1"
-                                                placeholder="Enter EID"
-                                            />
-                                        </div>
-
-                                        <div className="col-span-full flex items-center gap-x-4">
-                                            <div className="w-full">
-                                                <label className="text-sm font-medium">Email</label>
+                                            <label className="text-sm font-medium">EID {formData.simType === "E-Sim" && <span className="text-xs text-gray-500"> (required)</span>}</label>
+                                            <div className="relative">
                                                 <input
                                                     type="text"
-                                                    value={EID}
+                                                    value={eid}
                                                     onChange={(e) => {
                                                         let value = e.target.value.replace(/\D/g, ""); // digits only
                                                         if (value.length > 10) value = value.slice(0, 10);
-                                                        setEID(value);
+                                                        setEid(value);
                                                         setError("");
                                                     }}
-                                                    className="w-full border px-4 py-2 rounded-lg mt-1"
-                                                    placeholder="Enter your email"
+                                                    className="w-full border px-4 py-2 rounded-lg mt-1 pr-10"
+                                                    placeholder="Enter EID"
+                                                    disabled={formData.simType !== "E-Sim"}
                                                 />
+                                                {/* question mark + tooltip */}
+                                                <div className="absolute right-2 top-1/2 -translate-y-1/2">
+                                                    <div className="group relative">
+                                                        <div className="p-1 rounded-full bg-gray-100 border">
+                                                            <FaQuestion className="w-3.5 h-3.5 text-gray-600" />
+                                                        </div>
+                                                        <div className="invisible group-hover:visible opacity-0 group-hover:opacity-100 transition-opacity absolute right-0 mt-2 w-56 bg-black text-white text-xs p-2 rounded-md z-50">
+                                                            EID: Up to 10 digits. Required for E-SIM. Cannot start with 0.
+                                                        </div>
+                                                    </div>
+                                                </div>
                                             </div>
-                                            <FaQuestion className="mt-6 ml-2" />
+                                        </div>
+
+                                        {/* ICCID - required 24 digits */}
+                                        <div>
+                                            <label className="text-sm font-medium">ICCID <span className="text-xs text-gray-500">(32 digits)</span></label>
+                                            <div className="relative">
+                                                <input
+                                                    type="text"
+                                                    value={iccid}
+                                                    onChange={(e) => {
+                                                        let value = e.target.value.replace(/\D/g, ""); // digits only
+                                                        if (value.length > 32) value = value.slice(0, 32);
+                                                        setIccid(value);
+                                                        setError("");
+                                                    }}
+                                                    className="w-full border px-4 py-2 rounded-lg mt-1 pr-10"
+                                                    placeholder="Enter ICCID (32 digits)"
+                                                />
+                                                <div className="absolute right-2 top-1/2 -translate-y-1/2">
+                                                    <div className="group relative">
+                                                        <div className="p-1 rounded-full bg-gray-100 border">
+                                                            <FaQuestion className="w-3.5 h-3.5 text-gray-600" />
+                                                        </div>
+                                                        <div className="invisible group-hover:visible opacity-0 group-hover:opacity-100 transition-opacity absolute right-0 mt-2 w-56 bg-black text-white text-xs p-2 rounded-md z-50">
+                                                            ICCID must be exactly 32 numeric digits (no spaces).
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* EMI (required for SIM) */}
+                                        <div>
+                                            <label className="text-sm font-medium">EMI {formData.simType === "Sim" && <span className="text-xs text-gray-500"> (required)</span>}</label>
+                                            <div className="relative">
+                                                <input
+                                                    type="text"
+                                                    value={emi}
+                                                    onChange={(e) => {
+                                                        let value = e.target.value.replace(/\D/g, "");
+                                                        if (value.length > 15) value = value.slice(0, 15);
+                                                        setEmi(value);
+                                                        setError("");
+                                                    }}
+                                                    className="w-full border px-4 py-2 rounded-lg mt-1 pr-10"
+                                                    placeholder="Enter EMI"
+                                                    disabled={formData.simType !== "Sim"}
+                                                />
+                                                <div className="absolute right-2 top-1/2 -translate-y-1/2">
+                                                    <div className="group relative">
+                                                        <div className="p-1 rounded-full bg-gray-100 border">
+                                                            <FaQuestion className="w-3.5 h-3.5 text-gray-600" />
+                                                        </div>
+                                                        <div className="invisible group-hover:visible opacity-0 group-hover:opacity-100 transition-opacity absolute right-0 mt-2 w-56 bg-black text-white text-xs p-2 rounded-md z-50">
+                                                            EMI: Required for physical SIMs. Digits only, up to 15 characters.
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* ZIP Code */}
+                                        <div>
+                                            <label className="text-sm font-medium">ZIP Code</label>
+                                            <input
+                                                type="text"
+                                                value={zipCode}
+                                                onChange={(e) => {
+                                                    let value = e.target.value.replace(/\D/g, "");
+                                                    if (value.length > 10) value = value.slice(0, 10);
+                                                    setZipCode(value);
+                                                    setError("");
+                                                }}
+                                                className="w-full border px-4 py-2 rounded-lg mt-1"
+                                                placeholder="Enter ZIP Code"
+                                            />
+                                        </div>
+
+                                        {/* PIN Code */}
+                                        <div>
+                                            <label className="text-sm font-medium">PIN Code</label>
+                                            <input
+                                                type="text"
+                                                value={pinCode}
+                                                onChange={(e) => {
+                                                    let value = e.target.value.replace(/\D/g, "");
+                                                    if (value.length > 10) value = value.slice(0, 10);
+                                                    setPinCode(value);
+                                                    setError("");
+                                                }}
+                                                className="w-full border px-4 py-2 rounded-lg mt-1"
+                                                placeholder="Enter PIN Code"
+                                            />
+                                        </div>
+
+                                        {/* Email with tooltip */}
+                                        <div className="col-span-full flex items-center gap-x-4">
+                                            <div className="w-full">
+                                                <label className="text-sm font-medium">Email</label>
+                                                <div className="relative">
+                                                    <input
+                                                        type="text"
+                                                        value={email}
+                                                        onChange={(e) => {
+                                                            setEmail(e.target.value);
+                                                            setError("");
+                                                        }}
+                                                        className="w-full border px-4 py-2 rounded-lg mt-1 pr-10"
+                                                        placeholder="Enter your email"
+                                                    />
+                                                    <div className="absolute right-2 top-1/2 -translate-y-1/2">
+                                                        <div className="group relative">
+                                                            <div className="p-1 rounded-full bg-gray-100 border">
+                                                                <FaQuestion className="w-3.5 h-3.5 text-gray-600" />
+                                                            </div>
+                                                            <div className="invisible group-hover:visible opacity-0 group-hover:opacity-100 transition-opacity absolute right-0 mt-2 w-56 bg-black text-white text-xs p-2 rounded-md z-50">
+                                                                Optional email - we will use this for receipts and support.
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
 
@@ -527,6 +750,7 @@ function ActivateSim() {
                                         </button>
                                     </div>
                                 </div>
+
                             </div>
                         </div>
                         <div className="flex justify-between items-center mt-2 sticky bottom-0 bg-white md:px-8 px-4 pt-3 z-20 border-t">

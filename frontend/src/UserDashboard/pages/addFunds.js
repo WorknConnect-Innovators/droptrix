@@ -1,9 +1,12 @@
 import React, { useEffect, useState } from "react";
 import { Search, Plus, X, ListFilterIcon, ChevronRight, ChevronLeft, CircleDollarSign } from "lucide-react";
 import { message } from "antd";
+import { useLocation } from "react-router-dom";
 
 
 function AddFunds() {
+    const location = useLocation();
+    const fromDashboardAdd = location.state?.fromDashboardAdd || false;
     const [searchTerm, setSearchTerm] = useState("");
     const [showForm, setShowForm] = useState(false);
     const [uploading, setUploading] = useState(false);
@@ -26,6 +29,12 @@ function AddFunds() {
 
     const [rechargeHistory, setRechargeHistory] = useState([]);
     const user = localStorage.getItem("userData") ? JSON.parse(localStorage.getItem("userData")) : null;
+
+    useEffect(() => {
+        if (fromDashboardAdd) {
+            setShowForm(true);
+        }
+    }, [fromDashboardAdd]);
 
     const [newRecharge, setNewRecharge] = useState({
         amount: "",

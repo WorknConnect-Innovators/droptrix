@@ -10,8 +10,11 @@ import {
 } from "lucide-react";
 import { getCarriersFromBackend } from "../../utilities/getCarriers";
 import { message } from "antd";
+import { useLocation } from "react-router-dom";
 
 function TopUp() {
+    const location = useLocation();
+    const fromDashboardAdd = location.state?.fromDashboardAdd || false;
     const [searchTerm, setSearchTerm] = useState("");
     const [topUpHistory, setTopUpHistory] = useState([]);
     const [isAddingTopUp, setIsAddingTopUp] = useState(false);
@@ -38,6 +41,12 @@ function TopUp() {
     const [currentPage, setCurrentPage] = useState(1);
     const [currentItems, setCurrentItems] = useState([]);
     const [totalPages, setTotalPages] = useState(1);
+
+    useEffect(() => {
+        if (fromDashboardAdd) {
+            setIsAddingTopUp(true);
+        }
+    }, [fromDashboardAdd]);
 
     useEffect(() => {
         const carrierID = JSON.parse(localStorage.getItem("selectedCarrierID"));

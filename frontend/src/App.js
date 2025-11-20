@@ -19,6 +19,8 @@ import Dashboard from './pages/Dashboard'
 import ActivateSim from './UserDashboard/pages/ActivateSim'
 import AddFunds from './UserDashboard/pages/addFunds'
 import AdminFunds from './AdminDashnoard/pages/AccountFunds/adminFunds'
+import AdminTopups from './AdminDashnoard/pages/topups/adminTopups'
+import AdminSimActivation from './AdminDashnoard/pages/simActivation/adminSimActivation'
 
 function App() {
 
@@ -47,6 +49,8 @@ function App() {
           <Route path="carriers" element={<AdminCarrierPage />} />
           <Route path="plans" element={<AdminPlansPage />} />
           <Route path="topup" element={<TopUp />} />
+          <Route path='approve-topups' element={<AdminTopups />} />
+          <Route path='approve-activation' element={<AdminSimActivation />} />
           <Route path="activate-sim" element={<ActivateSim />} />
           <Route path="add-funds" element={<AddFunds />} />
           <Route path="user-funds" element={<AdminFunds />} />

@@ -30,10 +30,22 @@ function Sidebar() {
             route: "/dashboard/topup"
         },
         {
+            label: "Top Up",
+            icon: <BanknoteArrowUp size={26} />,
+            hasaccess: ["superadmin", "admin"],
+            route: "/dashboard/approve-topups"
+        },
+        {
             label: "Activate Sim",
             icon: <FaSimCard size={26} />,
             hasaccess: ["user"],
             route: "/dashboard/activate-sim"
+        },
+        {
+            label: "Activate Sim",
+            icon: <FaSimCard size={26} />,
+            hasaccess: ["superadmin", "admin"],
+            route: "/dashboard/approve-activation"
         },
         {
             label: "User Funds",
