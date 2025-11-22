@@ -21,6 +21,7 @@ import AddFunds from './UserDashboard/pages/addFunds'
 import AdminFunds from './AdminDashnoard/pages/AccountFunds/adminFunds'
 import AdminTopups from './AdminDashnoard/pages/topups/adminTopups'
 import AdminSimActivation from './AdminDashnoard/pages/simActivation/adminSimActivation'
+import UsersPage from './AdminDashnoard/pages/Users/usersPage'
 
 function App() {
 
@@ -54,6 +55,7 @@ function App() {
           <Route path="activate-sim" element={<ActivateSim />} />
           <Route path="add-funds" element={<AddFunds />} />
           <Route path="user-funds" element={<AdminFunds />} />
+          <Route path="users" element={<UsersPage />} />
         </Route>
       </Routes>
     </Router>

@@ -60,7 +60,7 @@ function Sidebar() {
             submenu: [
                 { label: "Companies", icon: <CompassIcon size={20} />, route: "/dashboard/carriers" },
                 { label: "Plans", icon: <FaPlaneSlash size={20} />, route: "/dashboard/plans" },
-                { label: "Settings", icon: <HomeIcon size={20} />, route: "/dashboard/settings" }
+                { label: "Users", icon: <HomeIcon size={20} />, route: "/dashboard/users" }
             ]
         }
     ]
