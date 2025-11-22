@@ -544,6 +544,7 @@ def make_topup_complete(request):
         try:
             data = json.loads(request.body)
             topup_id = data['topup_id']
+            print(topup_id)
             topup_data = Topup.objects.filter(id=topup_id).first()
             topup_data.status = 'Approved'
             topup_data.save()
