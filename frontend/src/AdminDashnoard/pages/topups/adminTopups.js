@@ -24,7 +24,7 @@ function AdminTopups() {
     // Load Topup Data
     const loadData = async () => {
         try {
-            const res = await fetch(`${process.env.REACT_APP_API_URL}/api/get-topup/`);
+            const res = await fetch(`${process.env.REACT_APP_API_URL_PRODUCTION}/api/get-topup/`);
             const data = await res.json();
 
             if (data.status === "success") {
@@ -70,7 +70,7 @@ function AdminTopups() {
         if (!selectedTopup) return;
 
         try {
-            const res = await fetch(`${process.env.REACT_APP_API_URL}/api/make-topup-complete/`, {
+            const res = await fetch(`${process.env.REACT_APP_API_URL_PRODUCTION}/api/make-topup-complete/`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ topup_id: selectedTopup.id }),
@@ -94,7 +94,7 @@ function AdminTopups() {
         if (!selectedTopup) return;
 
         try {
-            const res = await fetch(`${process.env.REACT_APP_API_URL}/api/cancel-topup-data/`, {
+            const res = await fetch(`${process.env.REACT_APP_API_URL_PRODUCTION}/api/cancel-topup-data/`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ topup_id: selectedTopup.id, topup_amount: selectedTopup.amount }),
