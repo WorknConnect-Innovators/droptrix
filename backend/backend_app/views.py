@@ -511,6 +511,7 @@ def get_topup(request):
         topup_data = Topup.objects.all()
         topup_all_data = [
             {
+                'topup_id': t.id,
                 'company_id': t.company_id,
                 'amount': t.amount,
                 'phone_no': t.phone_no,
