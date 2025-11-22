@@ -177,7 +177,10 @@ def signup(request):
                 username=username,
                 topup_charges=0.0,
                 recharge_charges=0.0,
-                sim_activation_charges=0.0
+                sim_activation_charges=0.0,
+                topup_discount=0.0,
+                recharge_discount=0.0,
+                sim_activation_discount=0.0
             )
             charges_add.save()
             return JsonResponse({'status': 'success', 'data_received': signup_data.id, 'account_balance': user_balance.account_balance_amount})
@@ -798,14 +801,34 @@ def update_charges_discount(request):
             topup_charges = data.get('topup_charges')
             recharge_charges = data.get('recharge_charges')
             sim_activation_charges = data.get('sim_activation_charges')
+            topup_discount = data.get('topup_discount')
+            recharge_discount = data.get('recharge_discount')
+            sim_activation_discount = data.get('sim_activation_discount')
             if not usernames or topup_charges is None or recharge_charges is None or sim_activation_charges is None:
                 return JsonResponse({"status": "fail", "message": "Missing data"})
             updated_count = Charges_and_Discount.objects.filter(username__in=usernames).update(
                 topup_charges=topup_charges,
                 recharge_charges=recharge_charges,
-                sim_activation_charges=sim_activation_charges
+                sim_activation_charges=sim_activation_charges,
+                topup_discount=topup_discount,
+                recharge_discount=recharge_discount,
+                sim_activation_discount=sim_activation_discount
             )
             return JsonResponse({"status": "success", "updated_count": updated_count})
         except Exception as e:
             return JsonResponse({"status": "error", "message": str(e)})
     return JsonResponse({"status": "fail", "message": "Only POST method allowed"})
+
+
+@csrf_exempt
+def user_charges_discount(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            username = data['username']
+            charges_discount_data = Charges_and_Discount.objects.filter(username=username).first()
+            data_json = model_to_dict(charges_discount_data)
+            return JsonResponse({'status': 'success', 'data_received': data_json})
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+    return JsonResponse({'status': 'error', 'message': 'Invalid request method'}, status=400)
