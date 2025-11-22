@@ -188,7 +188,7 @@ def signup(request):
 
 @csrf_exempt
 def get_signup(request):
-    if request.method == 'POST':
+    if request.method == 'GET':
         signup_data = Signup.objects.all()
         signup_all_data = [
             {
