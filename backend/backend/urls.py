@@ -57,5 +57,6 @@ urlpatterns = [
     path('api/get-user-account-balance/', views.get_user_account_balance, name='get_user_account_balance'),
     path('api/update-charges-discount/', views.update_charges_discount, name='update_charges_discount'),
     path('api/get-company-name/', views.get_company_name, name='get_company_name'),
-    path('api/cancel-topup-data/', views.cancel_topup, name='cancel_topup')
+    path('api/cancel-topup-data/', views.cancel_topup, name='cancel_topup'),
+    path('api/get-user-charges-discount/', views.user_charges_discount, name='user_charges_discount')
 ]

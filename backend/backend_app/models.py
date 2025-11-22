@@ -125,6 +125,10 @@ class Activate_sim(models.Model):
     username = models.CharField(max_length=200)
     plan_id = models.CharField(max_length=200)
     phone_no = models.CharField(max_length=200)
+    eid = models.CharField(max_length=200, default=None)
+    emi = models.CharField(max_length=200, default=None)
+    iccid = models.CharField(max_length=200, default=None)
+    company_id = models.CharField(max_length=200, default=None)
     amount_charged = models.DecimalField(max_digits=10, decimal_places=2)
     offer = models.CharField(max_length=2000)
     pending = models.BooleanField(default=True)
@@ -162,6 +166,9 @@ class Charges_and_Discount(models.Model):
     topup_charges = models.DecimalField(max_digits=10, decimal_places=2)
     recharge_charges = models.DecimalField(max_digits=10, decimal_places=2)
     sim_activation_charges = models.DecimalField(max_digits=10, decimal_places=2)
+    topup_discount = models.DecimalField(max_digits=10, decimal_places=2)
+    recharge_discount = models.DecimalField(max_digits=10, decimal_places=2)
+    sim_activation_discount = models.DecimalField(max_digits=10, decimal_places=2)
 
     def __str__(self):
         return self.username
