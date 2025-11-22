@@ -194,7 +194,6 @@ def get_signup(request):
             {
                 'email': s.email,
                 'full_name': s.full_name,
-                'password': s.password,
                 'username': s.username,
                 'user_type': s.user_type
             }
