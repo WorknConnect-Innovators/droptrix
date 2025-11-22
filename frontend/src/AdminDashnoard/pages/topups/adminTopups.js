@@ -68,12 +68,13 @@ function AdminTopups() {
 
     const approveTopup = async () => {
         if (!selectedTopup) return;
+        console.log(selectedTopup);
 
         try {
             const res = await fetch(`${process.env.REACT_APP_API_URL_PRODUCTION}/api/make-topup-complete/`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ topup_id: selectedTopup.id }),
+                body: JSON.stringify({ topup_id: selectedTopup.topup_id }),
             });
 
             const data = await res.json();
@@ -97,7 +98,7 @@ function AdminTopups() {
             const res = await fetch(`${process.env.REACT_APP_API_URL_PRODUCTION}/api/cancel-topup-data/`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ topup_id: selectedTopup.id, topup_amount: selectedTopup.amount }),
+                body: JSON.stringify({ topup_id: selectedTopup.topup_id, topup_amount: selectedTopup.amount }),
             });
 
             const data = await res.json();
