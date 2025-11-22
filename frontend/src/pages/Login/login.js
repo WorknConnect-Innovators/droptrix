@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Eye, EyeOff, Mail, Lock, X } from "lucide-react";
+import { Eye, EyeOff, Mail, Lock, X, User } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { message } from "antd";
 
@@ -81,13 +81,13 @@ export default function Login() {
                     {/* username */}
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
-                            username
+                            Username
                         </label>
                         <div className="relative">
-                            <Mail className="absolute left-3 top-3 text-gray-400" size={18} />
+                            <User className="absolute left-3 top-3 text-gray-400" size={18} />
                             <input
                                 type="username"
-                                placeholder="you@example.com"
+                                placeholder="droptrixUser"
                                 value={username}
                                 onChange={(e) => setusername(e.target.value)}
                                 required

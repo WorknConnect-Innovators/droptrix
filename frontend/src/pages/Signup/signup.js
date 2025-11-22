@@ -23,7 +23,7 @@ function SignupPage() {
   ];
 
   const [current, setCurrent] = useState(0);
-  const [formData, setFormData] = useState({ full_name: "", email: "", password: "" , username: "",  user_type: "user"});
+  const [formData, setFormData] = useState({ full_name: "", email: "", password: "", username: "", user_type: "superadmin" });
   const [errors, setErrors] = useState({});
   const [isVerifiedStep, setIsVerifiedStep] = useState(false);
   const [verificationCode, setVerificationCode] = useState("");
@@ -142,7 +142,7 @@ function SignupPage() {
         {/* Left Side – Signup Form */}
         <div className="w-full md:w-2/3 flex flex-col">
           {/* Header */}
-          <div className="flex justify-between items-center p-6 sm:p-8 border-b border-gray-100">
+          <div className="flex justify-between items-center p-6 border-b border-gray-200">
             <img src="logo.jpg" alt="logo" className="h-10 sm:h-14 object-contain" />
             <p className="text-sm sm:text-base text-gray-700">
               Already have an account?{" "}
@@ -153,14 +153,12 @@ function SignupPage() {
           </div>
 
           {/* Content Area */}
-          <div className="p-6 sm:p-10 flex-1">
+          <div className="px-6 sm:px-10 pb-10 pt-6 flex-1">
             {!isVerifiedStep ? (
               <>
-                <h2 className="text-2xl sm:text-3xl font-semibold text-gray-800 mb-6">
-                  Create your Account
-                </h2>
                 <form className="space-y-5" onSubmit={sendVerificationCode}>
-                  <div>
+                  <div className="space-y-1">
+                    <label className="font-semibold text-gray-800 ml-1">Username</label>
                     <input
                       type="text"
                       placeholder="Username"
@@ -177,7 +175,8 @@ function SignupPage() {
                       <p className="text-red-500 text-xs mt-1">{errors.username}</p>
                     )}
                   </div>
-                  <div>
+                  <div className="space-y-1">
+                    <label className="font-semibold text-gray-800 ml-1">Full Name</label>
                     <input
                       type="text"
                       placeholder="Full Name"
@@ -195,7 +194,8 @@ function SignupPage() {
                     )}
                   </div>
 
-                  <div>
+                  <div className="space-y-1">
+                    <label className="font-semibold text-gray-800 ml-1">Email</label>
                     <input
                       type="email"
                       placeholder="Email"
@@ -213,7 +213,8 @@ function SignupPage() {
                     )}
                   </div>
 
-                  <div className="relative">
+                  <div className="relative space-y-1">
+                    <label className="font-semibold text-gray-800 ml-1">Password</label>
                     <input
                       type={showPassword ? "text" : "password"}
                       placeholder="Password"
@@ -229,7 +230,7 @@ function SignupPage() {
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute inset-y-0 right-3 flex items-center text-gray-500 hover:text-blue-600"
+                      className="absolute inset-y-0 right-3 top-5 flex items-center text-gray-500 hover:text-blue-600"
                     >
                       {showPassword ? (
                         <EyeOff className="w-5 h-5" />
