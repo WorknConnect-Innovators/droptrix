@@ -22,6 +22,8 @@ import AdminFunds from './AdminDashnoard/pages/AccountFunds/adminFunds'
 import AdminTopups from './AdminDashnoard/pages/topups/adminTopups'
 import AdminSimActivation from './AdminDashnoard/pages/simActivation/adminSimActivation'
 import UsersPage from './AdminDashnoard/pages/Users/usersPage'
+import AddAdmin from './AdminDashnoard/pages/Admin/addAdmin'
+import UserChargesBulk from './AdminDashnoard/pages/Taxes/userChargesBulk'
 
 function App() {
 
@@ -56,6 +58,8 @@ function App() {
           <Route path="add-funds" element={<AddFunds />} />
           <Route path="user-funds" element={<AdminFunds />} />
           <Route path="users" element={<UsersPage />} />
+          <Route path="add-admin" element={<AddAdmin />} />
+          <Route path='user-charges' element={<UserChargesBulk />} />
         </Route>
       </Routes>
     </Router>
