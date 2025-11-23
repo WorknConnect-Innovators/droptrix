@@ -6,7 +6,6 @@ import {
     CircleDollarSign,
     Clock,
     Delete,
-    Image,
     ListFilterIcon,
     Plus,
     Search,
@@ -14,6 +13,7 @@ import {
 import { getCarriersFromBackend } from "../../utilities/getCarriers";
 import { message } from "antd";
 import { useLocation } from "react-router-dom";
+import { loadDiscountCharges } from "../../utilities/discountCharges";
 
 function TopUp() {
     const location = useLocation();
@@ -23,13 +23,16 @@ function TopUp() {
     const [isAddingTopUp, setIsAddingTopUp] = useState(false);
     const [carriers, setCarriers] = useState([]);
     const [selectedCarrier, setSelectedCarrier] = useState(null);
-    const [amount, setAmount] = useState("");
+    const [amount, setAmount] = useState(0);
     const [phoneNumber, setPhoneNumber] = useState("");
     const [rephoneNumber, setRephoneNumber] = useState("");
     const [isProcessing, setIsProcessing] = useState(false);
     const [error, setError] = useState("");
     const [availableBalance, setAvailableBalance] = useState(0);
     const [loadingCarriers, setLoadingCarriers] = useState(false);
+    const [chargesPercentage, setChargesPercentage] = useState(0);
+    const [discountPercentage, setDiscountPercentage] = useState(0);
+    const [payableAmount, setPayableAmount] = useState(0);
 
     const [selectedFilter, setSelectedFilter] = useState("company_id");
     const filterOptions = [
@@ -149,6 +152,18 @@ function TopUp() {
         loadBalance();
     }, []);
 
+    useEffect(() => {
+        if (isAddingTopUp) {
+            const username = JSON.parse(localStorage.getItem("userData")).username;
+            const chargesAndDiscounts = async () => {
+                const data = await loadDiscountCharges(username, 'topup')
+                setChargesPercentage(data?.charges);
+                setDiscountPercentage(data?.discount);
+            }
+            chargesAndDiscounts();
+        }
+    }, [isAddingTopUp]);
+
     const handleSelect = (carrier) => {
         setSelectedCarrier(carrier.company_id);
         setError("");
@@ -158,6 +173,13 @@ function TopUp() {
         const value = Number(e.target.value);
         if (value % 5 === 0 && value >= 5 && value <= 200) {
             setAmount(value);
+            const finalAmount =
+                value + (value * chargesPercentage) / 100 - (value * discountPercentage) / 100;
+
+            // round to 2 decimals but keep as NUMBER
+            const roundedAmount = Number(finalAmount.toFixed(2));
+
+            setPayableAmount(roundedAmount);
             setError("");
         } else {
             setAmount(e.target.value);
@@ -209,6 +231,7 @@ function TopUp() {
                 phone_no: phoneNumber,
                 username: JSON.parse(localStorage.getItem("userData")).username,
                 request_topup: true,
+                payable_amount: payableAmount,
             };
 
             const res = await fetch(
@@ -248,6 +271,8 @@ function TopUp() {
             setIsProcessing(false);
         }
     };
+
+    console.log("payableAmount:", payableAmount);
 
     return (
         <div className="bg-white shadow-lg rounded-lg py-4 overflow-hidden">
@@ -477,6 +502,37 @@ function TopUp() {
                             {error && (
                                 <div className="text-red-600 bg-red-50 border border-red-200 p-3 rounded-lg col-span-full">
                                     ⚠️ {error}
+                                </div>
+                            )}
+
+                            {(amount !== 0 || amount !== '') && (
+                                <div className="bg-gray-50 p-5 rounded-xl shadow-sm border mt-4">
+                                    <h3 className="text-lg font-semibold text-gray-700 mb-3">Amount Summary</h3>
+
+                                    <div className="flex justify-between text-sm text-gray-600 mb-2">
+                                        <span>Base Amount</span>
+                                        <span>Rs. {amount?.toFixed(2)}</span>
+                                    </div>
+
+                                    <div className="flex justify-between text-sm text-gray-600 mb-2">
+                                        <span>Charges ({chargesPercentage}%)</span>
+                                        <span>+ Rs. {(amount * chargesPercentage / 100).toFixed(2)}</span>
+                                    </div>
+
+                                    <div className="flex justify-between text-sm text-gray-600 mb-3">
+                                        <span>Discount ({discountPercentage}%)</span>
+                                        <span>- Rs. {(amount * discountPercentage / 100).toFixed(2)}</span>
+                                    </div>
+
+                                    {/* Divider */}
+                                    <div className="border-t my-3"></div>
+
+                                    <div className="flex justify-between text-lg font-semibold text-gray-800">
+                                        <span>Total Amount</span>
+                                        <span>
+                                            Rs. {payableAmount}
+                                        </span>
+                                    </div>
                                 </div>
                             )}
 

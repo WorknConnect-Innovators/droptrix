@@ -56,38 +56,36 @@ function UsersPage() {
 
     useEffect(() => setCurrentPage(1), [searchTerm, selectedFilter]);
 
-    const handleUserCharges = (user) => {
-        setIsUserChargesOpen(true);
-        setSelectedUser(user)
-        // load discounts from localStorage if present
-        try {
-            const stored = JSON.parse(localStorage.getItem('user_discounts') || '{}')
-            const udisc = stored[user.username] || { topup: '', recharge: '', sim_activation: '' }
-            setDiscounts(udisc)
-        } catch (err) { setDiscounts({ topup: '', recharge: '', sim_activation: '' }) }
-        // populate charges if backend provides them on the user object
-        setCharges({ topup: user.topup_charges || user.topup_charge || '', recharge: user.recharge_charges || '', sim_activation: user.sim_activation_charges || '' })
-    }
-
     const handleSaveCharges = async () => {
         if (!selectedUser) return
-        const t = Number(charges.topup)
-        const r = Number(charges.recharge)
-        const s = Number(charges.sim_activation)
-        if (isNaN(t) || isNaN(r) || isNaN(s)) { message.error('Please enter valid numeric values for taxes'); return }
+        const Ct = Number(charges.topup)
+        const Cr = Number(charges.recharge)
+        const Cs = Number(charges.sim_activation)
+        const Dt = Number(discounts.topup)
+        const Dr = Number(discounts.recharge)
+        const Ds = Number(discounts.sim_activation)
+        if (isNaN(Ct) || isNaN(Cr) || isNaN(Cs) || isNaN(Dt) || isNaN(Dr) || isNaN(Ds)) { message.error('Please enter valid numeric values for taxes'); return }
 
         setSaving(true)
         try {
-            const payload = { usernames: [selectedUser.username], topup_charges: t, recharge_charges: r, sim_activation_charges: s }
-            const res = await fetch(`${process.env.REACT_APP_API_URL_PRODUCTION}/api/update-charges-discount/`, {
-                method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
-            })
+            const payload =
+            {
+                usernames: [selectedUser.username],
+                topup_charges: Ct,
+                recharge_charges: Cr,
+                sim_activation_charges: Cs,
+                topup_discount: Dt,
+                recharge_discount: Dr,
+                sim_activation_discount: Ds
+            }
+            const res = await fetch(`${process.env.REACT_APP_API_URL_PRODUCTION}/api/update-charges-discount/`,
+                {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                })
             const data = await res.json()
             if (data.status === 'success') {
-                // persist discounts locally (backend doesn't have discount fields)
-                const stored = JSON.parse(localStorage.getItem('user_discounts') || '{}')
-                stored[selectedUser.username] = discounts
-                localStorage.setItem('user_discounts', JSON.stringify(stored))
                 message.success('Charges updated successfully')
                 setIsUserChargesOpen(false)
                 setSelectedUser(null)
@@ -99,8 +97,43 @@ function UsersPage() {
         finally { setSaving(false) }
     }
 
+    const loadDiscountCharges = async (user) => {
+        setSelectedUser(user);
+        try {
+            const res = await fetch(
+                `${process.env.REACT_APP_API_URL_PRODUCTION}/api/get-user-charges-discount/`,
+                {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ username: user.username })
+                })
+            const data = await res.json()
+            if (data.status === 'success') {
+                const receivedData = data?.data_received || {}
+
+                setDiscounts({
+                    topup: receivedData.topup_discount || '',
+                    recharge: receivedData.recharge_discount || '',
+                    sim_activation: receivedData.sim_activation_discount || ''
+                })
+
+                setCharges({
+                    topup: receivedData.topup_charges || '',
+                    recharge: receivedData.recharge_charges || '',
+                    sim_activation: receivedData.sim_activation_charges || ''
+                })
+
+                setIsUserChargesOpen(true);
+            }
+
+        }
+        catch (err) {
+            console.error(err);
+        }
+    }
+
     return (
-        <div className="bg-white shadow-lg rounded-lg py-4 overflow-hidden">
+        <div className="bg-white shadow-lg rounded-lg py-4 overflow-hidden" >
             <div className="bg-white z-20">
                 <div className="flex lg:flex-row flex-col lg:justify-between lg:items-center px-4 mb-4 gap-4">
                     <div className="flex gap-x-3 items-center">
@@ -176,15 +209,15 @@ function UsersPage() {
                                 <div className='space-y-3'>
                                     <div>
                                         <label className='text-sm font-semibold'>Topup Tax (%)</label>
-                                        <input type="text" value={charges.topup} onChange={e => setCharges({...charges, topup: e.target.value})} placeholder='e.g. 2.5' className='w-full border rounded-md px-3 py-2' />
+                                        <input type="text" value={charges.topup} onChange={e => setCharges({ ...charges, topup: e.target.value })} placeholder='e.g. 2.5' className='w-full border rounded-md px-3 py-2' />
                                     </div>
                                     <div>
                                         <label className='text-sm font-semibold'>Recharge Tax (%)</label>
-                                        <input type="text" value={charges.recharge} onChange={e => setCharges({...charges, recharge: e.target.value})} placeholder='e.g. 1.0' className='w-full border rounded-md px-3 py-2' />
+                                        <input type="text" value={charges.recharge} onChange={e => setCharges({ ...charges, recharge: e.target.value })} placeholder='e.g. 1.0' className='w-full border rounded-md px-3 py-2' />
                                     </div>
                                     <div>
                                         <label className='text-sm font-semibold'>SIM Activation Tax (%)</label>
-                                        <input type="text" value={charges.sim_activation} onChange={e => setCharges({...charges, sim_activation: e.target.value})} placeholder='e.g. 0.5' className='w-full border rounded-md px-3 py-2' />
+                                        <input type="text" value={charges.sim_activation} onChange={e => setCharges({ ...charges, sim_activation: e.target.value })} placeholder='e.g. 0.5' className='w-full border rounded-md px-3 py-2' />
                                     </div>
                                 </div>
                             </div>
@@ -195,15 +228,15 @@ function UsersPage() {
                             <div className='grid md:grid-cols-3 gap-4'>
                                 <div>
                                     <label className='text-sm font-semibold'>Topup Discount (%)</label>
-                                    <input type="text" value={discounts.topup} onChange={e => setDiscounts({...discounts, topup: e.target.value})} placeholder='e.g. 10' className='w-full border rounded-md px-3 py-2' />
+                                    <input type="text" value={discounts.topup} onChange={e => setDiscounts({ ...discounts, topup: e.target.value })} placeholder='e.g. 10' className='w-full border rounded-md px-3 py-2' />
                                 </div>
                                 <div>
                                     <label className='text-sm font-semibold'>Recharge Discount (%)</label>
-                                    <input type="text" value={discounts.recharge} onChange={e => setDiscounts({...discounts, recharge: e.target.value})} placeholder='e.g. 5' className='w-full border rounded-md px-3 py-2' />
+                                    <input type="text" value={discounts.recharge} onChange={e => setDiscounts({ ...discounts, recharge: e.target.value })} placeholder='e.g. 5' className='w-full border rounded-md px-3 py-2' />
                                 </div>
                                 <div>
                                     <label className='text-sm font-semibold'>SIM Activation Discount (%)</label>
-                                    <input type="text" value={discounts.sim_activation} onChange={e => setDiscounts({...discounts, sim_activation: e.target.value})} placeholder='e.g. 0' className='w-full border rounded-md px-3 py-2' />
+                                    <input type="text" value={discounts.sim_activation} onChange={e => setDiscounts({ ...discounts, sim_activation: e.target.value })} placeholder='e.g. 0' className='w-full border rounded-md px-3 py-2' />
                                 </div>
                             </div>
                         </div>
@@ -241,7 +274,7 @@ function UsersPage() {
                                             <td className="px-10 py-3">{u.user_type}</td>
                                             <td>
                                                 <button
-                                                    onClick={() => handleUserCharges(u)}
+                                                    onClick={() => loadDiscountCharges(u)}
                                                     className="text-sm bg-blue-600 text-white px-3 py-1 rounded-lg hover:bg-blue-700 transition">Charges</button>
                                             </td>
                                         </tr>
@@ -293,7 +326,7 @@ function UsersPage() {
                 </div>
             )}
 
-        </div>
+        </div >
     )
 }
 

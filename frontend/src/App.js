@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import HomePage from './pages/Home/home'
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom'
 import SignupPage from './pages/Signup/signup'
