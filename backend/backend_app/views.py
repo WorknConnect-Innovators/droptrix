@@ -509,7 +509,7 @@ def cancel_topup(request):
             topup_amount = data['topup_amount']
             topup_data = Topup.objects.filter(id=topup_id).first()
             topup_data.status = 'Canceled'
-            history_message=f'Your request for topup of amount {data["amount"]} has canceled.'
+            history_message=f'Your request for topup of amount {topup_amount} has canceled.'
             history_data = History(
                 username=topup_data.username,
                 history_type='Topup',
