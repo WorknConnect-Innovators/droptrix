@@ -515,12 +515,12 @@ def cancel_topup(request):
                 history_type='Topup',
                 history_message=history_message
             )
-            user_balance_data = Account_balance.objects.filter(username=data['username']).first()
-            user_balance_data.account_balance_amount += topup_amount
+            user_balance_data = Account_balance.objects.filter(username=topup_data.username).first()
+            user_balance_data.account_balance_amount += topup_data.amount
             user_balance_data.last_updated = datetime.now()
             user_balance_data.save()
             topup_data.balance_history = user_balance_data.account_balance_amount
-            history_data.history_message = user_balance_data.account_balance_amount
+            history_data.history_balance = user_balance_data.account_balance_amount
             topup_data.save()
             history_data.save()
             return JsonResponse({'status': 'success', 'data_received': topup_data.id})
