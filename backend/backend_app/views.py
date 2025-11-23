@@ -709,7 +709,7 @@ def user_sim_activation(request):
                 email=data['email'],
                 postal_code=data['postal_code']
             )
-            if balance_data < data['amount_charged']:
+            if balance_data.account_balance_amount < data['amount_charged']:
                 return JsonResponse({'status': 'success', 'message': 'Insufficient balance. Please recharge your account.'}, status=200)
             balance_data.account_balance_amount -= data['amount_charged']
             sim_activation_data.save()
@@ -805,7 +805,7 @@ def dashboard_summary_user(request):
             available_balance = account_balance_obj.account_balance_amount if account_balance_obj else 0
             plan_ids = Activate_sim.objects.filter(username=username).values_list('plan_id', flat=True).distinct()
             purchased_plans = list(Plans.objects.filter(plan_id__in=plan_ids).values())
-            recent_plan = model_to_dict(Plans.objects.filter(username=username).last())
+            recent_plan = [None if purchased_plans == [] else purchased_plans[-1]]
             topup_history = list(Topup.objects.filter(username=username).values())
             recharge_history = list(Recharge.objects.filter(username=username).values())
             activation_history = list(Activate_sim.objects.filter(username=username).values())
