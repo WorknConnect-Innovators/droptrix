@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Search, Plus, X, ListFilterIcon, ChevronRight, ChevronLeft, CircleDollarSign } from "lucide-react";
+import { Search, Plus, X, ListFilterIcon, ChevronRight, ChevronLeft, CircleDollarSign, Clock, Image } from "lucide-react";
 import { message } from "antd";
 import { useLocation } from "react-router-dom";
 
@@ -8,6 +8,7 @@ function AddFunds() {
     const location = useLocation();
     const fromDashboardAdd = location.state?.fromDashboardAdd || false;
     const [searchTerm, setSearchTerm] = useState("");
+    const [loading, setLoading] = useState(false);
     const [showForm, setShowForm] = useState(false);
     const [uploading, setUploading] = useState(false);
     const [step, setStep] = useState(1);
@@ -63,6 +64,7 @@ function AddFunds() {
     };
 
     const loadData = async () => {
+        setLoading(true);
         try {
             const res = await fetch(`${process.env.REACT_APP_API_URL_PRODUCTION}/api/get-user-recharge-data/`, {
                 method: "POST",
@@ -76,6 +78,8 @@ function AddFunds() {
             }
         } catch (error) {
             console.error(error);
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -293,7 +297,7 @@ function AddFunds() {
                 {/* Scrollable table body */}
                 <div className="flex-1 overflow-y-auto w-full md:px-0 px-4">
 
-                    <table className="w-full  text-sm text-gray-700 lg:inline-table hidden">
+                    <table className="w-full  text-sm text-gray-700 md:inline-table hidden">
                         <thead className="bg-blue-50 text-gray-600 uppercase text-xs sticky top-0 z-10">
                             <tr>
                                 <th className="px-10 py-3 text-left">No</th>
@@ -305,7 +309,16 @@ function AddFunds() {
                         </thead>
 
                         <tbody>
-                            {filteredData.length > 0 ? (
+                            {loading ? (
+                                <tr>
+                                    <td
+                                        colSpan="6"
+                                        className="px-10 py-6 text-center text-gray-500"
+                                    >
+                                        loading...
+                                    </td>
+                                </tr>
+                            ) : filteredData.length > 0 ? (
                                 currentItems.slice().reverse().map((item, index) => (
                                     <tr key={item.recharge_id} className="border-t hover:bg-gray-50">
                                         <td className="px-10 py-3 font-semibold">{index <= 8 ? `0${index + 1}` : index + 1}</td>
@@ -336,57 +349,140 @@ function AddFunds() {
                                 ))
                             ) : (
                                 <tr>
-                                    <td
-                                        colSpan="6"
-                                        className="px-10 py-6 text-center text-gray-500"
-                                    >
-                                        No results found.
+                                    <td colSpan="6" className="py-10">
+                                        <div className="flex flex-col items-center justify-center text-gray-500">
+                                            {/* Icon */}
+                                            <div className="mb-3">
+                                                <svg
+                                                    xmlns="http://www.w3.org/2000/svg"
+                                                    fill="none"
+                                                    viewBox="0 0 24 24"
+                                                    strokeWidth={1.5}
+                                                    stroke="currentColor"
+                                                    className="w-16 h-16 text-gray-400"
+                                                >
+                                                    <path
+                                                        strokeLinecap="round"
+                                                        strokeLinejoin="round"
+                                                        d="M9 13h6m2 8H7a2 2 0 01-2-2V7a2 2 0 012-2h3.5L12 7h5a2 2 0 012 2v10a2 2 0 01-2 2z"
+                                                    />
+                                                </svg>
+                                            </div>
+
+                                            {/* Text */}
+                                            <p className="text-lg font-semibold text-gray-600">No Related Data</p>
+                                            <p className="text-sm text-gray-400 mb-4">
+                                                Try adjusting your filters or add a new entry.
+                                            </p>
+
+                                            {/* Button */}
+                                            <button
+                                                onClick={() => setShowForm(true)}
+                                                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+                                            >
+                                                Add New
+                                            </button>
+                                        </div>
                                     </td>
                                 </tr>
+
                             )}
                         </tbody>
                     </table>
 
-                    {filteredData.slice().reverse().map((item, index) => (
-                        <div
-                            key={item.recharge_id}
-                            className="md:hidden border rounded-xl shadow-sm p-4 mb-4 bg-white hover:shadow-md transition flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3"
-                        >
-                            {/* Left Section: Number & Time */}
-                            <div className="flex flex-col sm:flex-row sm:items-center sm:gap-6">
-                                <div className="text-gray-700 font-bold text-lg">#{index + 1}</div>
-                                <div className="text-gray-500 text-sm">{new Date(item.timestamp).toLocaleString()}</div>
+                    <div className="md:hidden">
+                        {loading ? (
+                            <div className='flex flex-col w-full h-[30vh] justify-center items-center gap-4'>
+                                <div className="loader"></div>
+                                <p className='font-semibold text-gray-300' >Loading balance history...</p>
                             </div>
-
-                            {/* Middle Section: Amount */}
-                            <div className="text-green-600 font-semibold text-lg">
-                                $ {item.amount}
-                            </div>
-
-                            {/* Screenshot */}
-                            <div>
-                                <button
-                                    onClick={() => viewScreenshot(item.payment_screenshot)}
-                                    className="text-blue-600 underline text-sm hover:text-blue-800"
+                        ) : filteredData.length > 0 ? (
+                            filteredData.slice().reverse().map((item, index) => (
+                                <div
+                                    key={item.recharge_id}
+                                    className="border rounded-xl p-5 mb-4 bg-white shadow-sm hover:shadow-lg transition-all duration-200"
                                 >
-                                    View Screenshot
+                                    {/* Top Row: Number + Time */}
+                                    <div className="flex items-center justify-between">
+                                        {/* Circle Number */}
+                                        <div className="flex items-center gap-2">
+                                            <div className="w-9 h-9 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-semibold">
+                                                {index + 1}
+                                            </div>
+                                        </div>
+
+                                        {/* Time */}
+                                        <div className="flex items-center gap-1 text-gray-500 text-xs">
+                                            <Clock size={14} className="text-gray-400" />
+                                            {new Date(item.timestamp).toLocaleString()}
+                                        </div>
+                                    </div>
+
+                                    {/* Amount Section */}
+                                    <div className="mt-4 flex items-center gap-1 text-lg font-semibold text-green-600">
+                                        <CircleDollarSign size={20} className="text-green-600" />
+                                        <span className="my-auto">{item.amount}</span>
+                                    </div>
+
+                                    {/* Actions + Status */}
+                                    <div className="mt-5 flex items-center justify-between">
+                                        {/* Screenshot Button */}
+                                        <button
+                                            onClick={() => viewScreenshot(item.payment_screenshot)}
+                                            className="flex items-center gap-1 text-blue-600 text-sm font-medium hover:text-blue-800"
+                                        >
+                                            <Image size={16} className="my-auto" />
+                                            <span className="my-auto">View Screenshot</span>
+                                        </button>
+
+                                        {/* Status Badge */}
+                                        {item.approved ? (
+                                            <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-semibold">
+                                                Approved
+                                            </span>
+                                        ) : (
+                                            <span className="px-3 py-1 bg-yellow-100 text-yellow-700 rounded-full text-xs font-semibold">
+                                                Pending
+                                            </span>
+                                        )}
+                                    </div>
+                                </div>
+                            ))) : (
+                            <div className="flex flex-col items-center justify-center text-gray-500">
+                                {/* Icon */}
+                                <div className="mb-3">
+                                    <svg
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        fill="none"
+                                        viewBox="0 0 24 24"
+                                        strokeWidth={1.5}
+                                        stroke="currentColor"
+                                        className="w-16 h-16 text-gray-400"
+                                    >
+                                        <path
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                            d="M9 13h6m2 8H7a2 2 0 01-2-2V7a2 2 0 012-2h3.5L12 7h5a2 2 0 012 2v10a2 2 0 01-2 2z"
+                                        />
+                                    </svg>
+                                </div>
+
+                                {/* Text */}
+                                <p className="text-lg font-semibold text-gray-600">No Related Data</p>
+                                <p className="text-sm text-gray-400 mb-4">
+                                    Try adjusting your filters or add a new entry.
+                                </p>
+
+                                {/* Button */}
+                                <button
+                                    onClick={() => setShowForm(true)}
+                                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+                                >
+                                    Add New
                                 </button>
                             </div>
-
-                            {/* Status */}
-                            <div>
-                                {item.approved ? (
-                                    <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-medium">
-                                        Approved
-                                    </span>
-                                ) : (
-                                    <span className="px-3 py-1 bg-yellow-100 text-yellow-700 rounded-full text-xs font-medium">
-                                        Pending
-                                    </span>
-                                )}
-                            </div>
-                        </div>
-                    ))}
+                        )}
+                    </div>
                 </div>
 
                 {/* Sticky footer / pagination */}

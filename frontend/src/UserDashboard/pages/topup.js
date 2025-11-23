@@ -3,7 +3,10 @@ import {
     BanknoteArrowUp,
     ChevronLeft,
     ChevronRight,
+    CircleDollarSign,
+    Clock,
     Delete,
+    Image,
     ListFilterIcon,
     Plus,
     Search,
@@ -26,6 +29,7 @@ function TopUp() {
     const [isProcessing, setIsProcessing] = useState(false);
     const [error, setError] = useState("");
     const [availableBalance, setAvailableBalance] = useState(0);
+    const [loadingCarriers, setLoadingCarriers] = useState(false);
 
     const [selectedFilter, setSelectedFilter] = useState("company_id");
     const filterOptions = [
@@ -41,6 +45,7 @@ function TopUp() {
     const [currentPage, setCurrentPage] = useState(1);
     const [currentItems, setCurrentItems] = useState([]);
     const [totalPages, setTotalPages] = useState(1);
+    const [loading, setLoading] = useState(false);
 
     useEffect(() => {
         if (fromDashboardAdd) {
@@ -57,9 +62,11 @@ function TopUp() {
     }, [isAddingTopUp]);
 
     useEffect(() => {
+        setLoadingCarriers(true)
         const fetchCarriers = async () => {
             const response = await getCarriersFromBackend();
             setCarriers(response);
+            setLoadingCarriers(false);
         };
         fetchCarriers();
     }, []);
@@ -87,6 +94,7 @@ function TopUp() {
     };
 
     const loadData = async () => {
+        setLoading(true);
         try {
             const res = await fetch(`${process.env.REACT_APP_API_URL_PRODUCTION}/api/get-topup/`);
             const data = await res.json();
@@ -96,16 +104,17 @@ function TopUp() {
             }
         } catch (error) {
             console.error(error);
+        } finally {
+            setLoading(false)
         }
     };
-
 
     const filteredData = useMemo(() => {
         return topUpHistory
             .filter((item) => {
                 // 🔹 Step 1: Apply preFilter (status-based filtering)
-                if (preFilter === "approved" && item.pending_status) return false;
-                if (preFilter === "pending" && !item.pending_status) return false;
+                if (preFilter === "approved" && !item.pending_status) return false;
+                if (preFilter === "pending" && item.pending_status) return false;
 
                 return true;
             })
@@ -251,7 +260,7 @@ function TopUp() {
 
                         <div>
                             <h1 className="text-gray-900 font-extrabold lg:text-xl md:text-lg text-base tracking-wide">
-                                SIM Top-Up History
+                                SIM Top-Up {!isAddingTopUp && "History"}
                             </h1>
 
                             <p className="text-gray-400/80 font-medium italic lg:text-base md:text-sm text-xs">
@@ -279,7 +288,7 @@ function TopUp() {
                             className="w-fit lg:self-auto self-end flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg 
                                    hover:bg-blue-700 transition"
                         >
-                            <Plus size={18} /> Add Balance
+                            <Plus size={18} /> Make a Top-up
                         </button>
                     )}
 
@@ -376,7 +385,11 @@ function TopUp() {
                     <div className="flex-1 overflow-y-auto w-full md:px-20 px-4 py-1 ">
                         <label className="text-lg font-semibold mb-4 text-gray-700">Select Carrier</label>
                         <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6 mt-4 mb-8">
-                            {carriers.map((carrier, index) => {
+                            {loadingCarriers ? (
+                                <div className="dotsLoader"></div>
+                            ) : carriers.length === 0 ? (
+                                <div className="text-gray-500 col-span-full">No carriers available.</div>
+                            ) : carriers.map((carrier, index) => {
                                 const isSelected = selectedCarrier === carrier.company_id;
                                 return (
                                     <div
@@ -493,7 +506,7 @@ function TopUp() {
             ) : (
                 <div className="flex flex-col md:h-[59vh] h-[54vh] w-full">
                     <div className="flex-1 overflow-y-auto w-full md:px-0 px-4">
-                        <table className="w-full text-sm text-gray-700 lg:inline-table hidden">
+                        <table className="w-full text-sm text-gray-700 md:inline-table hidden">
                             <thead className="bg-blue-50 text-gray-600 uppercase text-xs sticky top-0 z-10">
                                 <tr>
                                     <th className="px-10 py-3 text-left">No</th>
@@ -505,7 +518,16 @@ function TopUp() {
                             </thead>
 
                             <tbody>
-                                {currentItems.length > 0 ? (
+                                {loading ? (
+                                    <tr>
+                                        <td
+                                            colSpan="5"
+                                            className="px-6 py-6 text-center text-gray-500"
+                                        >
+                                            Loading...
+                                        </td>
+                                    </tr>
+                                ) : currentItems.length > 0 ? (
                                     [...currentItems]
                                         .reverse()
                                         .map((item, index) => (
@@ -535,16 +557,134 @@ function TopUp() {
                                         ))
                                 ) : (
                                     <tr>
-                                        <td
-                                            colSpan="5"
-                                            className="px-6 py-6 text-center text-gray-500"
-                                        >
-                                            No results found.
+                                        <td colSpan="6" className="py-10">
+                                            <div className="flex flex-col items-center justify-center text-gray-500">
+                                                {/* Icon */}
+                                                <div className="mb-3">
+                                                    <svg
+                                                        xmlns="http://www.w3.org/2000/svg"
+                                                        fill="none"
+                                                        viewBox="0 0 24 24"
+                                                        strokeWidth={1.5}
+                                                        stroke="currentColor"
+                                                        className="w-16 h-16 text-gray-400"
+                                                    >
+                                                        <path
+                                                            strokeLinecap="round"
+                                                            strokeLinejoin="round"
+                                                            d="M9 13h6m2 8H7a2 2 0 01-2-2V7a2 2 0 012-2h3.5L12 7h5a2 2 0 012 2v10a2 2 0 01-2 2z"
+                                                        />
+                                                    </svg>
+                                                </div>
+
+                                                {/* Text */}
+                                                <p className="text-lg font-semibold text-gray-600">No Related Data</p>
+                                                <p className="text-sm text-gray-400 mb-4">
+                                                    Try adjusting your filters or add a new entry.
+                                                </p>
+
+                                                {/* Button */}
+                                                <button
+                                                    onClick={() => setIsAddingTopUp(true)}
+                                                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+                                                >
+                                                    Add New
+                                                </button>
+                                            </div>
                                         </td>
                                     </tr>
                                 )}
                             </tbody>
                         </table>
+
+
+                        <div className="md:hidden">
+                            {loading ? (
+                                <div className='flex flex-col w-full h-[30vh] justify-center items-center gap-4'>
+                                    <div className="loader"></div>
+                                    <p className='font-semibold text-gray-300' >Loading balance history...</p>
+                                </div>
+                            ) : filteredData.length > 0 ? (
+                                filteredData.slice().reverse().map((item, index) => (
+                                    <div
+                                        key={item.recharge_id}
+                                        className="border rounded-xl p-5 mb-4 bg-white shadow-sm hover:shadow-lg transition-all duration-200"
+                                    >
+                                        {/* Top Row: Number + Time */}
+                                        <div className="flex items-center justify-between">
+                                            {/* Circle Number */}
+                                            <div className="flex items-center gap-2">
+                                                <div className="w-9 h-9 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-semibold">
+                                                    {index + 1}
+                                                </div>
+                                            </div>
+
+                                            {/* Time */}
+                                            <div className="flex items-center gap-1 text-gray-500 text-xs">
+                                                <Clock size={14} className="text-gray-400" />
+                                                {item.phone_no}
+                                            </div>
+                                        </div>
+
+                                        {/* Amount Section */}
+                                        <div className="mt-4 flex items-center gap-1 text-lg font-semibold text-green-600">
+                                            <CircleDollarSign size={20} className="text-green-600" />
+                                            <span className="my-auto">{item.amount}</span>
+                                        </div>
+
+                                        {/* Actions + Status */}
+                                        <div className="mt-5 flex items-center justify-between">
+
+                                            <p className="text-sm text-gray-600" >{item.company_id}</p>
+
+                                            {/* Status Badge */}
+                                            {item.request_topup ? (
+                                                <span className="px-3 py-1 bg-yellow-100 text-yellow-700 rounded-full text-xs font-semibold">
+                                                    Pending
+                                                </span>
+                                            ) : (
+                                                <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-semibold">
+                                                    Approved
+                                                </span>
+                                            )}
+                                        </div>
+                                    </div>
+                                ))) : (
+                                <div className="flex flex-col items-center justify-center text-gray-500">
+                                    {/* Icon */}
+                                    <div className="mb-3">
+                                        <svg
+                                            xmlns="http://www.w3.org/2000/svg"
+                                            fill="none"
+                                            viewBox="0 0 24 24"
+                                            strokeWidth={1.5}
+                                            stroke="currentColor"
+                                            className="w-16 h-16 text-gray-400"
+                                        >
+                                            <path
+                                                strokeLinecap="round"
+                                                strokeLinejoin="round"
+                                                d="M9 13h6m2 8H7a2 2 0 01-2-2V7a2 2 0 012-2h3.5L12 7h5a2 2 0 012 2v10a2 2 0 01-2 2z"
+                                            />
+                                        </svg>
+                                    </div>
+
+                                    {/* Text */}
+                                    <p className="text-lg font-semibold text-gray-600">No Related Data</p>
+                                    <p className="text-sm text-gray-400 mb-4">
+                                        Try adjusting your filters or add a new entry.
+                                    </p>
+
+                                    {/* Button */}
+                                    <button
+                                        onClick={() => setIsAddingTopUp(true)}
+                                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+                                    >
+                                        Add New
+                                    </button>
+                                </div>
+                            )}
+                        </div>
                     </div>
 
                     {/* Pagination Footer */}

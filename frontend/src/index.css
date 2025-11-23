@@ -29,3 +29,56 @@ code {
 .font-cinzel {
   font-family: 'Cinzel', serif;
 }
+
+
+.loader {
+  width: 70px;
+  aspect-ratio: 1;
+  --c: no-repeat linear-gradient(#2941c9 0 0);
+  background:
+    var(--c) 0% 100%,
+    var(--c) 50% 100%,
+    var(--c) 100% 100%;
+  animation: l2 1s infinite linear;
+}
+
+@keyframes l2 {
+  0% {
+    background-size: 20% 100%, 20% 100%, 20% 100%
+  }
+
+  20% {
+    background-size: 20% 60%, 20% 100%, 20% 100%
+  }
+
+  40% {
+    background-size: 20% 80%, 20% 60%, 20% 100%
+  }
+
+  60% {
+    background-size: 20% 100%, 20% 80%, 20% 60%
+  }
+
+  80% {
+    background-size: 20% 100%, 20% 100%, 20% 80%
+  }
+
+  100% {
+    background-size: 20% 100%, 20% 100%, 20% 100%
+  }
+}
+
+/* HTML: <div class="loader"></div> */
+.dotsLoader {
+  width: 40px;
+  aspect-ratio: 4;
+  background: radial-gradient(circle closest-side, #2919b9 90%, #2e15d100) 0/calc(100%/3) 100% space;
+  clip-path: inset(0 100% 0 0);
+  animation: l1 1s steps(4) infinite;
+}
+
+@keyframes l1 {
+  to {
+    clip-path: inset(0 -34% 0 0)
+  }
+}

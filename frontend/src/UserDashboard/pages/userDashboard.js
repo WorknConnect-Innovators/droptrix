@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Plus, Smartphone, Wallet, ShoppingBag, Globe2, CreditCard, ArrowUpRight } from 'lucide-react';
+import { Plus, Smartphone, Wallet, ShoppingBag, Globe2, CreditCard, ArrowUpRight, AlertTriangle, RefreshCcw, Database } from 'lucide-react';
 import {
     LineChart,
     Line,
@@ -16,37 +16,76 @@ function UserDashboard() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
 
-    useEffect(() => {
+    const loadData = async () => {
+        setLoading(true);
         const username = JSON.parse(localStorage.getItem('userData'))?.username;
         if (!username) return setError("User not found");
+        try {
+            const res = await fetch(`${process.env.REACT_APP_API_URL_PRODUCTION}/api/user-dashboard-summary/`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ username }),
+            });
 
-        const loadData = async () => {
-            setLoading(true);
-            try {
-                const res = await fetch(`${process.env.REACT_APP_API_URL_PRODUCTION}/api/user-dashboard-summary/`, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ username }),
-                });
+            if (!res.ok) throw new Error("Failed to fetch data");
 
-                if (!res.ok) throw new Error("Failed to fetch data");
+            const data = await res.json();
+            setDashboardData(data.data_received || null);
+        } catch (err) {
+            console.error(err);
+            setError("Error loading dashboard data");
+        } finally {
+            setLoading(false);
+        }
+    };
 
-                const data = await res.json();
-                setDashboardData(data.data_received || null);
-            } catch (err) {
-                console.error(err);
-                setError("Error loading dashboard data");
-            } finally {
-                setLoading(false);
-            }
-        };
-
+    useEffect(() => {
         loadData();
     }, []);
 
-    if (loading) return <div className="text-center py-20 text-gray-500">Loading dashboard...</div>;
-    if (error) return <div className="text-center py-20 text-red-500">{error}</div>;
-    if (!dashboardData) return <div className="text-center py-20 text-gray-500">No dashboard data available.</div>;
+    if (loading) return <div className='flex flex-col w-full h-[80vh] justify-center items-center gap-4'>
+        <div className="loader"></div>
+        <p className='font-semibold text-gray-300' >Loading dashboard data...</p>
+    </div>;
+    if (error)
+        return (
+            <div className="flex flex-col items-center justify-center py-20 text-center">
+                <AlertTriangle size={48} className="text-red-500 mb-4" />
+
+                <h2 className="text-xl font-semibold text-red-600">Something went wrong</h2>
+                <p className="text-gray-500 mt-1 mb-5 text-sm max-w-sm">
+                    {error || "Unexpected error occurred. Please try again."}
+                </p>
+
+                <button
+                    onClick={loadData}
+                    className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
+                >
+                    <RefreshCcw size={18} />
+                    Refresh
+                </button>
+            </div>
+        );
+
+    if (!dashboardData)
+        return (
+            <div className="flex flex-col items-center justify-center py-20 text-center">
+                <Database size={48} className="text-gray-400 mb-4" />
+
+                <h2 className="text-xl font-semibold text-gray-700">No Dashboard Data</h2>
+                <p className="text-gray-500 mt-1 mb-5 text-sm max-w-sm">
+                    It looks empty here. Try refreshing to load the latest dashboard data.
+                </p>
+
+                <button
+                    onClick={loadData}
+                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+                >
+                    <RefreshCcw size={18} />
+                    Refresh
+                </button>
+            </div>
+        );
 
     // Extract values
     const { active_sims_count, available_balance, purchased_plans, topup_history, transaction_history } = dashboardData;
