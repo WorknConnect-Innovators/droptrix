@@ -85,7 +85,7 @@ class Payasyougo(models.Model):
     zipcode = models.CharField(max_length=200)
     e_id = models.CharField(max_length=200)
     plan_id = models.CharField(max_length=200)
-    email = models.CharField(max_length=200)
+    email = models.CharField(max_length=200, unique=True)
     contact_no = models.CharField(max_length=200)
     sim_type = models.CharField(max_length=200)
 
@@ -102,6 +102,7 @@ class Topup(models.Model):
     status = models.CharField(max_length=200, default='Pending')
     balance_history = models.DecimalField(max_digits=10, decimal_places=3)
     timestamp = models.DateTimeField(auto_now_add=True)
+    payable_amount = models.DecimalField(max_digits=10, decimal_places=2)
 
     def __str__(self):
         return self.username
@@ -172,3 +173,26 @@ class Charges_and_Discount(models.Model):
 
     def __str__(self):
         return self.username
+    
+
+class Offers(models.Model):
+    username = models.CharField(max_length=200)
+    discount_percentage = models.DecimalField(max_digits=10, decimal_places=2)
+    plan_id = models.CharField(max_length=200)
+
+    def __str__(self):
+        return self.username
+    
+
+class Default_charged_discount(models.Model):
+    plan_id = models.CharField(max_length=200)
+    company_id = models.CharField(max_length=200)
+    topup_charges = models.DecimalField(max_digits=10, decimal_places=2)
+    recharge_charges = models.DecimalField(max_digits=10, decimal_places=2)
+    sim_activation_charges = models.DecimalField(max_digits=10, decimal_places=2)
+    topup_discount = models.DecimalField(max_digits=10, decimal_places=2)
+    recharge_discount = models.DecimalField(max_digits=10, decimal_places=2)
+    sim_activation_discount = models.DecimalField(max_digits=10, decimal_places=2)
+
+    def __str__(self):
+        return self.plan_id

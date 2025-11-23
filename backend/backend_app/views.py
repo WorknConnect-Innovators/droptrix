@@ -2,7 +2,7 @@ from django.shortcuts import render
 from django.http import JsonResponse, HttpResponse
 import json
 from django.views.decorators.csrf import csrf_exempt
-from backend_app.models import Feedback, Newsletter, Signup, Carriers, Plans, Payasyougo, Topup, Recharge, Activate_sim, Account_balance, History, Charges_and_Discount
+from backend_app.models import Feedback, Newsletter, Signup, Carriers, Plans, Payasyougo, Topup, Recharge, Activate_sim, Account_balance, History, Charges_and_Discount, Offers, Default_charged_discount
 from django.core.mail import send_mail
 import random
 import string
@@ -160,6 +160,10 @@ def signup(request):
             password = data['password']
             username = data['username']
             user_type = data['user_type']
+            user_data = Signup.objects.filter(username=username).first()
+            if user_data:
+                if user_data.username == username:
+                    return JsonResponse({'status': 'success', 'message': f"Account with username {username} already exist."})
             signup_data = Signup(
                 email=email,
                 full_name=full_name,
@@ -422,6 +426,10 @@ def add_payasyougo(request):
     if request.method == 'POST':
         try:
             data = json.loads(request.body)
+            check_data = Payasyougo.objects.filter(email=data['email']).first()
+            if check_data:
+                if check_data.email == data['email']:
+                    return JsonResponse({'status': 'success', 'message': 'Pay as you go with this email already exist.'})
             payasyougo_data = Payasyougo(
                 zipcode=data['zipcode'],
                 e_id=data['e_id'],
@@ -469,21 +477,22 @@ def add_topup(request):
                 phone_no=data['phone_no'],
                 username=data['username'],
                 request_topup=data['request_topup'],
-                balance_history=balance_data.account_balance_amount
+                balance_history=balance_data.account_balance_amount,
+                payable_amount=data['payable_amount']
             )
-            history_message=f'You added a topup of amount {data["amount"]}.'
+            history_message=f'You requested a topup of amount {data["amount"]}.'
             history_data = History(
                 username=data['username'],
-                history_type='Topup History',
+                history_type='Topup',
                 history_message=history_message,
-                history_balance=balance_data.account_balance_amount
             )
-            history_data.save()
             user_balance_data = Account_balance.objects.filter(username=data['username']).first()
-            user_balance_data.account_balance_amount -= topup_data.amount
+            user_balance_data.account_balance_amount -= topup_data.payable_amount
             user_balance_data.last_updated = datetime.now()
-            user_balance_data.save()
+            history_data.history_balance = user_balance_data.account_balance_amount
             topup_data.balance_history = user_balance_data.account_balance_amount
+            user_balance_data.save()
+            history_data.save()
             topup_data.save()
             return JsonResponse({'status': 'success', 'data_received': topup_data.id, 'history_added': history_data.id})
         except Exception as e:
@@ -500,8 +509,20 @@ def cancel_topup(request):
             topup_amount = data['topup_amount']
             topup_data = Topup.objects.filter(id=topup_id).first()
             topup_data.status = 'Canceled'
-            topup_data.amount += topup_amount
+            history_message=f'Your request for topup of amount {data["amount"]} has canceled.'
+            history_data = History(
+                username=topup_data.username,
+                history_type='Topup',
+                history_message=history_message
+            )
+            user_balance_data = Account_balance.objects.filter(username=data['username']).first()
+            user_balance_data.account_balance_amount += topup_amount
+            user_balance_data.last_updated = datetime.now()
+            user_balance_data.save()
+            topup_data.balance_history = user_balance_data.account_balance_amount
+            history_data.history_message = user_balance_data.account_balance_amount
             topup_data.save()
+            history_data.save()
             return JsonResponse({'status': 'success', 'data_received': topup_data.id})
         except Exception as e:
             return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
@@ -521,7 +542,9 @@ def get_topup(request):
                 'username': t.username,
                 'request_topup': t.request_topup,
                 'status': t.status,
-                'balance_history': t.balance_history
+                'balance_history': t.balance_history,
+                'timestamp': t.timestamp,
+                'payable_amount': t.payable_amount
             }
             for t in topup_data
         ]
@@ -550,6 +573,15 @@ def make_topup_complete(request):
             topup_id = data['topup_id']
             topup_data = Topup.objects.filter(id=topup_id).first()
             topup_data.status = 'Approved'
+            history_message=f'Your request for topup of amount {data["amount"]} has approved.'
+            history_data = History(
+                username=topup_data.username,
+                history_type='Topup',
+                history_message=history_message
+            )
+            user_balance_data = Account_balance.objects.filter(username=topup_data.username).first()
+            history_data.history_balance = user_balance_data.account_balance_amount
+            history_data.save()
             topup_data.save()
             return JsonResponse({'status': 'success', 'data_received': topup_data.id})
         except Exception as e:
@@ -657,6 +689,11 @@ def user_sim_activation(request):
             activation_count = int(Recharge.objects.count())+1
             activation_id = f"ACTSIM-{datetime.now().strftime('%Y%m%d')}-{str(activation_count).zfill(4)}"
             balance_data = Account_balance.objects.filter(username=data['username']).first()
+            act_data = Activate_sim.objects.filter(email=data['email']).first()
+            if act_data:
+                if act_data.email == data['email']:
+                    return JsonResponse({'status': 'success', 'message': 'Sim activation with this email already exist.'})
+            plan_details = Plans.objects.filter(plan_id=data['plan_id']).first()
             sim_activation_data = Activate_sim(
                 activation_id=activation_id,
                 username=data['username'],
@@ -664,7 +701,13 @@ def user_sim_activation(request):
                 phone_no=data['phone_no'],
                 amount_charged=data['amount_charged'],
                 offer=data['offer'],
-                balance_history=balance_data.account_balance_amount
+                balance_history=balance_data.account_balance_amount,
+                emi=data['emi'],
+                eid=data['eid'],
+                iccid=data['iccid'],
+                company_id=plan_details.company_id,
+                email=data['email'],
+                postal_code=data['postal_code']
             )
             if balance_data < data['amount_charged']:
                 return JsonResponse({'status': 'success', 'message': 'Insufficient balance. Please recharge your account.'}, status=200)
@@ -699,7 +742,13 @@ def get_activation_data(request):
                 'offer': a.offer,
                 'pending': a.pending,
                 'timestamp': a.timestamp,
-                'balance_history': a.balance_history
+                'balance_history': a.balance_history,
+                'emi': a.emi,
+                'eid': a.eid,
+                'iccid': a.iccid,
+                'company_id': a.company_id,
+                'email': a.email,
+                'postal_code': a.postal_code
             }
             for a in activation_data
         ]
@@ -756,6 +805,7 @@ def dashboard_summary_user(request):
             available_balance = account_balance_obj.account_balance_amount if account_balance_obj else 0
             plan_ids = Activate_sim.objects.filter(username=username).values_list('plan_id', flat=True).distinct()
             purchased_plans = list(Plans.objects.filter(plan_id__in=plan_ids).values())
+            recent_plan = model_to_dict(Plans.objects.filter(username=username).last())
             topup_history = list(Topup.objects.filter(username=username).values())
             recharge_history = list(Recharge.objects.filter(username=username).values())
             activation_history = list(Activate_sim.objects.filter(username=username).values())
@@ -767,9 +817,10 @@ def dashboard_summary_user(request):
                     'available_balance': available_balance,
                     'purchased_plans': purchased_plans,
                     'topup_history': topup_history,
+                    'recent_plan': recent_plan,
                     'transaction_history': {
                         'activation_history': activation_history,
-                        'recharge_history': recharge_history
+                        'recharge_history': recharge_history,
                     }
                 }
             })
@@ -829,6 +880,137 @@ def user_charges_discount(request):
             charges_discount_data = Charges_and_Discount.objects.filter(username=username).first()
             data_json = model_to_dict(charges_discount_data)
             return JsonResponse({'status': 'success', 'data_received': data_json})
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+    return JsonResponse({'status': 'error', 'message': 'Invalid request method'}, status=400)
+
+
+@csrf_exempt
+def add_offer(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            username = data['username']
+            plan_id = data['plan_id']
+            discount_percentage = data['discount_percentage']
+            offers_data = Offers(
+                username=username,
+                discount_percentage=discount_percentage,
+                plan_id=plan_id
+            )
+            offers_data.save()
+            return JsonResponse({'status': 'success', 'data_received': offers_data})
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+    return JsonResponse({'status': 'error', 'message': 'Invalid request method'}, status=400)
+
+
+@csrf_exempt
+def get_user_offers(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            username = data.get('username')
+            if not username:
+                return JsonResponse({'status': 'error', 'message': 'username is required'}, status=400)
+            offers = Offers.objects.filter(username=username).order_by('-id')
+            unique_latest_offers = {}
+            for offer in offers:
+                if offer.plan_id not in unique_latest_offers:
+                    unique_latest_offers[offer.plan_id] = {
+                        "plan_id": offer.plan_id,
+                        "discount_percentage": str(offer.discount_percentage),
+                        "username": offer.username,
+                        "id": offer.id
+                    }
+            result = list(unique_latest_offers.values())
+            return JsonResponse({
+                "status": "success",
+                "count": len(result),
+                "offers": result
+            })
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+    return JsonResponse({'status': 'error', 'message': 'Invalid request method'}, status=400)
+
+
+@csrf_exempt
+def update_offer(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            username = data.get('username')
+            plan_id = data.get('plan_id')
+            discount_percentage = data.get('discount_percentage')
+            if not username or not plan_id:
+                return JsonResponse({
+                    'status': 'error',
+                    'message': 'username and plan_id are required'
+                }, status=400)
+            offer = Offers.objects.filter(
+                username=username,
+                plan_id=plan_id
+            ).order_by('-id').first()
+            if not offer:
+                return JsonResponse({
+                    'status': 'error',
+                    'message': 'Offer not found for this username and plan_id'
+                }, status=404)
+            if discount_percentage:
+                offer.discount_percentage = discount_percentage
+            offer.save()
+            return JsonResponse({
+                'status': 'success',
+                'message': 'Offer updated successfully',
+                'updated_offer': {
+                    'id': offer.id,
+                    'username': offer.username,
+                    'plan_id': offer.plan_id,
+                    'discount_percentage': str(offer.discount_percentage)
+                }
+            })
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+    return JsonResponse({'status': 'error', 'message': 'Invalid request method'}, status=400)
+
+
+@csrf_exempt
+def default_ch_dis(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            default_data = Default_charged_discount(
+                plan_id=data['plan_id'],
+                company_id=data['company_id'],
+                topup_charges=data['topup_charges'],
+                recharge_charges=data['recharge_charges'],
+                sim_activation_charges=data['sim_activation_charges'],
+                topup_discount=data['topup_discount'],
+                recharge_discount=data['recharge_discount'],
+                sim_activation_discount=data['sim_activation_discount']
+            )
+            default_data.save()
+            return JsonResponse({'status': 'success', 'data_received': default_data.plan_id})
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+    return JsonResponse({'status': 'error', 'message': 'Invalid request method'}, status=400)
+
+
+@csrf_exempt
+def update_default_ch_dis(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            plan_id = data['plan_id']
+            default_data = Default_charged_discount.objects.filter(plan_id=plan_id).first()
+            default_data.topup_charges = data['topup_charges'],
+            default_data.recharge_charges = data['recharge_charges'],
+            default_data.sim_activation_charges = data['sim_activation_charges'],
+            default_data.topup_discount = data['topup_discount'],
+            default_data.recharge_discount = data['recharge_discount'],
+            default_data.sim_activation_discount = data['sim_activation_discount']
+            default_data.save()
+            return JsonResponse({'status': 'success', 'data_received': default_data.plan_id})
         except Exception as e:
             return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
     return JsonResponse({'status': 'error', 'message': 'Invalid request method'}, status=400)
