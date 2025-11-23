@@ -667,7 +667,7 @@ def admin_approve_recharge(request):
             balance_data = Account_balance.objects.filter(username=data['username']).first()
             recharge_data.balance_history = balance_data.account_balance_amount
             recharge_data.save()
-            history_message=f'Admin approved your recharge of amount {data["amount"]}.'
+            history_message = f"Admin approved your recharge of amount {recharge_data.amount}."
             history_data = History(
                 username=data['username'],
                 history_type='Recharge History',
