@@ -2,7 +2,7 @@ from django.shortcuts import render
 from django.http import JsonResponse, HttpResponse
 import json
 from django.views.decorators.csrf import csrf_exempt
-from backend_app.models import Feedback, Newsletter, Signup, Carriers, Plans, Payasyougo, Topup, Recharge, Activate_sim, Account_balance, History, Charges_and_Discount
+from backend_app.models import Feedback, Newsletter, Signup, Carriers, Plans, Payasyougo, Topup, Recharge, Activate_sim, Account_balance, History, Charges_and_Discount, Offers
 from django.core.mail import send_mail
 import random
 import string
@@ -843,6 +843,95 @@ def user_charges_discount(request):
             charges_discount_data = Charges_and_Discount.objects.filter(username=username).first()
             data_json = model_to_dict(charges_discount_data)
             return JsonResponse({'status': 'success', 'data_received': data_json})
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+    return JsonResponse({'status': 'error', 'message': 'Invalid request method'}, status=400)
+
+
+@csrf_exempt
+def add_offer(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            username = data['username']
+            plan_id = data['plan_id']
+            discount_percentage = data['discount_percentage']
+            offers_data = Offers(
+                username=username,
+                discount_percentage=discount_percentage,
+                plan_id=plan_id
+            )
+            offers_data.save()
+            return JsonResponse({'status': 'success', 'data_received': offers_data})
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+    return JsonResponse({'status': 'error', 'message': 'Invalid request method'}, status=400)
+
+
+@csrf_exempt
+def get_user_offers(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            username = data.get('username')
+            if not username:
+                return JsonResponse({'status': 'error', 'message': 'username is required'}, status=400)
+            offers = Offers.objects.filter(username=username).order_by('-id')
+            unique_latest_offers = {}
+            for offer in offers:
+                if offer.plan_id not in unique_latest_offers:
+                    unique_latest_offers[offer.plan_id] = {
+                        "plan_id": offer.plan_id,
+                        "discount_percentage": str(offer.discount_percentage),
+                        "username": offer.username,
+                        "id": offer.id
+                    }
+            result = list(unique_latest_offers.values())
+            return JsonResponse({
+                "status": "success",
+                "count": len(result),
+                "offers": result
+            })
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+    return JsonResponse({'status': 'error', 'message': 'Invalid request method'}, status=400)
+
+
+@csrf_exempt
+def update_offer(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            username = data.get('username')
+            plan_id = data.get('plan_id')
+            discount_percentage = data.get('discount_percentage')
+            if not username or not plan_id:
+                return JsonResponse({
+                    'status': 'error',
+                    'message': 'username and plan_id are required'
+                }, status=400)
+            offer = Offers.objects.filter(
+                username=username,
+                plan_id=plan_id
+            ).order_by('-id').first()
+            if not offer:
+                return JsonResponse({
+                    'status': 'error',
+                    'message': 'Offer not found for this username and plan_id'
+                }, status=404)
+            if discount_percentage:
+                offer.discount_percentage = discount_percentage
+            offer.save()
+            return JsonResponse({
+                'status': 'success',
+                'message': 'Offer updated successfully',
+                'updated_offer': {
+                    'id': offer.id,
+                    'username': offer.username,
+                    'plan_id': offer.plan_id,
+                    'discount_percentage': str(offer.discount_percentage)
+                }
+            })
         except Exception as e:
             return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
     return JsonResponse({'status': 'error', 'message': 'Invalid request method'}, status=400)

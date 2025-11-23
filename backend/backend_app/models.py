@@ -172,3 +172,12 @@ class Charges_and_Discount(models.Model):
 
     def __str__(self):
         return self.username
+    
+
+class Offers(models.Model):
+    username = models.CharField(max_length=200)
+    discount_percentage = models.DecimalField(max_digits=10, decimal_places=2)
+    plan_id = models.CharField(max_length=200)
+
+    def __str__(self):
+        return self.username
