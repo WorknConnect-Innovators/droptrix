@@ -84,11 +84,7 @@ function ActivateSim() {
         }
     }, [selectedCarrier]);
 
-    const [sims, setSims] = useState([
-        { id: 1, simNumber: "923001112233", carrier: "Telenor", status: "Active", EID: "Pakistan" },
-        { id: 2, simNumber: "447700900123", carrier: "Vodafone UK", status: "Inactive", EID: "United Kingdom" },
-        { id: 3, simNumber: "971500123456", carrier: "Etisalat", status: "Active", EID: "UAE" },
-    ]);
+    const [sims, setSims] = useState([]);
 
     const handleSelectCarrier = (carrier) => {
         setSelectedCarrier(carrier.company_id);
@@ -113,6 +109,38 @@ function ActivateSim() {
             setAddingDetails(true);
         }
     }, [selectedCarrier, selectedPlan]);
+
+    // Load current user's activation requests from backend
+    const fetchUserActivations = async () => {
+        try {
+            const userData = localStorage.getItem('userData') ? JSON.parse(localStorage.getItem('userData')) : null
+            if (!userData || !userData.username) return
+            const res = await fetch(`${process.env.REACT_APP_API_URL_PRODUCTION}/api/get-activation-data/`,
+                {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: userData.username })
+                })
+            const json = await res.json()
+            if (json.status === 'success') {
+                // json.data_received is a list of activation objects (from backend view)
+                const mapped = (json.data_received || []).map((a) => ({
+                    id: a.activation_id || a.id,
+                    simNumber: a.phone_no,
+                    carrier: a.company_id || a.company_id || 'Unknown',
+                    EID: a.eid || '',
+                    status: a.pending ? 'Pending' : 'Active',
+                    plan_id: a.plan_id,
+                    amount_charged: a.amount_charged,
+                    email: a.email,
+                    timestamp: a.timestamp
+                }))
+                setSims(mapped)
+            }
+        } catch (err) { console.error('fetchUserActivations error', err) }
+    }
+
+    useEffect(() => { fetchUserActivations() }, [])
 
     const filteredData = React.useMemo(() => {
         return sims
@@ -157,7 +185,7 @@ function ActivateSim() {
 
 
     // ---- updated handleActivateSim with full validation ----
-    const handleActivateSim = () => {
+    const handleActivateSim = async () => {
         setError("");
 
         // Basic required
@@ -238,40 +266,64 @@ function ActivateSim() {
             }
         }
 
-        const newSim = {
-            id: sims.length + 1,
-            simNumber,
-            eid: eid || null,
-            emi: emi || null,
-            iccid,
-            carrier: selectedCarrier || "Unknown",
-            plan: selectedPlan || "Unknown",
-            status: "Active",
-        };
+        // Build payload according to backend expectations
+        try {
+            const userData = localStorage.getItem('userData') ? JSON.parse(localStorage.getItem('userData')) : null
+            const username = userData?.username || ''
+            const payload = {
+                username,
+                plan_id: selectedPlan,
+                phone_no: simNumber,
+                amount_charged: Number(selectedPlanDetails?.plan_price || 0),
+                offer: selectedPlanDetails?.off_percentage || 0,
+                emi: formData.simType === 'Sim' ? emi : '',
+                eid: formData.simType === 'E-Sim' ? eid : '',
+                iccid,
+                email: email || '',
+                postal_code: zipCode || ''
+            }
 
-        console.log("Activating SIM with data:", newSim);
+            console.log('Activate SIM payload:', payload);
 
-        setSims((prev) => [...prev, newSim]);
+            const res = await fetch(`${process.env.REACT_APP_API_URL_PRODUCTION}/api/user-sim-activation/`,
+                {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                })
+            const json = await res.json()
+            if (json.status === 'success') {
+                // backend returns account_balance and data_received
+                if (json.account_balance !== undefined) setBalance(json.account_balance)
+                message.success(json.message || 'SIM activation request submitted')
+                // refresh activations list
+                fetchUserActivations()
 
-        if (selectedPlanDetails && typeof selectedPlanDetails.plan_price !== "undefined") {
-            setBalance((prev) => prev - Number(selectedPlanDetails.plan_price));
+                // Reset fields & UI state
+                setIsAddingSim(false);
+                setSelectedCarrier(null);
+                setSelectedPlan(null);
+                setAddingDetails(false);
+                setSimNumber("");
+                setEid("");
+                setIccid("");
+                setEmi("");
+                setZipCode("");
+                setPinCode("");
+                setEmail("");
+                setError("");
+            } else {
+                // backend may return success with message for duplicate email, or error
+                if (json.message) {
+                    message.info(json.message)
+                } else {
+                    message.error('Failed to submit activation')
+                }
+            }
+        } catch (err) {
+            console.error('handleActivateSim error', err)
+            message.error('Server error while submitting activation')
         }
-
-        // Reset fields
-        setIsAddingSim(false);
-        setSelectedCarrier(null);
-        setSelectedPlan(null);
-        setAddingDetails(false);
-        setSimNumber("");
-        setEid("");
-        setIccid("");
-        setEmi("");
-        setZipCode("");
-        setPinCode("");
-        setEmail("");
-        setError("");
-
-        message.success("SIM Activated Successfully!");
     };
 
     const cancelActivation = () => {
