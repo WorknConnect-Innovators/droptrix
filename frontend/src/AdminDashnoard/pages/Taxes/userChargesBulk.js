@@ -74,21 +74,35 @@ export default function UserChargesBulk() {
     const t = Number(charges.topup)
     const r = Number(charges.recharge)
     const s = Number(charges.sim_activation)
-    if (isNaN(t) || isNaN(r) || isNaN(s)) { message.error('Enter valid numeric tax rates'); return }
+    const dt = Number(discounts.topup)
+    const dr = Number(discounts.recharge)
+    const ds = Number(discounts.sim_activation)
+    if (isNaN(t) || isNaN(r) || isNaN(s) || isNaN(dt) || isNaN(dr) || isNaN(ds)) { message.error('Enter valid numeric tax rates and discounts'); return }
 
     setSaving(true)
     try {
       const usernames = Array.from(selectedUsers)
-      const payload = { usernames, topup_charges: t, recharge_charges: r, sim_activation_charges: s }
+      const payload = {
+        usernames,
+        topup_charges: t,
+        recharge_charges: r,
+        sim_activation_charges: s,
+        topup_discount: dt,
+        recharge_discount: dr,
+        sim_activation_discount: ds
+      }
       const res = await fetch(`${process.env.REACT_APP_API_URL_PRODUCTION}/api/update-charges-discount/`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
       })
       const data = await res.json()
       if (data.status === 'success') {
         // save discounts locally per user until backend supports discount fields
-        const stored = JSON.parse(localStorage.getItem('user_discounts') || '{}')
-        usernames.forEach(u => { stored[u] = discounts })
-        localStorage.setItem('user_discounts', JSON.stringify(stored))
+        try {
+          const stored = JSON.parse(localStorage.getItem('user_discounts') || '{}')
+          usernames.forEach(u => { stored[u] = discounts })
+          localStorage.setItem('user_discounts', JSON.stringify(stored))
+        } catch (err) { /* ignore localStorage errors */ }
+
         message.success('Applied charges to selected users')
         setSelectedUsers(new Set())
         setSelectAllOnPage(false)
@@ -161,18 +175,18 @@ export default function UserChargesBulk() {
           <div className="space-y-2">
             <div className="text-sm font-semibold">Charges to apply (Tax rates %)</div>
             <div className="grid grid-cols-3 gap-2">
-              <input placeholder="Topup %" value={charges.topup} onChange={e => setCharges({...charges, topup: e.target.value})} className="border rounded p-2" />
-              <input placeholder="Recharge %" value={charges.recharge} onChange={e => setCharges({...charges, recharge: e.target.value})} className="border rounded p-2" />
-              <input placeholder="SIM Activation %" value={charges.sim_activation} onChange={e => setCharges({...charges, sim_activation: e.target.value})} className="border rounded p-2" />
+              <input placeholder="Topup %" value={charges.topup} onChange={e => setCharges({...charges, topup: e.target.value})} className="w-full border rounded-md px-3 py-2" />
+              <input placeholder="Recharge %" value={charges.recharge} onChange={e => setCharges({...charges, recharge: e.target.value})} className="w-full border rounded-md px-3 py-2" />
+              <input placeholder="SIM Activation %" value={charges.sim_activation} onChange={e => setCharges({...charges, sim_activation: e.target.value})} className="w-full border rounded-md px-3 py-2" />
             </div>
           </div>
 
           <div className="space-y-2">
             <div className="text-sm font-semibold">Discounts to apply (optional %)</div>
             <div className="grid grid-cols-3 gap-2">
-              <input placeholder="Topup %" value={discounts.topup} onChange={e => setDiscounts({...discounts, topup: e.target.value})} className="border rounded p-2" />
-              <input placeholder="Recharge %" value={discounts.recharge} onChange={e => setDiscounts({...discounts, recharge: e.target.value})} className="border rounded p-2" />
-              <input placeholder="SIM Activation %" value={discounts.sim_activation} onChange={e => setDiscounts({...discounts, sim_activation: e.target.value})} className="border rounded p-2" />
+              <input placeholder="Topup %" value={discounts.topup} onChange={e => setDiscounts({...discounts, topup: e.target.value})} className="w-full border rounded-md px-3 py-2" />
+              <input placeholder="Recharge %" value={discounts.recharge} onChange={e => setDiscounts({...discounts, recharge: e.target.value})} className="w-full border rounded-md px-3 py-2" />
+              <input placeholder="SIM Activation %" value={discounts.sim_activation} onChange={e => setDiscounts({...discounts, sim_activation: e.target.value})} className="w-full border rounded-md px-3 py-2" />
             </div>
           </div>
         </div>

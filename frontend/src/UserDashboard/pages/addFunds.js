@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Search, Plus, X, ListFilterIcon, ChevronRight, ChevronLeft, CircleDollarSign, Clock, Image } from "lucide-react";
 import { message } from "antd";
 import { useLocation } from "react-router-dom";
+import { loadDiscountCharges } from "../../utilities/discountCharges";
 
 
 function AddFunds() {
@@ -30,6 +31,10 @@ function AddFunds() {
 
     const [rechargeHistory, setRechargeHistory] = useState([]);
     const user = localStorage.getItem("userData") ? JSON.parse(localStorage.getItem("userData")) : null;
+
+    const [chargesPercentage, setChargesPercentage] = useState(0);
+    const [discountPercentage, setDiscountPercentage] = useState(0);
+    const [payableCharges, setPayableCharges] = useState(0);
 
     useEffect(() => {
         if (fromDashboardAdd) {
@@ -160,6 +165,17 @@ function AddFunds() {
             }));
         }
     };
+
+    useEffect(() => {
+        if (showForm) {
+            const chargesAndDiscounts = async () => {
+                const data = await loadDiscountCharges(user?.username, 'recharge')
+                setChargesPercentage(data?.charges);
+                setDiscountPercentage(data?.discount);
+            }
+            chargesAndDiscounts();
+        }
+    }, [showForm, user]);
 
     const submitRecharge = async () => {
         if (!newRecharge.amount) {
@@ -580,9 +596,10 @@ function AddFunds() {
                                         type="number"
                                         className="w-full mt-1 border rounded-lg px-3 py-2"
                                         value={newRecharge.amount}
-                                        onChange={(e) =>
+                                        onChange={(e) => {
                                             setNewRecharge({ ...newRecharge, amount: e.target.value })
-                                        }
+                                            setPayableCharges(e.target.value * (1 + chargesPercentage / 100 - discountPercentage / 100));
+                                        }}
                                         placeholder="Enter amount"
                                     />
 
@@ -627,14 +644,18 @@ function AddFunds() {
                                             <span>$ {newRecharge.amount}</span>
                                         </p>
                                         <p className="flex justify-between mt-1">
-                                            <span>Tax (5%):</span>
-                                            <span>$ {(newRecharge.amount * 0.05).toFixed(0)}</span>
+                                            <span>Charges ({(chargesPercentage).toFixed(2)}%):</span>
+                                            <span>+ $ {(newRecharge.amount * (chargesPercentage / 100)).toFixed(2)}</span>
+                                        </p>
+                                        <p className="flex justify-between mt-1">
+                                            <span>Discount ({(discountPercentage).toFixed(2)}%):</span>
+                                            <span> - $ {(newRecharge.amount * (discountPercentage / 100)).toFixed(2)}</span>
                                         </p>
                                         <hr className="my-2" />
                                         <p className="flex justify-between font-semibold">
                                             <span>Total Payable:</span>
                                             <span>
-                                                $ {(newRecharge.amount * 1.05).toFixed(0)}
+                                                $ {payableCharges}
                                             </span>
                                         </p>
                                     </div>
