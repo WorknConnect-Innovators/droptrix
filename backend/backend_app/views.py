@@ -573,7 +573,7 @@ def make_topup_complete(request):
             topup_id = data['topup_id']
             topup_data = Topup.objects.filter(id=topup_id).first()
             topup_data.status = 'Approved'
-            history_message=f'Your request for topup of amount {data["amount"]} has approved.'
+            history_message=f'Your request for topup of amount {topup_data.amount} has approved.'
             history_data = History(
                 username=topup_data.username,
                 history_type='Topup',
