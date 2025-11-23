@@ -61,5 +61,7 @@ urlpatterns = [
     path('api/get-user-charges-discount/', views.user_charges_discount, name='user_charges_discount'),
     path('api/add-user-offer/', views.add_offer, name='add_offer'),
     path('api/get-user-offers/', views.get_user_offers, name='get_user_offers'),
-    path('api/update-user-offer/', views.update_offer, name='update_offer')
+    path('api/update-user-offer/', views.update_offer, name='update_offer'),
+    path('api/default-charges-discount/', views.default_ch_dis, name='default_ch_dis'),
+    path('api/update-default-charges-discount/', views.update_default_ch_dis, name='update_default_ch_dis')
 ]
