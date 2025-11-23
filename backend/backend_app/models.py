@@ -85,7 +85,7 @@ class Payasyougo(models.Model):
     zipcode = models.CharField(max_length=200)
     e_id = models.CharField(max_length=200)
     plan_id = models.CharField(max_length=200)
-    email = models.CharField(max_length=200)
+    email = models.CharField(max_length=200, unique=True)
     contact_no = models.CharField(max_length=200)
     sim_type = models.CharField(max_length=200)
 

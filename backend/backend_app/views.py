@@ -160,6 +160,10 @@ def signup(request):
             password = data['password']
             username = data['username']
             user_type = data['user_type']
+            user_data = Signup.objects.filter(username=username).first()
+            if user_data:
+                if user_data.username == username:
+                    return JsonResponse({'status': 'success', 'message': f"Account with username {username} already exist."})
             signup_data = Signup(
                 email=email,
                 full_name=full_name,
@@ -422,6 +426,10 @@ def add_payasyougo(request):
     if request.method == 'POST':
         try:
             data = json.loads(request.body)
+            check_data = Payasyougo.objects.filter(email=data['email']).first()
+            if check_data:
+                if check_data.email == data['email']:
+                    return JsonResponse({'status': 'success', 'message': 'Pay as you go with this email already exist.'})
             payasyougo_data = Payasyougo(
                 zipcode=data['zipcode'],
                 e_id=data['e_id'],
@@ -657,6 +665,10 @@ def user_sim_activation(request):
             activation_count = int(Recharge.objects.count())+1
             activation_id = f"ACTSIM-{datetime.now().strftime('%Y%m%d')}-{str(activation_count).zfill(4)}"
             balance_data = Account_balance.objects.filter(username=data['username']).first()
+            act_data = Activate_sim.objects.filter(email=data['email']).first()
+            if act_data:
+                if act_data.email == data['email']:
+                    return JsonResponse({'status': 'success', 'message': 'Sim activation with this email already exist.'})
             sim_activation_data = Activate_sim(
                 activation_id=activation_id,
                 username=data['username'],
@@ -756,6 +768,7 @@ def dashboard_summary_user(request):
             available_balance = account_balance_obj.account_balance_amount if account_balance_obj else 0
             plan_ids = Activate_sim.objects.filter(username=username).values_list('plan_id', flat=True).distinct()
             purchased_plans = list(Plans.objects.filter(plan_id__in=plan_ids).values())
+            recent_plan = model_to_dict(Plans.objects.filter(username=username).last())
             topup_history = list(Topup.objects.filter(username=username).values())
             recharge_history = list(Recharge.objects.filter(username=username).values())
             activation_history = list(Activate_sim.objects.filter(username=username).values())
@@ -767,9 +780,10 @@ def dashboard_summary_user(request):
                     'available_balance': available_balance,
                     'purchased_plans': purchased_plans,
                     'topup_history': topup_history,
+                    'recent_plan': recent_plan,
                     'transaction_history': {
                         'activation_history': activation_history,
-                        'recharge_history': recharge_history
+                        'recharge_history': recharge_history,
                     }
                 }
             })
