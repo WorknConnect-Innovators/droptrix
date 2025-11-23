@@ -669,6 +669,7 @@ def user_sim_activation(request):
             if act_data:
                 if act_data.email == data['email']:
                     return JsonResponse({'status': 'success', 'message': 'Sim activation with this email already exist.'})
+            plan_details = Plans.objects.filter(plan_id=data['plan_id']).first()
             sim_activation_data = Activate_sim(
                 activation_id=activation_id,
                 username=data['username'],
@@ -676,7 +677,13 @@ def user_sim_activation(request):
                 phone_no=data['phone_no'],
                 amount_charged=data['amount_charged'],
                 offer=data['offer'],
-                balance_history=balance_data.account_balance_amount
+                balance_history=balance_data.account_balance_amount,
+                emi=data['emi'],
+                eid=data['eid'],
+                iccid=data['iccid'],
+                company_id=plan_details.company_id,
+                email=data['email'],
+                postal_code=data['postal_code']
             )
             if balance_data < data['amount_charged']:
                 return JsonResponse({'status': 'success', 'message': 'Insufficient balance. Please recharge your account.'}, status=200)
@@ -711,7 +718,13 @@ def get_activation_data(request):
                 'offer': a.offer,
                 'pending': a.pending,
                 'timestamp': a.timestamp,
-                'balance_history': a.balance_history
+                'balance_history': a.balance_history,
+                'emi': a.emi,
+                'eid': a.eid,
+                'iccid': a.iccid,
+                'company_id': a.company_id,
+                'email': a.email,
+                'postal_code': a.postal_code
             }
             for a in activation_data
         ]
