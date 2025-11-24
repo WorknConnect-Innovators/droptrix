@@ -889,7 +889,7 @@ def add_offer(request):
                 plan_id=plan_id
             )
             offers_data.save()
-            return JsonResponse({'status': 'success', 'data_received': offers_data})
+            return JsonResponse({'status': 'success', 'data_received': offers_data.plan_id})
         except Exception as e:
             return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
     return JsonResponse({'status': 'error', 'message': 'Invalid request method'}, status=400)
@@ -909,7 +909,7 @@ def add_company_offer(request):
                 company_id=company_id
             )
             offers_data.save()
-            return JsonResponse({'status': 'success', 'data_received': offers_data})
+            return JsonResponse({'status': 'success', 'data_received': offers_data.company_id})
         except Exception as e:
             return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
     return JsonResponse({'status': 'error', 'message': 'Invalid request method'}, status=400)
