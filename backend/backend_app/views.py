@@ -923,7 +923,7 @@ def get_user_offers(request):
             username = data.get('username')
             if not username:
                 return JsonResponse({'status': 'error', 'message': 'username is required'}, status=400)
-            offers = Company_offers.objects.filter(username=username).order_by('-id')
+            offers = Plan_offers.objects.filter(username=username).order_by('-id')
             unique_latest_offers = {}
             for offer in offers:
                 if offer.plan_id not in unique_latest_offers:
@@ -955,9 +955,9 @@ def get_company_offers(request):
             offers = Company_offers.objects.filter(username=username).order_by('-id')
             unique_latest_offers = {}
             for offer in offers:
-                if offer.plan_id not in unique_latest_offers:
-                    unique_latest_offers[offer.plan_id] = {
-                        "plan_id": offer.plan_id,
+                if offer.company_id not in unique_latest_offers:
+                    unique_latest_offers[offer.company_id] = {
+                        "plan_id": offer.company_id,
                         "discount_percentage": str(offer.discount_percentage),
                         "username": offer.username,
                         "id": offer.id
@@ -1044,7 +1044,7 @@ def update_company_offer(request):
                 'updated_offer': {
                     'id': offer.id,
                     'username': offer.username,
-                    'plan_id': offer.plan_id,
+                    'plan_id': offer.company_id,
                     'discount_percentage': str(offer.discount_percentage)
                 }
             })
