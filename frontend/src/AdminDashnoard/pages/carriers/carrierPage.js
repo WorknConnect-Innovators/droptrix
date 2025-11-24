@@ -1,35 +1,47 @@
 import React, { useEffect, useState } from "react";
-import { Plus, Search, Edit2, Trash2, X } from "lucide-react";
+import { Plus, Search, Edit2, Trash2 } from "lucide-react";
 
 function AdminCarrierPage() {
     const [searchTerm, setSearchTerm] = useState("");
     const [showModal, setShowModal] = useState(false);
     const [uploading, setUploading] = useState(false);
     const [carriers, setCarriers] = useState([]);
-    const [newCarrier, setNewCarrier] = useState({
+
+    const [isEditing, setIsEditing] = useState(false);
+    const [editId, setEditId] = useState(null);
+
+    const defaultFields = {
+        emi: true,
+        eid: true,
+        iccid: true,
+        email: true,
+        postal_code: true,
+        phone_no: true,
+        pinCode: true,
+    };
+
+    const [esimFields, setEsimFields] = useState(defaultFields);
+    const [physicalFields, setPhysicalFields] = useState(defaultFields);
+
+    const [carrierForm, setCarrierForm] = useState({
         name: "",
         description: "",
         logo: "",
     });
 
-    // ✅ Fetch Carriers from Backend
+    // Fetch carriers
     const getCarriersFromBackend = async () => {
         try {
             const res = await fetch(
                 `${process.env.REACT_APP_API_URL_PRODUCTION}/api/get-carriers/`
             );
             const data = await res.json();
-            console.log("Fetched carriers:", data);
 
             if (data.status === "success") {
-                setCarriers(data?.data);
-            } else {
-                console.error("Invalid data structure:", data);
-                setCarriers([]); // fallback
+                setCarriers(data.data);
             }
         } catch (error) {
-            console.error("Error fetching carriers:", error);
-            setCarriers([]); // fallback in case of error
+            console.error("Fetch error:", error);
         }
     };
 
@@ -37,272 +49,348 @@ function AdminCarrierPage() {
         getCarriersFromBackend();
     }, []);
 
-    // ✅ Cloudinary Upload Function
+    // Upload to cloudinary
     const handleCloudinaryUpload = async (file) => {
         const formData = new FormData();
         formData.append("file", file);
         formData.append("upload_preset", "droptrixCarrierLogos");
-
         setUploading(true);
 
         try {
             const res = await fetch(
                 `https://api.cloudinary.com/v1_1/dyodgkvkr/image/upload`,
-                {
-                    method: "POST",
-                    body: formData,
-                }
+                { method: "POST", body: formData }
             );
             const data = await res.json();
-            console.log("Cloudinary upload successful:", data.secure_url);
+
             setUploading(false);
             return data.secure_url || null;
         } catch (error) {
-            console.error("Cloudinary upload failed:", error);
+            console.error("Cloudinary error:", error);
             setUploading(false);
             return null;
         }
     };
 
-    // ✅ Add Carrier Function
-    const handleAddCarrier = async () => {
-        if (!newCarrier.name || !newCarrier.description || !newCarrier.logo) {
-            alert("Please fill all fields before adding a carrier.");
+    // Add or Update carrier
+    const handleSaveCarrier = async () => {
+        if (!carrierForm.name || !carrierForm.description || !carrierForm.logo) {
+            alert("Please fill all fields.");
             return;
         }
 
+        const payload = {
+            name: carrierForm.name,
+            description: carrierForm.description,
+            logo_url: carrierForm.logo,
+            esim_required_fields: Object.keys(esimFields).filter(k => esimFields[k]),
+            physical_required_fields: Object.keys(physicalFields).filter(k => physicalFields[k]),
+        };
+
         try {
-            const res = await fetch(
-                `${process.env.REACT_APP_API_URL_PRODUCTION}/api/add-carriers/`,
-                {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                        name: newCarrier.name,
-                        description: newCarrier.description,
-                        logo_url: newCarrier.logo,
-                    }),
-                }
-            );
+            let res;
+            if (isEditing) {
+                // Update
+                res = await fetch(
+                    `${process.env.REACT_APP_API_URL_PRODUCTION}/api/update-carriers/${editId}/`,
+                    {
+                        method: "PUT",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify(payload),
+                    }
+                );
+            } else {
+                // Add
+                res = await fetch(
+                    `${process.env.REACT_APP_API_URL_PRODUCTION}/api/add-carriers/`,
+                    {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify(payload),
+                    }
+                );
+            }
 
             const result = await res.json();
 
             if (result.status === "success") {
-                setCarriers((prev) => [
-                    ...prev,
-                    { ...newCarrier, id: prev.length + 1 },
-                ]);
                 setShowModal(false);
-                setNewCarrier({ name: "", description: "", logo: "" });
+                setIsEditing(false);
+                setEditId(null);
+                resetForm();
+                getCarriersFromBackend();
             } else {
-                alert("Failed to add carrier: " + result.message);
+                alert("Operation failed: " + result.message);
             }
-        } catch (err) {
-            console.error("Backend error:", err);
+        } catch (error) {
+            console.error("Save error:", error);
         }
     };
 
-    // ✅ File Change Handler
+    const resetForm = () => {
+        setCarrierForm({ name: "", description: "", logo: "" });
+        setEsimFields(defaultFields);
+        setPhysicalFields(defaultFields);
+    };
+
+    // Handle logo input
     const handleFileChange = async (e) => {
         const file = e.target.files[0];
         if (!file) return;
         const uploadedUrl = await handleCloudinaryUpload(file);
         if (uploadedUrl) {
-            setNewCarrier((prev) => ({ ...prev, logo: uploadedUrl }));
+            setCarrierForm((prev) => ({ ...prev, logo: uploadedUrl }));
         }
     };
 
-    // ✅ Delete Carrier (frontend only)
+    // Delete (frontend only or add backend delete if needed)
     const handleDelete = (id) => {
-        if (window.confirm("Are you sure you want to delete this carrier?")) {
+        if (window.confirm("Delete this carrier?")) {
             setCarriers((prev) => prev.filter((c) => c.id !== id));
         }
     };
 
-    // ✅ Defensive filter
-    const filteredCarriers = Array.isArray(carriers)
-        ? carriers.filter((c) =>
-            c.name?.toLowerCase().includes(searchTerm.toLowerCase())
-        )
-        : [];
+    // Load data into modal for editing
+    const handleEdit = (carrier) => {
+        setIsEditing(true);
+        setEditId(carrier.id);
+
+        setCarrierForm({
+            name: carrier.name,
+            description: carrier.description,
+            logo: carrier.logo_url || carrier.logo,
+        });
+
+        // Load required fields
+        const loadFields = (keys) => {
+            const all = {};
+            Object.keys(defaultFields).forEach(k => {
+                all[k] = keys?.includes(k);
+            });
+            return all;
+        };
+
+        setEsimFields(loadFields(carrier.esim_required_fields));
+        setPhysicalFields(loadFields(carrier.physical_required_fields));
+
+        setShowModal(true);
+    };
+
+    const filteredCarriers = carriers.filter((c) =>
+        c.name?.toLowerCase().includes(searchTerm.toLowerCase())
+    );
 
     return (
         <div>
             {/* Header */}
             <div className="flex justify-between items-center mb-6">
-                <h1 className="text-2xl font-semibold text-gray-800">
-                    Manage Carriers
-                </h1>
+                <h1 className="text-2xl font-semibold">Manage Carriers</h1>
 
                 <div className="flex items-center gap-3">
                     <div className="relative">
                         <Search className="absolute left-3 top-2.5 text-gray-400" size={18} />
                         <input
                             type="text"
-                            placeholder="Search carrier..."
+                            placeholder="Search..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                            className="pl-10 pr-4 py-2 border rounded-lg text-sm"
                         />
                     </div>
 
                     <button
-                        onClick={() => setShowModal(true)}
-                        className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition"
+                        onClick={() => {
+                            resetForm();
+                            setIsEditing(false);
+                            setShowModal(true);
+                        }}
+                        className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg"
                     >
                         <Plus size={18} /> Add Carrier
                     </button>
                 </div>
             </div>
 
-            {/* Table */}
-            <div className="bg-white shadow-md rounded-lg overflow-hidden">
-                <table className="min-w-full text-sm text-gray-700">
-                    <thead className="bg-blue-50 text-gray-600 uppercase text-xs">
-                        <tr>
-                            <th className="px-6 py-3 text-left">Logo</th>
-                            <th className="px-6 py-3 text-left">Name</th>
-                            <th className="px-6 py-3 text-left">Description</th>
-                            <th className="px-6 py-3 text-center">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {filteredCarriers.length > 0 ? (
-                            filteredCarriers.map((carrier) => (
-                                <tr
-                                    key={carrier.id || carrier.name}
-                                    className="border-t hover:bg-gray-50 transition"
-                                >
-                                    <td className="px-6 py-3">
-                                        <img
-                                            src={carrier.logo || carrier.logo_url}
-                                            alt={carrier.name}
-                                            className="h-10 w-10 object-cover rounded-full"
-                                        />
-                                    </td>
-                                    <td className="px-6 py-3 font-medium">{carrier.name}</td>
-                                    <td className="px-6 py-3">{carrier.description}</td>
-                                    <td className="px-6 py-3 flex justify-center gap-3">
-                                        <button className="text-blue-600 hover:text-blue-800">
-                                            <Edit2 size={18} />
-                                        </button>
-                                        <button
-                                            onClick={() => handleDelete(carrier.id)}
-                                            className="text-red-600 hover:text-red-800"
-                                        >
-                                            <Trash2 size={18} />
-                                        </button>
-                                    </td>
-                                </tr>
-                            ))
-                        ) : (
-                            <tr>
-                                <td
-                                    colSpan="4"
-                                    className="px-6 py-6 text-center text-gray-500 italic"
-                                >
-                                    No carriers found.
-                                </td>
-                            </tr>
-                        )}
-                    </tbody>
-                </table>
-            </div>
-
             {/* Modal */}
-            {showModal && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex justify-center items-center z-50">
-                    <div className="bg-white w-[90%] max-w-lg rounded-2xl shadow-lg p-6 relative">
+            {showModal ? (
+                <div className="w-full p-6 bg-white shadow-md rounded-lg">
+                    <div className="space-y-4">
+
+                        {/* Name */}
+                        <div>
+                            <label className="block text-sm font-medium">Carrier Name</label>
+                            <input
+                                type="text"
+                                value={carrierForm.name}
+                                onChange={(e) =>
+                                    setCarrierForm((prev) => ({ ...prev, name: e.target.value }))
+                                }
+                                className="w-full border rounded-lg px-3 py-2 text-sm"
+                            />
+                        </div>
+
+                        {/* Description */}
+                        <div>
+                            <label className="block text-sm font-medium">Description</label>
+                            <textarea
+                                rows={3}
+                                value={carrierForm.description}
+                                onChange={(e) =>
+                                    setCarrierForm((prev) => ({
+                                        ...prev,
+                                        description: e.target.value,
+                                    }))
+                                }
+                                className="w-full border rounded-lg px-3 py-2 text-sm resize-none"
+                            ></textarea>
+                        </div>
+
+                        {/* Logo */}
+                        <div>
+                            <label className="block text-sm font-medium">Logo</label>
+
+                            {uploading ? (
+                                <p className="text-blue-500 text-sm">Uploading...</p>
+                            ) : carrierForm.logo ? (
+                                <img
+                                    src={carrierForm.logo}
+                                    alt="preview"
+                                    className="h-16 w-16 rounded-full object-cover mb-2"
+                                />
+                            ) : null}
+
+                            <input
+                                type="file"
+                                accept="image/*"
+                                onChange={handleFileChange}
+                                className="text-sm"
+                            />
+                        </div>
+
+                        {/* ESIM Required Fields */}
+                        <FieldsToggleSection
+                            title="E-SIM Required Fields"
+                            fields={esimFields}
+                            setFields={setEsimFields}
+                        />
+
+                        {/* Physical Required Fields */}
+                        <FieldsToggleSection
+                            title="Physical SIM Required Fields"
+                            fields={physicalFields}
+                            setFields={setPhysicalFields}
+                        />
+                    </div>
+
+                    <div className="mt-6 flex justify-end gap-3">
                         <button
                             onClick={() => setShowModal(false)}
-                            className="absolute top-4 right-4 text-gray-500 hover:text-gray-700"
+                            className="px-4 py-2 text-gray-600"
                         >
-                            <X size={22} />
+                            Cancel
                         </button>
 
-                        <h2 className="text-xl font-semibold mb-4 text-gray-800">
-                            Add New Carrier
-                        </h2>
-
-                        <div className="space-y-4">
-                            <div>
-                                <label className="block text-sm font-medium mb-1">
-                                    Carrier Name
-                                </label>
-                                <input
-                                    type="text"
-                                    value={newCarrier.name}
-                                    onChange={(e) =>
-                                        setNewCarrier((prev) => ({
-                                            ...prev,
-                                            name: e.target.value,
-                                        }))
-                                    }
-                                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                    placeholder="Enter carrier name"
-                                />
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium mb-1">
-                                    Description
-                                </label>
-                                <textarea
-                                    value={newCarrier.description}
-                                    onChange={(e) =>
-                                        setNewCarrier((prev) => ({
-                                            ...prev,
-                                            description: e.target.value,
-                                        }))
-                                    }
-                                    rows="3"
-                                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-                                    placeholder="Enter carrier description"
-                                ></textarea>
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium mb-1">
-                                    Carrier Logo
-                                </label>
-
-                                {uploading ? (
-                                    <p className="text-blue-500 text-sm italic">Uploading...</p>
-                                ) : newCarrier.logo ? (
-                                    <img
-                                        src={newCarrier.logo}
-                                        alt="preview"
-                                        className="h-16 w-16 object-cover rounded-full mb-2"
-                                    />
-                                ) : null}
-
-                                <input
-                                    type="file"
-                                    accept="image/*"
-                                    onChange={handleFileChange}
-                                    className="text-sm text-gray-600"
-                                />
-                            </div>
-                        </div>
-
-                        <div className="mt-6 flex justify-end gap-3">
-                            <button
-                                onClick={() => setShowModal(false)}
-                                className="px-4 py-2 text-gray-600 hover:text-gray-800"
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                onClick={handleAddCarrier}
-                                disabled={uploading}
-                                className="px-5 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition disabled:bg-gray-400"
-                            >
-                                Add Carrier
-                            </button>
-                        </div>
+                        <button
+                            onClick={handleSaveCarrier}
+                            disabled={uploading}
+                            className="px-5 py-2 bg-blue-600 text-white rounded-lg"
+                        >
+                            {isEditing ? "Update Carrier" : "Add Carrier"}
+                        </button>
                     </div>
                 </div>
+            ) : (
+                // Table
+                <div className="bg-white shadow rounded-lg overflow-hidden">
+                    <table className="min-w-full text-sm">
+                        <thead className="bg-blue-50 text-gray-600 uppercase text-xs">
+                            <tr>
+                                <th className="px-6 py-3 text-left">Logo</th>
+                                <th className="px-6 py-3 text-left">Name</th>
+                                <th className="px-6 py-3 text-left">Description</th>
+                                <th className="px-6 py-3 text-center">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {filteredCarriers.length ? (
+                                filteredCarriers.map((carrier) => (
+                                    <tr key={carrier.id} className="border-t hover:bg-gray-50">
+                                        <td className="px-6 py-3">
+                                            <img
+                                                src={carrier.logo_url || carrier.logo}
+                                                className="h-12 w-12 object-contain"
+                                                alt="logo"
+                                            />
+                                        </td>
+
+                                        <td className="px-6 py-3">{carrier.name}</td>
+                                        <td className="px-6 py-3">{carrier.description}</td>
+
+                                        <td className="px-6 py-3 flex justify-center gap-4">
+                                            <button
+                                                onClick={() => handleEdit(carrier)}
+                                                className="text-blue-600 hover:text-blue-800"
+                                            >
+                                                <Edit2 size={18} />
+                                            </button>
+
+                                            <button
+                                                onClick={() => handleDelete(carrier.id)}
+                                                className="text-red-600 hover:text-red-800"
+                                            >
+                                                <Trash2 size={18} />
+                                            </button>
+                                        </td>
+                                    </tr>
+                                ))
+                            ) : (
+                                <tr>
+                                    <td colSpan="4" className="px-6 py-6 text-center text-gray-500">
+                                        No carriers found.
+                                    </td>
+                                </tr>
+                            )}
+                        </tbody>
+                    </table>
+                </div>
             )}
+        </div>
+    );
+}
+
+// Reusable Toggle Component
+function FieldsToggleSection({ title, fields, setFields }) {
+    return (
+        <div className="mt-4">
+            <h4 className="font-semibold mb-2">{title}</h4>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                {Object.keys(fields).map((key) => (
+                    <label key={key} className="flex items-center gap-3 p-2 border rounded-lg">
+                        <input
+                            type="checkbox"
+                            checked={fields[key]}
+                            onChange={() =>
+                                setFields((prev) => ({ ...prev, [key]: !prev[key] }))
+                            }
+                            className="sr-only peer"
+                        />
+
+                        <span
+                            className={`inline-flex items-center w-10 h-6 rounded-full transition-colors ${fields[key] ? "bg-indigo-600" : "bg-gray-300"
+                                }`}
+                        >
+                            <span
+                                className={`w-4 h-4 bg-white rounded-full shadow transform transition-transform ${fields[key] ? "translate-x-5" : "translate-x-1"
+                                    }`}
+                            />
+                        </span>
+
+                        <span className="text-sm capitalize">
+                            {key.replace("_", " ")}
+                        </span>
+                    </label>
+                ))}
+            </div>
         </div>
     );
 }

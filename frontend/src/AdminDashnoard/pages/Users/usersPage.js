@@ -1,8 +1,14 @@
 import React, { useEffect, useState } from 'react'
 import { Search, ListFilterIcon, ChevronLeft, ChevronRight, CircleDollarSign } from 'lucide-react'
 import { message } from 'antd'
+import { getCarriersFromBackend } from '../../../utilities/getCarriers';
+import { companyBasedPlans } from '../../../utilities/getPlans';
+import { useNavigate } from 'react-router-dom';
+
 
 function UsersPage() {
+
+    const navigate = useNavigate();
     const [searchTerm, setSearchTerm] = useState("");
     const [users, setUsers] = useState([]);
     const [isUserChargesOpen, setIsUserChargesOpen] = useState(false);
@@ -18,11 +24,32 @@ function UsersPage() {
         { label: 'User Type', key: 'user_type' },
     ];
     const [isFilterOpen, setIsFilterOpen] = useState(false);
+    const [selectedCarrier, setSelectedCarrier] = useState({});
+    const [selectedPlanCarrier, setSelectedPlanCarrier] = useState({});
 
     const [itemsPerPage, setItemsPerPage] = useState(10);
     const [currentPage, setCurrentPage] = useState(1);
     const [currentItems, setCurrentItems] = useState([]);
     const [totalPages, setTotalPages] = useState(1);
+    const [carriers, setCarriers] = useState([]);
+
+    useEffect(() => {
+        const fetchCarriers = async () => {
+            const result = await getCarriersFromBackend();
+            setCarriers(result);
+        }
+        fetchCarriers();
+    }, [])
+
+    useEffect(() => {
+        if (selectedPlanCarrier) {
+            const getPlans = async () => {
+                const result = await companyBasedPlans(selectedPlanCarrier.id);
+                console.log(result)
+            }
+            getPlans();
+        }
+    }, [selectedPlanCarrier])
 
     const loadUsers = async () => {
         try {
@@ -98,6 +125,7 @@ function UsersPage() {
     }
 
     const loadDiscountCharges = async (user) => {
+
         setSelectedUser(user);
         try {
             const res = await fetch(
@@ -150,7 +178,7 @@ function UsersPage() {
 
                 <hr className="py-2" />
 
-                <div className="flex lg:flex-row flex-col lg:justify-between lg:items-center gap-4 px-4 pb-5">
+                <div className={`${isUserChargesOpen ? 'hidden' : 'flex'} lg:flex-row flex-col lg:justify-between lg:items-center gap-4 px-4 pb-5`}>
                     <div className="border rounded-lg text-sm w-fit">
                         <button className={`rounded-l-lg px-4 py-2 border-r ${'bg-transparent'}`}>All</button>
                     </div>
@@ -183,12 +211,12 @@ function UsersPage() {
             </div>
 
             {isUserChargesOpen ? (
-                <div className="flex flex-col md:h-[59vh] h-[54vh] w-full">
+                <div className="flex flex-col md:h-[67vh] h-[54vh] w-full">
                     <div className="flex-1 overflow-y-auto w-full md:px-20 px-4">
-                        <div className='grid md:grid-cols-2 gap-6'>
+                        <div className='space-y-6 mt-4'>
                             <div>
                                 <h3 className='font-semibold mb-2'>Personal Information</h3>
-                                <div className='space-y-3'>
+                                <div className='grid md:grid-cols-2 gap-4'>
                                     <div>
                                         <label className='text-sm font-semibold'>Username</label>
                                         <input type="text" value={selectedUser.username} readOnly className='w-full border border-gray-300 bg-gray-100 rounded-md px-3 py-2' />
@@ -205,41 +233,82 @@ function UsersPage() {
                             </div>
 
                             <div>
-                                <h3 className='font-semibold mb-2'>Charges Information (Tax rates %)</h3>
-                                <div className='space-y-3'>
-                                    <div>
-                                        <label className='text-sm font-semibold'>Topup Tax (%)</label>
-                                        <input type="text" value={charges.topup} onChange={e => setCharges({ ...charges, topup: e.target.value })} placeholder='e.g. 2.5' className='w-full border rounded-md px-3 py-2' />
+                                <h3 className='font-semibold mb-2'>Charges Information ( %)</h3>
+                                <div className='grid md:grid-cols-2 gap-4'>
+                                    <div className='space-y-3'>
+                                        <div>
+                                            <label className='text-sm font-semibold'>Recharge Tax (%)</label>
+                                            <input type="number" value={charges.recharge} onChange={e => setCharges({ ...charges, recharge: e.target.value })} placeholder='e.g. 1.0' className='w-full border rounded-md px-3 py-2' />
+                                        </div>
                                     </div>
-                                    <div>
-                                        <label className='text-sm font-semibold'>Recharge Tax (%)</label>
-                                        <input type="text" value={charges.recharge} onChange={e => setCharges({ ...charges, recharge: e.target.value })} placeholder='e.g. 1.0' className='w-full border rounded-md px-3 py-2' />
+                                    <div className='md:max-w-2xl gap-4'>
+                                        <div>
+                                            <label className='text-sm font-semibold'>Recharge Discount (%)</label>
+                                            <input type="number" value={discounts.recharge} onChange={e => setDiscounts({ ...discounts, recharge: e.target.value })} placeholder='e.g. 5' className='w-full border rounded-md px-3 py-2' />
+                                        </div>
                                     </div>
-                                    <div>
-                                        <label className='text-sm font-semibold'>SIM Activation Tax (%)</label>
-                                        <input type="text" value={charges.sim_activation} onChange={e => setCharges({ ...charges, sim_activation: e.target.value })} placeholder='e.g. 0.5' className='w-full border rounded-md px-3 py-2' />
+                                </div>
+                            </div>
+
+                            <div>
+                                <h3 className='font-semibold mb-2'>Carriers Offers</h3>
+                                <div className='grid md:grid-cols-2 gap-4'>
+                                    <div className='space-y-3'>
+                                        <div>
+                                            <label className='text-sm font-semibold'>Select Carrier</label>
+                                            <select className='w-full border rounded-md px-3 py-2'>
+                                                {carriers.map(carrier => (
+                                                    <option
+                                                        onSelect={() => setSelectedCarrier(carrier)}
+                                                        key={carrier.company_id}
+                                                        value={carrier.company_id}
+                                                    >
+                                                        {carrier.name}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div className='md:max-w-2xl gap-4'>
+                                        <div>
+                                            <label className='text-sm font-semibold'>Discount</label>
+                                            <input type="number" value={discounts.recharge} onChange={e => setDiscounts({ ...discounts, recharge: e.target.value })} placeholder='e.g. 5' className='w-full border rounded-md px-3 py-2' />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div>
+                                <h3 className='font-semibold mb-2'>Plan Offers</h3>
+                                <div className='grid md:grid-cols-2 gap-4'>
+                                    <div className='space-y-3'>
+                                        <div>
+                                            <label className='text-sm font-semibold'>Select Carrier</label>
+                                            <select
+                                                className='w-full border rounded-md px-3 py-2'>
+                                                {carriers.map(carrier => (
+                                                    <option
+                                                        key={carrier.company_id}
+                                                        value={carrier.company_id}
+                                                        onSelect={() => setSelectedPlanCarrier(carrier)}
+                                                    >
+                                                        {carrier.name}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div className='md:max-w-2xl gap-4'>
+                                        <div>
+                                            <label className='text-sm font-semibold'>Discount</label>
+                                            <input type="number" value={discounts.recharge} onChange={e => setDiscounts({ ...discounts, recharge: e.target.value })} placeholder='e.g. 5' className='w-full border rounded-md px-3 py-2' />
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
 
-                        <div className='mt-6'>
-                            <h3 className='font-semibold mb-2'>Discounts (optional %)</h3>
-                            <div className='grid md:grid-cols-3 gap-4'>
-                                <div>
-                                    <label className='text-sm font-semibold'>Topup Discount (%)</label>
-                                    <input type="text" value={discounts.topup} onChange={e => setDiscounts({ ...discounts, topup: e.target.value })} placeholder='e.g. 10' className='w-full border rounded-md px-3 py-2' />
-                                </div>
-                                <div>
-                                    <label className='text-sm font-semibold'>Recharge Discount (%)</label>
-                                    <input type="text" value={discounts.recharge} onChange={e => setDiscounts({ ...discounts, recharge: e.target.value })} placeholder='e.g. 5' className='w-full border rounded-md px-3 py-2' />
-                                </div>
-                                <div>
-                                    <label className='text-sm font-semibold'>SIM Activation Discount (%)</label>
-                                    <input type="text" value={discounts.sim_activation} onChange={e => setDiscounts({ ...discounts, sim_activation: e.target.value })} placeholder='e.g. 0' className='w-full border rounded-md px-3 py-2' />
-                                </div>
-                            </div>
-                        </div>
+
                     </div>
 
                     <div className='flex gap-3 items-center justify-end mt-4 md:px-20 px-4'>
@@ -274,7 +343,7 @@ function UsersPage() {
                                             <td className="px-10 py-3">{u.user_type}</td>
                                             <td>
                                                 <button
-                                                    onClick={() => loadDiscountCharges(u)}
+                                                    onClick={() => navigate('/dashboard/user-details', { state: { user: u } })}
                                                     className="text-sm bg-blue-600 text-white px-3 py-1 rounded-lg hover:bg-blue-700 transition">Charges</button>
                                             </td>
                                         </tr>

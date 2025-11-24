@@ -184,86 +184,70 @@ function ActivateSim() {
         /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test((s || "").trim());
 
 
-    // ---- updated handleActivateSim with full validation ----
+    // ---- updated handleActivateSim with full validation that honors carrier required fields ----
     const handleActivateSim = async () => {
         setError("");
 
-        // Basic required
-        if (!simNumber?.trim()) {
-            setError("Please enter the SIM number.");
-            return;
+        const requiredFields = (selectedCarrierDetails && formData.simType === 'E-Sim')
+            ? (selectedCarrierDetails.esim_required_fields || [])
+            : (selectedCarrierDetails && formData.simType === 'Sim')
+                ? (selectedCarrierDetails.physical_required_fields || [])
+                : [];
+
+        // SIM Number (phone_no)
+        if (requiredFields.includes('phone_no')) {
+            if (!simNumber?.trim()) { setError('Please enter the SIM number.'); return }
         }
 
-        // ICCID required and exactly 32 digits
-        if (!iccid) {
-            setError("Please enter ICCID (32 digits).");
-            return;
-        }
-        if (!isDigits(iccid) || iccid.length !== 32) {
-            setError("ICCID must be exactly 32 digits.");
-            return;
+        // ICCID validation: if required or provided
+        if (requiredFields.includes('iccid') || iccid) {
+            if (!iccid) { setError('Please enter ICCID (32 digits).'); return }
+            if (!isDigits(iccid) || iccid.length !== 32) { setError('ICCID must be exactly 32 digits.'); return }
         }
 
-        // Conditional fields based on SIM type
-        if (formData.simType === "E-Sim") {
-            // EID required, numeric, max 10, cannot start with 0
-            if (!eid) {
-                setError("Please enter EID for E-SIM.");
-                return;
-            }
-            if (!isDigits(eid)) {
-                setError("EID must contain digits only.");
-                return;
-            }
-            if (eid.startsWith("0")) {
-                setError("EID cannot start with 0.");
-                return;
-            }
-            if (eid.length > 10) {
-                setError("EID cannot be more than 10 digits.");
-                return;
-            }
-        } else {
-            // Sim type -> EMI required
-            if (!emi) {
-                setError("Please enter EMI for SIM type.");
-                return;
-            }
-            if (!isDigits(emi)) {
-                setError("EMI must contain digits only.");
-                return;
-            }
-            if (emi.length > 15) {
-                setError("EMI cannot be more than 15 digits.");
-                return;
+        // EID (E-SIM) validation
+        if (formData.simType === 'E-Sim') {
+            if (requiredFields.includes('eid')) {
+                if (!eid) { setError('Please enter EID for E-SIM.'); return }
+                if (!isDigits(eid)) { setError('EID must contain digits only.'); return }
+                if (eid.startsWith('0')) { setError('EID cannot start with 0.'); return }
+                if (eid.length > 10) { setError('EID cannot be more than 10 digits.'); return }
+            } else if (eid) {
+                // if not required but provided, validate format
+                if (!isDigits(eid) || eid.startsWith('0') || eid.length > 10) { setError('Invalid EID format.'); return }
             }
         }
 
-        // Zip / PIN optional but if provided should be digits
-        if (zipCode && !isDigits(zipCode)) {
-            setError("ZIP Code must contain digits only.");
-            return;
-        }
-        if (pinCode && !isDigits(pinCode)) {
-            setError("PIN Code must contain digits only.");
-            return;
-        }
-
-        // Email optional but if provided must be valid
-        if (email && !isValidEmail(email)) {
-            setError("Please enter a valid email address.");
-            return;
-        }
-
-        // Example account balance check (keeps your original behavior)
-        if (selectedPlanDetails && typeof selectedPlanDetails.plan_price !== "undefined") {
-            const price = Number(selectedPlanDetails.plan_price);
-            if (!Number.isFinite(price)) {
-                // skip or handle as needed
-            } else if (balance < price) {
-                setError("Insufficient account balance");
-                return;
+        // EMI (physical SIM) validation
+        if (formData.simType === 'Sim') {
+            if (requiredFields.includes('emi')) {
+                if (!emi) { setError('Please enter EMI for SIM type.'); return }
+                if (!isDigits(emi)) { setError('EMI must contain digits only.'); return }
+                if (emi.length > 15) { setError('EMI cannot be more than 15 digits.'); return }
+            } else if (emi) {
+                if (!isDigits(emi) || emi.length > 15) { setError('Invalid EMI format.'); return }
             }
+        }
+
+        // ZIP/Postal code
+        if (requiredFields.includes('postal_code')) {
+            if (!zipCode) { setError('Please enter Postal/ZIP Code.'); return }
+            if (!isDigits(zipCode)) { setError('ZIP Code must contain digits only.'); return }
+        } else if (zipCode && !isDigits(zipCode)) { setError('ZIP Code must contain digits only.'); return }
+
+        // Email
+        if (requiredFields.includes('email')) {
+            if (!email) { setError('Please enter email.'); return }
+            if (!isValidEmail(email)) { setError('Please enter a valid email address.'); return }
+        } else if (email && !isValidEmail(email)) { setError('Please enter a valid email address.'); return }
+
+        // PIN code (optional always) - validate if present
+        if (pinCode && !isDigits(pinCode)) { setError('PIN Code must contain digits only.'); return }
+
+        // Account balance check
+        if (selectedPlanDetails && typeof selectedPlanDetails.plan_price !== 'undefined') {
+            const price = Number(selectedPlanDetails.plan_price)
+            if (Number.isFinite(price) && balance < price) { setError('Insufficient account balance'); return }
         }
 
         // Build payload according to backend expectations
@@ -280,51 +264,42 @@ function ActivateSim() {
                 eid: formData.simType === 'E-Sim' ? eid : '',
                 iccid,
                 email: email || '',
-                postal_code: zipCode || ''
+                postal_code: zipCode || '',
+                pinCode: pinCode || '',
             }
 
-            console.log('Activate SIM payload:', payload);
+            console.log('Activate SIM payload:', payload)
 
-            const res = await fetch(`${process.env.REACT_APP_API_URL_PRODUCTION}/api/user-sim-activation/`,
-                {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                })
+            const res = await fetch(`${process.env.REACT_APP_API_URL_PRODUCTION}/api/user-sim-activation/`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
+            })
             const json = await res.json()
             if (json.status === 'success') {
-                // backend returns account_balance and data_received
                 if (json.account_balance !== undefined) setBalance(json.account_balance)
                 message.success(json.message || 'SIM activation request submitted')
-                // refresh activations list
                 fetchUserActivations()
 
                 // Reset fields & UI state
-                setIsAddingSim(false);
-                setSelectedCarrier(null);
-                setSelectedPlan(null);
-                setAddingDetails(false);
-                setSimNumber("");
-                setEid("");
-                setIccid("");
-                setEmi("");
-                setZipCode("");
-                setPinCode("");
-                setEmail("");
-                setError("");
+                setIsAddingSim(false)
+                setSelectedCarrier(null)
+                setSelectedPlan(null)
+                setAddingDetails(false)
+                setSimNumber('')
+                setEid('')
+                setIccid('')
+                setEmi('')
+                setZipCode('')
+                setPinCode('')
+                setEmail('')
+                setError('')
             } else {
-                // backend may return success with message for duplicate email, or error
-                if (json.message) {
-                    message.info(json.message)
-                } else {
-                    message.error('Failed to submit activation')
-                }
+                if (json.message) { message.info(json.message) } else { message.error('Failed to submit activation') }
             }
         } catch (err) {
             console.error('handleActivateSim error', err)
             message.error('Server error while submitting activation')
         }
-    };
+    }
 
     const cancelActivation = () => {
         setIsAddingSim(false);
@@ -340,6 +315,13 @@ function ActivateSim() {
         setEmail("");
         setError("");
     }
+
+    // Determine which fields carrier requires for the selected SIM type
+    const carrierRequiredFields = (selectedCarrierDetails && formData.simType === 'E-Sim')
+        ? (selectedCarrierDetails.esim_required_fields || [])
+        : (selectedCarrierDetails && formData.simType === 'Sim')
+            ? (selectedCarrierDetails.physical_required_fields || [])
+            : [];
 
 
     return (
@@ -632,14 +614,15 @@ function ActivateSim() {
                                                 type="text"
                                                 value={simNumber}
                                                 onChange={(e) => setSimNumber(e.target.value)}
-                                                className="w-full border px-4 py-2 rounded-lg mt-1"
+                                                disabled={selectedCarrierDetails ? !carrierRequiredFields.includes('phone_no') : false}
+                                                className={`w-full border px-4 py-2 rounded-lg mt-1 ${selectedCarrierDetails && !carrierRequiredFields.includes('phone_no') ? 'bg-gray-100 text-gray-500' : ''}`}
                                                 placeholder="Enter SIM Number"
                                             />
                                         </div>
 
                                         {/* EID (for E-SIM) */}
                                         <div>
-                                            <label className="text-sm font-medium">EID {formData.simType === "E-Sim" && <span className="text-xs text-gray-500"> (required)</span>}</label>
+                                            <label className="text-sm font-medium">EID</label>
                                             <div className="relative">
                                                 <input
                                                     type="text"
@@ -652,7 +635,7 @@ function ActivateSim() {
                                                     }}
                                                     className="w-full border px-4 py-2 rounded-lg mt-1 pr-10"
                                                     placeholder="Enter EID"
-                                                    disabled={formData.simType !== "E-Sim"}
+                                                    disabled={(selectedCarrierDetails ? !carrierRequiredFields.includes('eid') : false)}
                                                 />
                                                 {/* question mark + tooltip */}
                                                 <div className="absolute right-2 top-1/2 -translate-y-1/2">
@@ -670,7 +653,7 @@ function ActivateSim() {
 
                                         {/* ICCID - required 24 digits */}
                                         <div>
-                                            <label className="text-sm font-medium">ICCID <span className="text-xs text-gray-500">(32 digits)</span></label>
+                                            <label className="text-sm font-medium">ICCID {carrierRequiredFields.includes('iccid') && <span className="text-xs text-gray-500">(required 32 digits)</span>}</label>
                                             <div className="relative">
                                                 <input
                                                     type="text"
@@ -681,7 +664,8 @@ function ActivateSim() {
                                                         setIccid(value);
                                                         setError("");
                                                     }}
-                                                    className="w-full border px-4 py-2 rounded-lg mt-1 pr-10"
+                                                    disabled={selectedCarrierDetails ? !carrierRequiredFields.includes('iccid') : false}
+                                                    className={`w-full border px-4 py-2 rounded-lg mt-1 pr-10 ${selectedCarrierDetails && !carrierRequiredFields.includes('iccid') ? 'bg-gray-100 text-gray-500' : ''}`}
                                                     placeholder="Enter ICCID (32 digits)"
                                                 />
                                                 <div className="absolute right-2 top-1/2 -translate-y-1/2">
@@ -699,7 +683,7 @@ function ActivateSim() {
 
                                         {/* EMI (required for SIM) */}
                                         <div>
-                                            <label className="text-sm font-medium">EMI {formData.simType === "Sim" && <span className="text-xs text-gray-500"> (required)</span>}</label>
+                                            <label className="text-sm font-medium">EMI</label>
                                             <div className="relative">
                                                 <input
                                                     type="text"
@@ -710,9 +694,9 @@ function ActivateSim() {
                                                         setEmi(value);
                                                         setError("");
                                                     }}
-                                                    className="w-full border px-4 py-2 rounded-lg mt-1 pr-10"
+                                                    disabled={(selectedCarrierDetails ? !carrierRequiredFields.includes('emi') : false)}
+                                                    className={`w-full border px-4 py-2 rounded-lg mt-1 pr-10 ${selectedCarrierDetails && !carrierRequiredFields.includes('emi') ? 'bg-gray-100 text-gray-500' : ''}`}
                                                     placeholder="Enter EMI"
-                                                    disabled={formData.simType !== "Sim"}
                                                 />
                                                 <div className="absolute right-2 top-1/2 -translate-y-1/2">
                                                     <div className="group relative">
@@ -726,10 +710,8 @@ function ActivateSim() {
                                                 </div>
                                             </div>
                                         </div>
-
-                                        {/* ZIP Code */}
                                         <div>
-                                            <label className="text-sm font-medium">ZIP Code</label>
+                                            <label className="text-sm font-medium">ZIP Code {carrierRequiredFields.includes('postal_code') && <span className="text-xs text-gray-500">(required)</span>}</label>
                                             <input
                                                 type="text"
                                                 value={zipCode}
@@ -739,7 +721,8 @@ function ActivateSim() {
                                                     setZipCode(value);
                                                     setError("");
                                                 }}
-                                                className="w-full border px-4 py-2 rounded-lg mt-1"
+                                                disabled={selectedCarrierDetails ? !carrierRequiredFields.includes('postal_code') : false}
+                                                className={`w-full border px-4 py-2 rounded-lg mt-1 ${selectedCarrierDetails && !carrierRequiredFields.includes('postal_code') ? 'bg-gray-100 text-gray-500' : ''}`}
                                                 placeholder="Enter ZIP Code"
                                             />
                                         </div>
@@ -756,7 +739,8 @@ function ActivateSim() {
                                                     setPinCode(value);
                                                     setError("");
                                                 }}
-                                                className="w-full border px-4 py-2 rounded-lg mt-1"
+                                                disabled={selectedCarrierDetails ? !carrierRequiredFields.includes('pinCode') : false}
+                                                className={`w-full border px-4 py-2 rounded-lg mt-1 ${selectedCarrierDetails && !carrierRequiredFields.includes('pinCode') ? 'bg-gray-100 text-gray-500' : ''}`}
                                                 placeholder="Enter PIN Code"
                                             />
                                         </div>
@@ -764,16 +748,17 @@ function ActivateSim() {
                                         {/* Email with tooltip */}
                                         <div className="col-span-full flex items-center gap-x-4">
                                             <div className="w-full">
-                                                <label className="text-sm font-medium">Email</label>
+                                                <label className="text-sm font-medium">Email {carrierRequiredFields.includes('email') && <span className="text-xs text-gray-500">(required)</span>}</label>
                                                 <div className="relative">
                                                     <input
                                                         type="text"
                                                         value={email}
+                                                        disabled={selectedCarrierDetails ? !carrierRequiredFields.includes('email') : false}
                                                         onChange={(e) => {
                                                             setEmail(e.target.value);
                                                             setError("");
                                                         }}
-                                                        className="w-full border px-4 py-2 rounded-lg mt-1 pr-10"
+                                                        className={`w-full border px-4 py-2 rounded-lg mt-1 pr-10 ${selectedCarrierDetails && !carrierRequiredFields.includes('email') ? 'bg-gray-100 text-gray-500' : ''}`}
                                                         placeholder="Enter your email"
                                                     />
                                                     <div className="absolute right-2 top-1/2 -translate-y-1/2">
