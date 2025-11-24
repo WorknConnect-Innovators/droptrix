@@ -56,6 +56,8 @@ class Carriers(models.Model):
     description = models.TextField()
     logo_url = models.CharField(max_length=2000)
     company_id = models.CharField(max_length=200, unique=True)
+    esim_required_fields = models.JSONField(default=list)
+    physical_required_fields = models.JSONField(default=list)
 
     def __str__(self):
         return self.name
@@ -164,18 +166,14 @@ class History(models.Model):
 
 class Charges_and_Discount(models.Model):
     username = models.CharField(max_length=200)
-    topup_charges = models.DecimalField(max_digits=10, decimal_places=2)
     recharge_charges = models.DecimalField(max_digits=10, decimal_places=2)
-    sim_activation_charges = models.DecimalField(max_digits=10, decimal_places=2)
-    topup_discount = models.DecimalField(max_digits=10, decimal_places=2)
     recharge_discount = models.DecimalField(max_digits=10, decimal_places=2)
-    sim_activation_discount = models.DecimalField(max_digits=10, decimal_places=2)
 
     def __str__(self):
         return self.username
     
 
-class Offers(models.Model):
+class Plan_offers(models.Model):
     username = models.CharField(max_length=200)
     discount_percentage = models.DecimalField(max_digits=10, decimal_places=2)
     plan_id = models.CharField(max_length=200)
@@ -184,15 +182,20 @@ class Offers(models.Model):
         return self.username
     
 
+class Company_offers(models.Model):
+    username = models.CharField(max_length=200)
+    discount_percentage = models.DecimalField(max_digits=10, decimal_places=2)
+    company_id = models.CharField(max_length=200)
+
+    def __str__(self):
+        return self.username
+    
+
 class Default_charged_discount(models.Model):
     plan_id = models.CharField(max_length=200)
     company_id = models.CharField(max_length=200)
-    topup_charges = models.DecimalField(max_digits=10, decimal_places=2)
     recharge_charges = models.DecimalField(max_digits=10, decimal_places=2)
-    sim_activation_charges = models.DecimalField(max_digits=10, decimal_places=2)
-    topup_discount = models.DecimalField(max_digits=10, decimal_places=2)
     recharge_discount = models.DecimalField(max_digits=10, decimal_places=2)
-    sim_activation_discount = models.DecimalField(max_digits=10, decimal_places=2)
 
     def __str__(self):
         return self.plan_id

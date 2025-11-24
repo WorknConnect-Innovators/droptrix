@@ -2,7 +2,7 @@ from django.shortcuts import render
 from django.http import JsonResponse, HttpResponse
 import json
 from django.views.decorators.csrf import csrf_exempt
-from backend_app.models import Feedback, Newsletter, Signup, Carriers, Plans, Payasyougo, Topup, Recharge, Activate_sim, Account_balance, History, Charges_and_Discount, Offers, Default_charged_discount
+from backend_app.models import Feedback, Newsletter, Signup, Carriers, Plans, Payasyougo, Topup, Recharge, Activate_sim, Account_balance, History, Charges_and_Discount, Default_charged_discount, Plan_offers, Company_offers
 from django.core.mail import send_mail
 import random
 import string
@@ -179,12 +179,8 @@ def signup(request):
             user_balance.save()
             charges_add = Charges_and_Discount(
                 username=username,
-                topup_charges=0.0,
                 recharge_charges=0.0,
-                sim_activation_charges=0.0,
-                topup_discount=0.0,
                 recharge_discount=0.0,
-                sim_activation_discount=0.0
             )
             charges_add.save()
             return JsonResponse({'status': 'success', 'data_received': signup_data.id, 'account_balance': user_balance.account_balance_amount})
@@ -300,7 +296,9 @@ def add_carriers(request):
                 name=data['name'],
                 description=data['description'],
                 logo_url=data['logo_url'],
-                company_id=company_id
+                company_id=company_id,
+                esim_required_fields=data['esim_required_fields'],
+                physical_required_fields=data['physical_required_fields']
             )
             carriers_data.save()
             return JsonResponse({'status': 'success', 'data_received': carriers_data.id})
@@ -318,7 +316,9 @@ def get_carriers(request):
                 'name': c.name,
                 'description': c.description,
                 'logo_url': c.logo_url,
-                'company_id': c.company_id
+                'company_id': c.company_id,
+                'esim_required_fields': c.esim_required_fields,
+                'physical_required_fields': c.physical_required_fields
             }
             for c in careers_data
         ]
@@ -849,21 +849,11 @@ def update_charges_discount(request):
         try:
             data = json.loads(request.body)
             usernames = data.get('usernames', [])
-            topup_charges = data.get('topup_charges')
             recharge_charges = data.get('recharge_charges')
-            sim_activation_charges = data.get('sim_activation_charges')
-            topup_discount = data.get('topup_discount')
             recharge_discount = data.get('recharge_discount')
-            sim_activation_discount = data.get('sim_activation_discount')
-            if not usernames or topup_charges is None or recharge_charges is None or sim_activation_charges is None:
-                return JsonResponse({"status": "fail", "message": "Missing data"})
             updated_count = Charges_and_Discount.objects.filter(username__in=usernames).update(
-                topup_charges=topup_charges,
                 recharge_charges=recharge_charges,
-                sim_activation_charges=sim_activation_charges,
-                topup_discount=topup_discount,
                 recharge_discount=recharge_discount,
-                sim_activation_discount=sim_activation_discount
             )
             return JsonResponse({"status": "success", "updated_count": updated_count})
         except Exception as e:
@@ -893,10 +883,30 @@ def add_offer(request):
             username = data['username']
             plan_id = data['plan_id']
             discount_percentage = data['discount_percentage']
-            offers_data = Offers(
+            offers_data = Plan_offers(
                 username=username,
                 discount_percentage=discount_percentage,
                 plan_id=plan_id
+            )
+            offers_data.save()
+            return JsonResponse({'status': 'success', 'data_received': offers_data})
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+    return JsonResponse({'status': 'error', 'message': 'Invalid request method'}, status=400)
+
+
+@csrf_exempt
+def add_company_offer(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            username = data['username']
+            company_id = data['company_id']
+            discount_percentage = data['discount_percentage']
+            offers_data = Company_offers(
+                username=username,
+                discount_percentage=discount_percentage,
+                company_id=company_id
             )
             offers_data.save()
             return JsonResponse({'status': 'success', 'data_received': offers_data})
@@ -913,7 +923,36 @@ def get_user_offers(request):
             username = data.get('username')
             if not username:
                 return JsonResponse({'status': 'error', 'message': 'username is required'}, status=400)
-            offers = Offers.objects.filter(username=username).order_by('-id')
+            offers = Company_offers.objects.filter(username=username).order_by('-id')
+            unique_latest_offers = {}
+            for offer in offers:
+                if offer.plan_id not in unique_latest_offers:
+                    unique_latest_offers[offer.plan_id] = {
+                        "plan_id": offer.plan_id,
+                        "discount_percentage": str(offer.discount_percentage),
+                        "username": offer.username,
+                        "id": offer.id
+                    }
+            result = list(unique_latest_offers.values())
+            return JsonResponse({
+                "status": "success",
+                "count": len(result),
+                "offers": result
+            })
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+    return JsonResponse({'status': 'error', 'message': 'Invalid request method'}, status=400)
+
+
+@csrf_exempt
+def get_company_offers(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            username = data.get('username')
+            if not username:
+                return JsonResponse({'status': 'error', 'message': 'username is required'}, status=400)
+            offers = Company_offers.objects.filter(username=username).order_by('-id')
             unique_latest_offers = {}
             for offer in offers:
                 if offer.plan_id not in unique_latest_offers:
@@ -947,7 +986,47 @@ def update_offer(request):
                     'status': 'error',
                     'message': 'username and plan_id are required'
                 }, status=400)
-            offer = Offers.objects.filter(
+            offer = Plan_offers.objects.filter(
+                username=username,
+                plan_id=plan_id
+            ).order_by('-id').first()
+            if not offer:
+                return JsonResponse({
+                    'status': 'error',
+                    'message': 'Offer not found for this username and plan_id'
+                }, status=404)
+            if discount_percentage:
+                offer.discount_percentage = discount_percentage
+            offer.save()
+            return JsonResponse({
+                'status': 'success',
+                'message': 'Offer updated successfully',
+                'updated_offer': {
+                    'id': offer.id,
+                    'username': offer.username,
+                    'plan_id': offer.plan_id,
+                    'discount_percentage': str(offer.discount_percentage)
+                }
+            })
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+    return JsonResponse({'status': 'error', 'message': 'Invalid request method'}, status=400)
+
+
+@csrf_exempt
+def update_company_offer(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            username = data.get('username')
+            plan_id = data.get('plan_id')
+            discount_percentage = data.get('discount_percentage')
+            if not username or not plan_id:
+                return JsonResponse({
+                    'status': 'error',
+                    'message': 'username and plan_id are required'
+                }, status=400)
+            offer = Company_offers.objects.filter(
                 username=username,
                 plan_id=plan_id
             ).order_by('-id').first()
@@ -982,12 +1061,8 @@ def default_ch_dis(request):
             default_data = Default_charged_discount(
                 plan_id=data['plan_id'],
                 company_id=data['company_id'],
-                topup_charges=data['topup_charges'],
                 recharge_charges=data['recharge_charges'],
-                sim_activation_charges=data['sim_activation_charges'],
-                topup_discount=data['topup_discount'],
                 recharge_discount=data['recharge_discount'],
-                sim_activation_discount=data['sim_activation_discount']
             )
             default_data.save()
             return JsonResponse({'status': 'success', 'data_received': default_data.plan_id})
@@ -1003,12 +1078,8 @@ def update_default_ch_dis(request):
             data = json.loads(request.body)
             plan_id = data['plan_id']
             default_data = Default_charged_discount.objects.filter(plan_id=plan_id).first()
-            default_data.topup_charges = data['topup_charges'],
             default_data.recharge_charges = data['recharge_charges'],
-            default_data.sim_activation_charges = data['sim_activation_charges'],
-            default_data.topup_discount = data['topup_discount'],
             default_data.recharge_discount = data['recharge_discount'],
-            default_data.sim_activation_discount = data['sim_activation_discount']
             default_data.save()
             return JsonResponse({'status': 'success', 'data_received': default_data.plan_id})
         except Exception as e:
