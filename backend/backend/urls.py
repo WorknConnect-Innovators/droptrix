@@ -57,6 +57,7 @@ urlpatterns = [
     path('api/get-user-account-balance/', views.get_user_account_balance, name='get_user_account_balance'),
     path('api/update-charges-discount/', views.update_charges_discount, name='update_charges_discount'),
     path('api/get-company-name/', views.get_company_name, name='get_company_name'),
+    path('api/get-plan-name/', views.get_plan_name, name='get_plan_name'),
     path('api/cancel-topup-data/', views.cancel_topup, name='cancel_topup'),
     path('api/get-user-charges-discount/', views.user_charges_discount, name='user_charges_discount'),
     path('api/add-user-offer/', views.add_offer, name='add_offer'),
@@ -66,5 +67,6 @@ urlpatterns = [
     path('api/update-default-charges-discount/', views.update_default_ch_dis, name='update_default_ch_dis'),
     path('api/add-company-offer/', views.add_company_offer, name='add_company_offer'),
     path('api/get-company-offers/', views.get_company_offers, name='get_company_offers'),
-    path('api/update-company-offer/', views.update_company_offer, name='update_company_offer')
+    path('api/update-company-offer/', views.update_company_offer, name='update_company_offer'),
+    path('api/get-default-charges-discount', views.get_default_ch_dis, name='get_default_ch_dis')
 ]

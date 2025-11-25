@@ -118,6 +118,7 @@ class Recharge(models.Model):
     username = models.CharField(max_length=200)
     timestamp = models.DateTimeField(auto_now_add=True)
     balance_history = models.DecimalField(max_digits=10, decimal_places=2)
+    payable_amount = models.DecimalField(max_digits=10, decimal_places=2)
 
     def __str__(self):
         return self.username
@@ -133,12 +134,12 @@ class Activate_sim(models.Model):
     iccid = models.CharField(max_length=200, default=None)
     company_id = models.CharField(max_length=200, default=None)
     amount_charged = models.DecimalField(max_digits=10, decimal_places=2)
-    offer = models.CharField(max_length=2000)
     pending = models.BooleanField(default=True)
     timestamp = models.DateTimeField(auto_now_add=True)
     balance_history = models.DecimalField(max_digits=10, decimal_places=2)
     email = models.CharField(max_length=200, unique=True)
     postal_code = models.IntegerField()
+    pin_code = models.IntegerField()
 
     def __str__(self):
         return self.username

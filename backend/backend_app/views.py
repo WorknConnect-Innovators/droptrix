@@ -422,6 +422,19 @@ def update_plans(request):
 
 
 @csrf_exempt
+def get_plan_name(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            plan_id = data['plan_id']
+            plan_name = Plans.objects.filter(plan_id=plan_id).first().plan_name
+            return JsonResponse({'status': 'success', 'data_received': plan_name})
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+    return JsonResponse({'status': 'error', 'message': 'Invalid request method'}, status=400)
+
+
+@csrf_exempt
 def add_payasyougo(request):
     if request.method == 'POST':
         try:
@@ -455,6 +468,7 @@ def get_payasyougo(request):
                 'zipcode': p.zipcode,
                 'e_id': p.e_id,
                 'plan_id': p.plan_id,
+                'plan_name': Plans.objects.filter(plan_id=p.plan_id).first().plan_name,
                 'email': p.email,
                 'contact_no': p.contact_no,
                 'sim_type': p.sim_type
@@ -537,6 +551,7 @@ def get_topup(request):
             {
                 'topup_id': t.id,
                 'company_id': t.company_id,
+                'company_name': Carriers.objects.filter(company_id=t.company_id).first().name,
                 'amount': t.amount,
                 'phone_no': t.phone_no,
                 'username': t.username,
@@ -602,7 +617,8 @@ def user_recharge_account(request):
                 amount=data['amount'],
                 payment_screenshot=data['payment_screenshot'],
                 username=data['username'],
-                balance_history=balance_data.account_balance_amount
+                balance_history=balance_data.account_balance_amount,
+                payable_amount=data['payable_amount']
             )
             recharge_data.save()
             history_message=f'You submitted a request for recharge of amount {data["amount"]}.'
@@ -630,7 +646,8 @@ def get_recharge_data(request):
                 'username': r.username,
                 'timestamp': r.timestamp,
                 'approved': r.approved,
-                'balance_history': r.balance_history
+                'balance_history': r.balance_history,
+                'payable_amount': r.payable_amount
             }
             for r in recharge_data
         ]
@@ -700,14 +717,14 @@ def user_sim_activation(request):
                 plan_id=data['plan_id'],
                 phone_no=data['phone_no'],
                 amount_charged=data['amount_charged'],
-                offer=data['offer'],
                 balance_history=balance_data.account_balance_amount,
                 emi=data['emi'],
                 eid=data['eid'],
                 iccid=data['iccid'],
                 company_id=plan_details.company_id,
                 email=data['email'],
-                postal_code=data['postal_code']
+                postal_code=data['postal_code'],
+                pin_code=data['pin_code']
             )
             if balance_data.account_balance_amount < data['amount_charged']:
                 return JsonResponse({'status': 'success', 'message': 'Insufficient balance. Please recharge your account.'}, status=200)
@@ -737,9 +754,9 @@ def get_activation_data(request):
                 'activation_id': a.activation_id,
                 'username': a.username,
                 'plan_id': a.plan_id,
+                'plan_name': Plans.objects.filter(plan_id=a.plan_id).first().plan_name,
                 'phone_no': a.phone_no,
                 'amount_charged': a.amount_charged,
-                'offer': a.offer,
                 'pending': a.pending,
                 'timestamp': a.timestamp,
                 'balance_history': a.balance_history,
@@ -747,8 +764,10 @@ def get_activation_data(request):
                 'eid': a.eid,
                 'iccid': a.iccid,
                 'company_id': a.company_id,
+                'company_name': Carriers.objects.filter(company_id=a.company_id).first().name,
                 'email': a.email,
-                'postal_code': a.postal_code
+                'postal_code': a.postal_code,
+                'pin_code': a.pin_code
             }
             for a in activation_data
         ]
@@ -929,6 +948,7 @@ def get_user_offers(request):
                 if offer.plan_id not in unique_latest_offers:
                     unique_latest_offers[offer.plan_id] = {
                         "plan_id": offer.plan_id,
+                        "plan_name": Plans.objects.filter(plan_id=offer.plan_id).first().plan_name,
                         "discount_percentage": str(offer.discount_percentage),
                         "username": offer.username,
                         "id": offer.id
@@ -957,7 +977,8 @@ def get_company_offers(request):
             for offer in offers:
                 if offer.company_id not in unique_latest_offers:
                     unique_latest_offers[offer.company_id] = {
-                        "plan_id": offer.company_id,
+                        "company_id": offer.company_id,
+                        "company_name": Carriers.objects.filter(company_id=offer.company_id).first().name,
                         "discount_percentage": str(offer.discount_percentage),
                         "username": offer.username,
                         "id": offer.id
@@ -1019,16 +1040,16 @@ def update_company_offer(request):
         try:
             data = json.loads(request.body)
             username = data.get('username')
-            plan_id = data.get('plan_id')
+            company_id = data.get('company_id')
             discount_percentage = data.get('discount_percentage')
-            if not username or not plan_id:
+            if not username or not company_id:
                 return JsonResponse({
                     'status': 'error',
                     'message': 'username and plan_id are required'
                 }, status=400)
             offer = Company_offers.objects.filter(
                 username=username,
-                plan_id=plan_id
+                company_id=company_id
             ).order_by('-id').first()
             if not offer:
                 return JsonResponse({
@@ -1044,7 +1065,7 @@ def update_company_offer(request):
                 'updated_offer': {
                     'id': offer.id,
                     'username': offer.username,
-                    'plan_id': offer.company_id,
+                    'company_id': offer.company_id,
                     'discount_percentage': str(offer.discount_percentage)
                 }
             })
@@ -1085,3 +1106,22 @@ def update_default_ch_dis(request):
         except Exception as e:
             return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
     return JsonResponse({'status': 'error', 'message': 'Invalid request method'}, status=400)
+
+
+@csrf_exempt
+def get_default_ch_dis(request):
+    if request.method == 'GET':
+        get_data = Default_charged_discount.objects.all()
+        get_all_data = [
+            {
+                'plan_id': d.plan_id,
+                'plan_name': Plans.objects.filter(plan_id=d.plan_id).first().plan_name,
+                'company_id': d.company_id,
+                'company_name': Carriers.objects.filter(company_id=d.company_id).first().name,
+                'recharge_charges': d.recharge_charges,
+                'recharge_discount': d.recharge_discount
+            }
+            for d in get_data
+        ]
+        return JsonResponse({'status': 'success', 'data': get_all_data})
+    return JsonResponse({'status': 'error', 'message': 'Only GET method is allowed'})
