@@ -189,19 +189,19 @@ function UserDetails() {
                         <p className="flex items-center gap-2">
                             <User className="w-4 h-4 text-gray-600" />
                             <span className="font-semibold">Name:</span>
-                            {user.full_name}
+                            {user?.full_name}
                         </p>
 
                         <p className="flex items-center gap-2">
                             <Mail className="w-4 h-4 text-gray-600" />
                             <span className="font-semibold">Email:</span>
-                            {user.email}
+                            {user?.email}
                         </p>
 
                         <p className="flex items-center gap-2">
                             <BadgeCheck className="w-4 h-4 text-gray-600" />
                             <span className="font-semibold">Username:</span>
-                            {user.username}
+                            {user?.username}
                         </p>
 
                     </div>
