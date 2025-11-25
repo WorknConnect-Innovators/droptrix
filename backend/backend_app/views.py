@@ -1151,6 +1151,7 @@ def update_topup(request):
                 balance_data.save()
                 topup_data.balance_history = balance_data.account_balance_amount
                 topup_data.payable_amount = data['payable_amount']
+                topup_data.save()
             else:
                 return JsonResponse({'status': 'success', 'message': 'Topup request is not in pending status.'})
             return JsonResponse({'status': 'success', 'data_received': topup_data.id})
@@ -1178,6 +1179,7 @@ def update_recharge(request):
                 balance_data.save()
                 recharge_data.balance_history = balance_data.account_balance_amount
                 recharge_data.payable_amount = data['payable_amount']
+                recharge_data.save()
             else:
                 return JsonResponse({'status': 'success', 'message': 'Recharge request is not in pending status.'})
             return JsonResponse({'status': 'success', 'data_received': recharge_data.recharge_id})
@@ -1211,9 +1213,28 @@ def update_activation(request):
                 balance_data.save()
                 activation_data.balance_history = balance_data.account_balance_amount
                 activation_data.amount_charged = data['amount_charged']
+                activation_data.save()
             else:
                 return JsonResponse({'status': 'success', 'message': 'Recharge request is not in pending status.'})
             return JsonResponse({'status': 'success', 'data_received': activation_data.activation_id})
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+    return JsonResponse({'status': 'error', 'message': 'Invalid request method'}, status=400)
+
+
+@csrf_exempt
+def update_carriers(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            company_data = Carriers.objects.filter(company_id=data['company_id']).first()
+            company_data.name = data['name']
+            company_data.description = data['description']
+            company_data.logo_url = data['logo_url']
+            company_data.esim_required_fields = data['esim_required_fields']
+            company_data.physical_required_fields = data['physical_required_fields']
+            company_data.save()
+            return JsonResponse({'status': 'success', 'data_received': company_data.company_id})
         except Exception as e:
             return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
     return JsonResponse({'status': 'error', 'message': 'Invalid request method'}, status=400)
