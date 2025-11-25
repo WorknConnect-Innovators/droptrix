@@ -1,11 +1,14 @@
 import React, { useEffect, useState } from "react";
 import { Plus, Search, Edit2, Trash2, DeleteIcon } from "lucide-react";
+import { getIDBasedPlans } from "../../../utilities/getPlans";
 
 function AdminPlansPage() {
     const [searchTerm, setSearchTerm] = useState("");
     const [isAddingPlan, setIsAddingPlan] = useState(false);
     const [plans, setPlans] = useState([]);
     const [carriers, setCarriers] = useState([]);
+    const [isEditing, setisEditing] = useState(false);
+    const [editingPlanId, setEditingPlanId] = useState(null);
     const [newPlan, setNewPlan] = useState({
         company_id: "",
         plan_name: "",
@@ -19,6 +22,27 @@ function AdminPlansPage() {
         tagline2: "",
         details: "",
     });
+
+    const handleEditingToggle = async (planID) => {
+        // open the shared form in edit mode
+        setisEditing(true);
+        setIsAddingPlan(true);
+        setEditingPlanId(planID);
+        const plans = await getIDBasedPlans(planID);
+        setNewPlan({
+            company_id: plans.company_id,
+            plan_name: plans.plan_name,
+            plan_type: plans.plan_type,
+            plan_price: plans.plan_price,
+            previous_price: plans.previous_price,
+            plan_duration: plans.plan_duration,
+            plan_feature: plans.plan_feature || [""],
+            off_percentage: plans.off_percentage,
+            tagline1: plans.tagline1,
+            tagline2: plans.tagline2,
+            details: plans.details,
+        });
+    }
 
     const duration = ["1 Month", "3 Months", "6 Months", "12 Months"];
     const planTypes = ["Prepaid", "Postpaid", "Company"];
@@ -141,6 +165,86 @@ function AdminPlansPage() {
         }
     };
 
+    // Update existing plan
+    const handleUpdatePlan = async () => {
+        if (!editingPlanId) return;
+
+        const {
+            company_id,
+            plan_name,
+            plan_type,
+            plan_price,
+            previous_price,
+            plan_duration,
+            plan_feature,
+            off_percentage,
+            tagline1,
+            tagline2,
+            details,
+        } = newPlan;
+
+        if (!company_id || !plan_name || !plan_duration) {
+            alert("Please fill required fields before updating the plan.");
+            return;
+        }
+
+        try {
+            const res = await fetch(
+                `${process.env.REACT_APP_API_URL_PRODUCTION}/api/update-plans/`,
+                {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        company_id,
+                        plan_name,
+                        plan_type,
+                        popularity: 'High',
+                        live_status: true,
+                        plan_price,
+                        previous_price,
+                        plan_duration,
+                        plan_feature,
+                        off_percentage,
+                        tagline1,
+                        tagline2,
+                        details,
+                        plan_id: editingPlanId,
+                    }),
+                }
+            );
+
+            const result = await res.json();
+            if (result.status === "success") {
+                setPlans((prev) =>
+                    prev.map((p) =>
+                        p.plan_id === editingPlanId || p.id === editingPlanId ? { ...p, ...newPlan } : p
+                    )
+                );
+                setIsAddingPlan(false);
+                setisEditing(false);
+                setEditingPlanId(null);
+                setNewPlan({
+                    company_id: "",
+                    plan_name: "",
+                    plan_type: "",
+                    plan_price: "",
+                    previous_price: "",
+                    plan_duration: "",
+                    plan_feature: [""],
+                    off_percentage: "",
+                    tagline1: "",
+                    tagline2: "",
+                    details: "",
+                });
+            } else {
+                alert("Failed to update plan: " + (result.message || "Unknown error"));
+            }
+        } catch (err) {
+            console.error("Update error:", err);
+            alert("Update failed. See console for details.");
+        }
+    };
+
 
     // ✅ Delete Plan (frontend only)
     const handleDelete = (id) => {
@@ -153,7 +257,26 @@ function AdminPlansPage() {
         ? plans.filter((c) =>
             c.plan_name?.toLowerCase().includes(searchTerm.toLowerCase())
         )
-        : [];
+        : []
+
+    const handleCancel = () => {
+        setisEditing(false);
+        setIsAddingPlan(false);
+        setNewPlan({
+            company_id: "",
+            plan_name: "",
+            plan_type: "",
+            plan_price: "",
+            previous_price: "",
+            plan_duration: "",
+            plan_feature: [""],
+            off_percentage: "",
+            tagline1: "",
+            tagline2: "",
+            details: "",
+        });
+        setEditingPlanId(null);
+    }
 
     return (
         <div>
@@ -184,7 +307,7 @@ function AdminPlansPage() {
                         </button>
                     ) : (
                         <button
-                            onClick={() => setIsAddingPlan(false)}
+                            onClick={handleCancel}
                             className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition"
                         >
                             <DeleteIcon size={18} /> Cancel
@@ -195,54 +318,7 @@ function AdminPlansPage() {
             </div>
 
             {/* Table */}
-            {!isAddingPlan ? (
-                <div className="bg-white shadow-md rounded-lg overflow-hidden">
-                    <table className="min-w-full text-sm text-gray-700">
-                        <thead className="bg-blue-50 text-gray-600 uppercase text-xs">
-                            <tr>
-                                <th className="px-6 py-3 text-left">Plan Name</th>
-                                <th className="px-6 py-3 text-left">Price</th>
-                                <th className="px-6 py-3 text-left">Description</th>
-                                <th className="px-6 py-3 text-center">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {filteredPlans.length > 0 ? (
-                                filteredPlans.map((plan, index) => (
-                                    <tr
-                                        key={index}
-                                        className="border-t hover:bg-gray-50 transition"
-                                    >
-                                        <td className="px-6 py-3 font-medium">{plan.plan_name}</td>
-                                        <td className="px-6 py-3">{plan.plan_price}</td>
-                                        <td className="px-6 py-3">{plan.details}</td>
-                                        <td className="px-6 py-3 flex justify-center gap-3">
-                                            <button className="text-blue-600 hover:text-blue-800">
-                                                <Edit2 size={18} />
-                                            </button>
-                                            <button
-                                                onClick={() => handleDelete(plan.id)}
-                                                className="text-red-600 hover:text-red-800"
-                                            >
-                                                <Trash2 size={18} />
-                                            </button>
-                                        </td>
-                                    </tr>
-                                ))
-                            ) : (
-                                <tr>
-                                    <td
-                                        colSpan="4"
-                                        className="px-6 py-6 text-center text-gray-500 italic"
-                                    >
-                                        No plans found.
-                                    </td>
-                                </tr>
-                            )}
-                        </tbody>
-                    </table>
-                </div>
-            ) : (
+            {isAddingPlan || isEditing ? (
                 <div className="w-full">
                     <div className="border rounded-md shadow p-6 bg-white">
                         <div className="grid grid-cols-6 gap-6">
@@ -255,7 +331,8 @@ function AdminPlansPage() {
                                     onChange={(e) =>
                                         setNewPlan((prev) => ({ ...prev, company_id: e.target.value }))
                                     }
-                                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    disabled={isEditing}
+                                    className={`w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500${isEditing ? " bg-gray-100 cursor-not-allowed" : ""}`}
                                 >
                                     <option value="">Select Carrier</option>
                                     {Array.isArray(carriers) && carriers.length > 0 ? (
@@ -279,7 +356,8 @@ function AdminPlansPage() {
                                     onChange={(e) =>
                                         setNewPlan((prev) => ({ ...prev, plan_name: e.target.value }))
                                     }
-                                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    disabled={isEditing}
+                                    className={`w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500${isEditing ? " bg-gray-100 cursor-not-allowed" : ""}`}
                                     placeholder="Enter plan name"
                                 />
                             </div>
@@ -315,7 +393,7 @@ function AdminPlansPage() {
                                 >
                                     <option value="">Select Plan Type</option>
                                     {planTypes.map((type, index) => (
-                                        <option key={index} value={type}>
+                                        <option selected={newPlan.plan_type === type} key={index} value={type}>
                                             {type}
                                         </option>
                                     ))}
@@ -450,19 +528,76 @@ function AdminPlansPage() {
                         {/* Buttons */}
                         <div className="mt-6 flex justify-end gap-3">
                             <button
-                                onClick={() => setIsAddingPlan(false)}
+                                onClick={handleCancel}
                                 className="px-4 py-2 text-gray-600 hover:text-gray-800"
                             >
                                 Cancel
                             </button>
-                            <button
-                                onClick={handleAddPlan}
-                                className="px-5 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition disabled:bg-gray-400"
-                            >
-                                Add Plan
-                            </button>
+                            {isEditing ? (
+                                <button
+                                    onClick={handleUpdatePlan}
+                                    className="px-5 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition disabled:bg-gray-400"
+                                >
+                                    Update Plan
+                                </button>
+                            ) : (
+                                <button
+                                    onClick={handleAddPlan}
+                                    className="px-5 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition disabled:bg-gray-400"
+                                >
+                                    Add Plan
+                                </button>
+                            )}
+
                         </div>
                     </div>
+                </div>
+            ) : (
+                <div className="bg-white shadow-md rounded-lg overflow-hidden">
+                    <table className="min-w-full text-sm text-gray-700">
+                        <thead className="bg-blue-50 text-gray-600 uppercase text-xs">
+                            <tr>
+                                <th className="px-6 py-3 text-left">Plan Name</th>
+                                <th className="px-6 py-3 text-left">Price</th>
+                                <th className="px-6 py-3 text-left">Description</th>
+                                <th className="px-6 py-3 text-center">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {filteredPlans.length > 0 ? (
+                                filteredPlans.map((plan, index) => (
+                                    <tr
+                                        key={index}
+                                        className="border-t hover:bg-gray-50 transition"
+                                    >
+                                        <td className="px-6 py-3 font-medium">{plan.plan_name}</td>
+                                        <td className="px-6 py-3">{plan.plan_price}</td>
+                                        <td className="px-6 py-3">{plan.details}</td>
+                                        <td className="px-6 py-3 flex justify-center gap-3">
+                                            <button onClick={() => handleEditingToggle(plan.plan_id)} className="text-blue-600 hover:text-blue-800">
+                                                <Edit2 size={18} />
+                                            </button>
+                                            <button
+                                                onClick={() => handleDelete(plan.id)}
+                                                className="text-red-600 hover:text-red-800"
+                                            >
+                                                <Trash2 size={18} />
+                                            </button>
+                                        </td>
+                                    </tr>
+                                ))
+                            ) : (
+                                <tr>
+                                    <td
+                                        colSpan="4"
+                                        className="px-6 py-6 text-center text-gray-500 italic"
+                                    >
+                                        No plans found.
+                                    </td>
+                                </tr>
+                            )}
+                        </tbody>
+                    </table>
                 </div>
 
             )}

@@ -180,6 +180,7 @@ function AdminFunds() {
                                 <th className="px-10 py-3 text-left">Username</th>
                                 <th className="px-10 py-3 text-left">Time</th>
                                 <th className="px-10 py-3 text-left">Amount</th>
+                                 <th className="px-10 py-3 text-left">Paid Amount</th>
                                 <th className="px-10 py-3 text-left">Screenshot</th>
                                 <th className="px-10 py-3 text-left">Status</th>
                                 <th className="px-10 py-3 text-left">Action</th>
@@ -193,7 +194,8 @@ function AdminFunds() {
                                         <td className="px-10 py-3 font-semibold">{index <= 8 ? `0${index + 1}` : index + 1}</td>
                                         <td className="px-10 py-3 font-semibold">{item.username}</td>
                                         <td className="px-10 py-3">{new Date(item.timestamp).toLocaleString()}</td>
-                                        <td className="px-10 py-3 text-green-600 font-semibold">$ {item.amount}</td>
+                                        <td className="px-10 py-3 text-red-600 font-semibold">$ {item.amount}</td>
+                                         <td className="px-10 py-3 text-green-600 font-semibold">$ {item.payable_amount}</td>
                                         <td className="px-10 py-3">
                                             <a href={item.payment_screenshot} target="_blank" rel="noreferrer" className="text-blue-600 underline">View</a>
                                         </td>

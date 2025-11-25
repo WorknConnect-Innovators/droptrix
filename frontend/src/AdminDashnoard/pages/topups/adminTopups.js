@@ -177,6 +177,7 @@ function AdminTopups() {
                                 <th className="px-10 py-3 text-left">Carrier</th>
                                 <th className="px-10 py-3 text-left">Phone No</th>
                                 <th className="px-10 py-3 text-left">Amount</th>
+                                <th className="px-10 py-3 text-left">Paid Amount</th>
                                 <th className="px-10 py-3 text-left">Status</th>
                                 <th className="px-10 py-3 text-left">Action</th>
                             </tr>
@@ -185,12 +186,13 @@ function AdminTopups() {
                         <tbody>
                             {filteredData.length > 0 ? (
                                 currentItems.slice().reverse().map((item, index) => (
-                                    <tr key={item.id} className="border-t hover:bg-gray-50">
+                                    <tr key={index} className="border-t hover:bg-gray-50">
                                         <td className="px-10 py-3 font-semibold">{index <= 8 ? `0${index + 1}` : index + 1}</td>
                                         <td className="px-10 py-3 font-semibold">{item.username}</td>
-                                        <td className="px-10 py-3">{item.company_id}</td>
+                                        <td className="px-10 py-3">{item.company_name}</td>
                                         <td className="px-10 py-3">{item.phone_no}</td>
-                                        <td className="px-10 py-3 text-green-600 font-semibold">$ {item.amount}</td>
+                                        <td className="px-10 py-3 text-red-600 font-semibold">$ {item.amount}</td>
+                                        <td className="px-10 py-3 text-green-600 font-semibold">$ {item.payable_amount}</td>
                                         <td className="px-10 py-3">{item.status === 'Approved' ? (<span className="px-3 py-1 bg-green-100 text-green-600 rounded-full text-xs">Approved</span>) : (<span className="px-3 py-1 bg-yellow-100 text-yellow-600 rounded-full text-xs">Pending</span>)}</td>
                                         <td className="px-10 py-3">
                                             {item.status !== 'Approved' && (
@@ -211,7 +213,7 @@ function AdminTopups() {
                     </table>
 
                     {filteredData.slice().reverse().map((item, index) => (
-                        <div key={item.id} className="md:hidden border rounded-xl shadow-sm p-4 mb-4 bg-white hover:shadow-md transition flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
+                        <div key={index} className="md:hidden border rounded-xl shadow-sm p-4 mb-4 bg-white hover:shadow-md transition flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
                             <div className="flex flex-col sm:flex-row sm:items-center sm:gap-6">
                                 <div className="text-gray-700 font-bold text-lg">#{index + 1}</div>
                                 <div className="text-gray-500 text-sm">{item.username}</div>

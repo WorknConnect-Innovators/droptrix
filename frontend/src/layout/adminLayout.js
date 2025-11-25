@@ -13,7 +13,7 @@ const AdminDashLayout = () => {
             <div className="md:block hidden">
                 <Sidebar userType={CurrentUser?.user_type} />
             </div>
-            <main className="flex-1 md:ml-20 ml-0 transition-all duration-300">
+            <main className="flex-1 md:ml-20 ml-0 transition-all duration-300 overflow-x-hidden">
                 <AdminTopnav />
                 <div className="md:px-10 px-4 py-6">
                     <Outlet />

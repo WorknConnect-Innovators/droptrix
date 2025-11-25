@@ -24,7 +24,7 @@ function AdminSimActivation() {
     // Load activation data
     const loadData = async () => {
         try {
-            const res = await fetch(`${process.env.REACT_APP_API_URL_PRODUCTION}/api/get_activation_data/`);
+            const res = await fetch(`${process.env.REACT_APP_API_URL_PRODUCTION}/api/get-activation-data/`);
             const data = await res.json();
             if (data.status === "success") {
                 setActivationData(data.data);
@@ -139,15 +139,22 @@ function AdminSimActivation() {
 
             <div className="flex flex-col md:h-[59vh] h-[54vh] w-full">
                 <div className="flex-1 overflow-y-auto w-full md:px-0 px-4">
-                    <table className="w-full text-sm text-gray-700 lg:inline-table hidden">
+                    <table className="w-full text-sm text-gray-700 lg:inline-table hidden overflow-x-auto">
                         <thead className="bg-blue-50 text-gray-600 uppercase text-xs sticky top-0 z-10">
                             <tr>
-                                <th className="px-10 py-3 text-left">No</th>
+                                <th className="px-10 py-3 text-left sticky left-0 bg-blue-50">No</th>
                                 <th className="px-10 py-3 text-left">Username</th>
-                                <th className="px-10 py-3 text-left">Plan ID</th>
+                                <th className="px-10 py-3 text-left">Email</th>
+                                <th className="px-10 py-3 text-left">Plan</th>
                                 <th className="px-10 py-3 text-left">Phone No</th>
+                                <th className="px-10 py-3 text-left">EMI</th>
+                                <th className="px-10 py-3 text-left">EID</th>
+                                <th className="px-10 py-3 text-left">ICCID</th>
+                                <th className="px-10 py-3 text-left whitespace-nowrap">Postal Code</th>
+                                <th className="px-10 py-3 text-left whitespace-nowrap">Pin code</th>
+                                <th className="px-10 py-3 text-left">Timestamp</th>
                                 <th className="px-10 py-3 text-left">Amount</th>
-                                <th className="px-10 py-3 text-left">Offer</th>
+                                <th className="px-10 py-3 text-left whitespace-nowrap">Paid Amount</th>
                                 <th className="px-10 py-3 text-left">Status</th>
                                 <th className="px-10 py-3 text-left">Action</th>
                             </tr>
@@ -157,12 +164,19 @@ function AdminSimActivation() {
                             {filteredData.length > 0 ? (
                                 currentItems.slice().reverse().map((item, idx) => (
                                     <tr key={item.activation_id} className="border-t hover:bg-gray-50">
-                                        <td className="px-10 py-3 font-semibold">{idx <= 8 ? `0${idx + 1}` : idx + 1}</td>
+                                        <td className="px-10 py-3 font-semibold sticky left-0 bg-white">{idx <= 8 ? `0${idx + 1}` : idx + 1}</td>
                                         <td className="px-10 py-3 font-semibold">{item.username}</td>
-                                        <td className="px-10 py-3">{item.plan_id}</td>
+                                        <td className="px-10 py-3">{item.email}</td>
+                                        <td className="px-10 py-3 whitespace-nowrap">{item.plan_name}</td>
                                         <td className="px-10 py-3">{item.phone_no}</td>
+                                        <td className="px-10 py-3">{item.emi}</td>
+                                        <td className="px-10 py-3">{item.eid}</td>
+                                        <td className="px-10 py-3">{item.iccid}</td>
+                                        <td className="px-10 py-3">{item.postal_code}</td>
+                                        <td className="px-10 py-3">{item.pin_code}</td>
+                                        <td className="px-10 py-3 whitespace-nowrap ">{new Date(item.timestamp).toLocaleString()}</td>
+                                        <td className="px-10 py-3 text-red-600 font-semibold">$ {item.amount}</td>
                                         <td className="px-10 py-3 text-green-600 font-semibold">$ {item.amount_charged}</td>
-                                        <td className="px-10 py-3">{item.offer}</td>
                                         <td className="px-10 py-3">{item.pending ? (<span className="px-3 py-1 bg-yellow-100 text-yellow-600 rounded-full text-xs">Pending</span>) : (<span className="px-3 py-1 bg-green-100 text-green-600 rounded-full text-xs">Approved</span>)}</td>
                                         <td className="px-10 py-3">{item.pending && (<button onClick={() => { setSelectedActivation(item); setShowApproveModal(true); }} className="flex items-center gap-1 bg-blue-600 text-white px-3 py-1 rounded-lg text-xs hover:bg-blue-700">Approve</button>)}</td>
                                     </tr>
