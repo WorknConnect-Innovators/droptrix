@@ -42,12 +42,57 @@ function ActivateSim() {
     const [pinCode, setPinCode] = useState("");
     const [email, setEmail] = useState("");
     const [error, setError] = useState("");
+    const [planDiscount, setPlanDiscount] = useState(0);
+    const [payableAmount, setPayableAmount] = useState(0);
 
     const [formData, setFormData] = useState({
         simType: "Sim", // "Sim" or "E-Sim"
     });
 
-    const [balance, setBalance] = useState(100);
+    const [availableBalance, setAvailableBalance] = useState(0);
+
+    const getUserPlanOffer = async () => {
+        try {
+            const res = await fetch(`${process.env.REACT_APP_API_URL_PRODUCTION}/api/get-user-offers/`,
+                {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: JSON.parse(localStorage.getItem("userData")).username, })
+                })
+            const data = await res.json()
+            const offers = data.offers
+            const discount = offers.filter(offer => offer.plan_id === selectedPlan)
+            setPlanDiscount(discount[0].discount_percentage)
+            setPayableAmount(selectedPlanDetails.plan_price - (selectedPlanDetails.plan_price * discount[0].discount_percentage / 100))
+            if (data.status === 'success') {
+                message.success('Charges fetched successfully')
+            } else {
+                message.error(data.message || 'Failed to update charges')
+            }
+        } catch (err) { console.error(err); message.error('Server error') }
+    }
+
+    const loadBalance = async () => {
+        try {
+            const res = await fetch(
+                `${process.env.REACT_APP_API_URL_PRODUCTION}/api/get-user-account-balance/`,
+                {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        username: JSON.parse(localStorage.getItem("userData")).username,
+                    }),
+                }
+            );
+            const data = await res.json();
+
+            if (data.status === "success") {
+                setAvailableBalance(data.data_received.account_balance_amount);
+            }
+        } catch (error) {
+            console.error(error);
+        }
+    };
 
     useEffect(() => {
         if (fromDashboardAdd) {
@@ -107,6 +152,8 @@ function ActivateSim() {
     useEffect(() => {
         if (selectedCarrier && selectedPlan) {
             setAddingDetails(true);
+            loadBalance();
+            getUserPlanOffer();
         }
     }, [selectedCarrier, selectedPlan]);
 
@@ -247,7 +294,7 @@ function ActivateSim() {
         // Account balance check
         if (selectedPlanDetails && typeof selectedPlanDetails.plan_price !== 'undefined') {
             const price = Number(selectedPlanDetails.plan_price)
-            if (Number.isFinite(price) && balance < price) { setError('Insufficient account balance'); return }
+            if (Number.isFinite(price) && availableBalance < price) { setError('Insufficient account balance'); return }
         }
 
         // Build payload according to backend expectations
@@ -275,7 +322,7 @@ function ActivateSim() {
             })
             const json = await res.json()
             if (json.status === 'success') {
-                if (json.account_balance !== undefined) setBalance(json.account_balance)
+                if (json.account_balance !== undefined) setAvailableBalance(json.account_balance)
                 message.success(json.message || 'SIM activation request submitted')
                 fetchUserActivations()
 
@@ -778,6 +825,32 @@ function ActivateSim() {
 
                                     {error && <p className="text-red-600 mt-2">{error}</p>}
 
+                                    {(selectedPlanDetails.plan_price !== 0 || selectedPlanDetails.plan_price !== '') && (
+                                        <div className="bg-gray-50 p-5 rounded-xl shadow-sm border mt-4">
+                                            <h3 className="text-lg font-semibold text-gray-700 mb-3">Amount Summary</h3>
+
+                                            <div className="flex justify-between text-sm text-gray-600 mb-2">
+                                                <span>Base Amount</span>
+                                                <span>${selectedPlanDetails?.plan_price}</span>
+                                            </div>
+
+                                            <div className="flex justify-between text-sm text-gray-600 mb-3">
+                                                <span>Discount ({planDiscount}%)</span>
+                                                <span>- ${(selectedPlanDetails.plan_price * planDiscount / 100).toFixed(2)}</span>
+                                            </div>
+
+                                            {/* Divider */}
+                                            <div className="border-t my-3"></div>
+
+                                            <div className="flex justify-between text-lg font-semibold text-gray-800">
+                                                <span>Total Amount</span>
+                                                <span>
+                                                    ${payableAmount?.toFixed(2)}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    )}
+
                                     <div className="mt-4 flex justify-end">
                                         <button
                                             onClick={handleActivateSim}
@@ -791,8 +864,8 @@ function ActivateSim() {
                             </div>
                         </div>
                         <div className="flex justify-between items-center mt-2 sticky bottom-0 bg-white md:px-8 px-4 pt-3 z-20 border-t">
-                            <p>Available balance: ${balance}</p>
-                            <p>Total payment: ${selectedPlanDetails.plan_price}</p>
+                            <p>Available balance: ${availableBalance}</p>
+                            <p>Total payment: ${payableAmount}</p>
                         </div>
                     </div>
                 )

@@ -13,7 +13,6 @@ import {
 import { getCarriersFromBackend } from "../../utilities/getCarriers";
 import { message } from "antd";
 import { useLocation } from "react-router-dom";
-import { loadDiscountCharges } from "../../utilities/discountCharges";
 
 function TopUp() {
     const location = useLocation();
@@ -30,7 +29,6 @@ function TopUp() {
     const [error, setError] = useState("");
     const [availableBalance, setAvailableBalance] = useState(0);
     const [loadingCarriers, setLoadingCarriers] = useState(false);
-    const [chargesPercentage, setChargesPercentage] = useState(0);
     const [discountPercentage, setDiscountPercentage] = useState(0);
     const [payableAmount, setPayableAmount] = useState(0);
 
@@ -112,6 +110,8 @@ function TopUp() {
         }
     };
 
+     console.log("Topup history:", topUpHistory);
+
     const filteredData = useMemo(() => {
         return topUpHistory
             .filter((item) => {
@@ -153,16 +153,35 @@ function TopUp() {
     }, []);
 
     useEffect(() => {
-        if (isAddingTopUp) {
+        if (isAddingTopUp && selectedCarrier) {
             const username = JSON.parse(localStorage.getItem("userData")).username;
-            const chargesAndDiscounts = async () => {
-                const data = await loadDiscountCharges(username, 'topup')
-                setChargesPercentage(data?.charges);
-                setDiscountPercentage(data?.discount);
+            const getUserCarrierOffers = async () => {
+                try {
+                    const res = await fetch(`${process.env.REACT_APP_API_URL_PRODUCTION}/api/get-company-offers/`,
+                        {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ username })
+                        })
+                    const data = await res.json()
+                    const offers = data.offers
+                    const carrierOffer = offers.find(offer => offer.plan_id === selectedCarrier);
+
+                    if (carrierOffer) {
+                        setDiscountPercentage(carrierOffer.discount_percentage || 0);
+                    } else {
+                        setDiscountPercentage(0);
+                    }
+                    if (data.status === 'success') {
+                        message.success('Charges fetched successfully')
+                    } else {
+                        message.error(data.message || 'Failed to update charges')
+                    }
+                } catch (err) { console.error(err); message.error('Server error') }
             }
-            chargesAndDiscounts();
+            getUserCarrierOffers();
         }
-    }, [isAddingTopUp]);
+    }, [isAddingTopUp, selectedCarrier]);
 
     const handleSelect = (carrier) => {
         setSelectedCarrier(carrier.company_id);
@@ -174,7 +193,7 @@ function TopUp() {
         if (value % 5 === 0 && value >= 5 && value <= 200) {
             setAmount(value);
             const finalAmount =
-                value + (value * chargesPercentage) / 100 - (value * discountPercentage) / 100;
+                value - (value * discountPercentage) / 100;
 
             // round to 2 decimals but keep as NUMBER
             const roundedAmount = Number(finalAmount.toFixed(2));
@@ -264,6 +283,7 @@ function TopUp() {
             setPhoneNumber("");
             setRephoneNumber("");
             setSelectedCarrier(null);
+            setPayableAmount(0)
         } catch (err) {
             console.error("Top-up error:", err);
             setError("Something went wrong during the top-up. Please try again.");
@@ -271,8 +291,6 @@ function TopUp() {
             setIsProcessing(false);
         }
     };
-
-    console.log("payableAmount:", payableAmount);
 
     return (
         <div className="bg-white shadow-lg rounded-lg py-4 overflow-hidden">
@@ -512,11 +530,6 @@ function TopUp() {
                                     <div className="flex justify-between text-sm text-gray-600 mb-2">
                                         <span>Base Amount</span>
                                         <span>Rs. {amount?.toFixed(2)}</span>
-                                    </div>
-
-                                    <div className="flex justify-between text-sm text-gray-600 mb-2">
-                                        <span>Charges ({chargesPercentage}%)</span>
-                                        <span>+ Rs. {(amount * chargesPercentage / 100).toFixed(2)}</span>
                                     </div>
 
                                     <div className="flex justify-between text-sm text-gray-600 mb-3">
