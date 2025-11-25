@@ -724,7 +724,8 @@ def user_sim_activation(request):
                 company_id=plan_details.company_id,
                 email=data['email'],
                 postal_code=data['postal_code'],
-                pin_code=data['pin_code']
+                pin_code=data['pin_code'],
+                amount=data['amount']
             )
             if balance_data.account_balance_amount < data['amount_charged']:
                 return JsonResponse({'status': 'success', 'message': 'Insufficient balance. Please recharge your account.'}, status=200)
@@ -767,7 +768,8 @@ def get_activation_data(request):
                 'company_name': Carriers.objects.filter(company_id=a.company_id).first().name,
                 'email': a.email,
                 'postal_code': a.postal_code,
-                'pin_code': a.pin_code
+                'pin_code': a.pin_code,
+                'amount': a.amount
             }
             for a in activation_data
         ]
