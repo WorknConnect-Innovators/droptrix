@@ -140,6 +140,7 @@ class Activate_sim(models.Model):
     email = models.CharField(max_length=200, unique=True)
     postal_code = models.IntegerField()
     pin_code = models.IntegerField()
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
 
     def __str__(self):
         return self.username
