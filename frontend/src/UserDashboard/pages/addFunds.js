@@ -46,6 +46,7 @@ function AddFunds() {
         amount: "",
         username: user ? user.username : "",
         payment_screenshot: "",
+        payable_amount: '',
     });
 
     const loadBalance = async () => {
@@ -183,6 +184,11 @@ function AddFunds() {
             return;
         }
 
+        setNewRecharge((prev) => ({
+            ...prev,
+            payable_amount: payableCharges,
+        }));
+
         try {
             const res = await fetch(`${process.env.REACT_APP_API_URL_PRODUCTION}/api/user-recharge-account/`, {
                 method: "POST",
@@ -199,6 +205,7 @@ function AddFunds() {
                 setNewRecharge({
                     amount: "",
                     payment_screenshot: "",
+                    payable_amount: ""
                 });
                 setStep(1);
 
@@ -223,6 +230,7 @@ function AddFunds() {
             amount: "",
             username: user ? user.username : "",
             payment_screenshot: "",
+            payable_amount: ''
         });
     }
 
@@ -597,7 +605,7 @@ function AddFunds() {
                                         className="w-full mt-1 border rounded-lg px-3 py-2"
                                         value={newRecharge.amount}
                                         onChange={(e) => {
-                                            setNewRecharge({ ...newRecharge, amount: e.target.value })
+                                            setNewRecharge({ ...newRecharge, amount: e.target.value, payable_amount: e.target.value * (1 + chargesPercentage / 100 - discountPercentage / 100) })
                                             setPayableCharges(e.target.value * (1 + chargesPercentage / 100 - discountPercentage / 100));
                                         }}
                                         placeholder="Enter amount"
