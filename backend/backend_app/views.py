@@ -1128,3 +1128,92 @@ def get_default_ch_dis(request):
         ]
         return JsonResponse({'status': 'success', 'data': get_all_data})
     return JsonResponse({'status': 'error', 'message': 'Only GET method is allowed'})
+
+
+@csrf_exempt
+def update_topup(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            topup_id = data['id']
+            topup_data = Topup.objects.filter(id=topup_id).first()
+            balance_data = Account_balance.objects.filter(username=data['username']).first()
+            if topup_data.status == 'Pending':
+                topup_data.company_id = data['company_id']
+                topup_data.amount = data['amount']
+                topup_data.phone_no = data['phone_no']
+                topup_data.request_topup = data['request_topup']
+                topup_data.timestamp = datetime.now()
+                aditional_payable_amount = abs(topup_data.payable_amount - Decimal(str(data['payable_amount'])))
+                if aditional_payable_amount > balance_data.account_balance_amount:
+                    return JsonResponse({'status': 'success', 'message': 'Insufficient balance. Please recharge your account.'})
+                balance_data.account_balance_amount -= aditional_payable_amount
+                balance_data.save()
+                topup_data.balance_history = balance_data.account_balance_amount
+                topup_data.payable_amount = data['payable_amount']
+            else:
+                return JsonResponse({'status': 'success', 'message': 'Topup request is not in pending status.'})
+            return JsonResponse({'status': 'success', 'data_received': topup_data.id})
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+    return JsonResponse({'status': 'error', 'message': 'Invalid request method'}, status=400)
+
+
+@csrf_exempt
+def update_recharge(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            recharge_id = data['recharge_id']
+            recharge_data = Recharge.objects.filter(recharge_id=recharge_id).first()
+            balance_data = Account_balance.objects.filter(username=data['username']).first()
+            if recharge_data.approved == False:
+                recharge_data.payment_screenshot = data['payment_screenshot']
+                recharge_data.amount = data['amount']
+                recharge_data.timestamp = datetime.now()
+                aditional_payable_amount = abs(recharge_data.payable_amount - Decimal(str(data['payable_amount'])))
+                if aditional_payable_amount > balance_data.account_balance_amount:
+                    return JsonResponse({'status': 'success', 'message': 'Insufficient balance. Please recharge your account.'})
+                balance_data.account_balance_amount -= aditional_payable_amount
+                balance_data.save()
+                recharge_data.balance_history = balance_data.account_balance_amount
+                recharge_data.payable_amount = data['payable_amount']
+            else:
+                return JsonResponse({'status': 'success', 'message': 'Recharge request is not in pending status.'})
+            return JsonResponse({'status': 'success', 'data_received': recharge_data.recharge_id})
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+    return JsonResponse({'status': 'error', 'message': 'Invalid request method'}, status=400)
+
+
+@csrf_exempt
+def update_activation(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            activation_id = data['activation_id']
+            activation_data = Activate_sim.objects.filter(activation_id=activation_id).first()
+            balance_data = Account_balance.objects.filter(username=data['username']).first()
+            if activation_data.pending == True:
+                activation_data.plan_id = data['plan_id']
+                activation_data.phone_no = data['phone_no']
+                activation_data.emi = data['emi']
+                activation_data.eid = data['eid']
+                activation_data.iccid = data['iccid']
+                activation_data.company_id = data['company_id']
+                activation_data.email = data['email']
+                activation_data.postal_code = data['postal_code']
+                activation_data.pin_code = data['pin_code']
+                aditional_payable_amount = abs(activation_data.amount_charged - Decimal(str(data['amount_charged'])))
+                if aditional_payable_amount > balance_data.account_balance_amount:
+                    return JsonResponse({'status': 'success', 'message': 'Insufficient balance. Please recharge your account.'})
+                balance_data.account_balance_amount -= aditional_payable_amount
+                balance_data.save()
+                activation_data.balance_history = balance_data.account_balance_amount
+                activation_data.amount_charged = data['amount_charged']
+            else:
+                return JsonResponse({'status': 'success', 'message': 'Recharge request is not in pending status.'})
+            return JsonResponse({'status': 'success', 'data_received': activation_data.activation_id})
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+    return JsonResponse({'status': 'error', 'message': 'Invalid request method'}, status=400)

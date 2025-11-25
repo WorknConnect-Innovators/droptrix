@@ -69,5 +69,8 @@ urlpatterns = [
     path('api/get-company-offers/', views.get_company_offers, name='get_company_offers'),
     path('api/update-company-offer/', views.update_company_offer, name='update_company_offer'),
     path('api/get-default-charges-discount', views.get_default_ch_dis, name='get_default_ch_dis'),
-    path('api/get-user-activation-data/', views.get_user_activation_data, name='get_user_activation_data')
+    path('api/get-user-activation-data/', views.get_user_activation_data, name='get_user_activation_data'),
+    path('api/update-topup/', views.update_topup, name='update_topup'),
+    path('api/update-recharge/', views.update_recharge, name='update_recharge'),
+    path('api/update-activation/', views.update_activation, name='update_activation')
 ]
