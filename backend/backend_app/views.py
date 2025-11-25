@@ -13,6 +13,7 @@ from backend.settings import SECRET_KEY
 from django.core.mail import EmailMessage
 from django.core.mail import EmailMultiAlternatives
 from django.forms.models import model_to_dict
+from decimal import Decimal
 
 
 @csrf_exempt
@@ -729,7 +730,7 @@ def user_sim_activation(request):
             )
             if balance_data.account_balance_amount < data['amount_charged']:
                 return JsonResponse({'status': 'success', 'message': 'Insufficient balance. Please recharge your account.'}, status=200)
-            balance_data.account_balance_amount -= data['amount_charged']
+            balance_data.account_balance_amount -= Decimal(str(data['amount_charged']))
             sim_activation_data.save()
             balance_data.save()
             history_message=f'You sent a request of sim activation for amount of {data["amount"]}.'
