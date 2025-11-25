@@ -32,9 +32,9 @@ function TopUp() {
     const [discountPercentage, setDiscountPercentage] = useState(0);
     const [payableAmount, setPayableAmount] = useState(0);
 
-    const [selectedFilter, setSelectedFilter] = useState("company_id");
+    const [selectedFilter, setSelectedFilter] = useState("company_name");
     const filterOptions = [
-        { label: "Carrier", key: "company_id" },
+        { label: "Carrier", key: "company_name" },
         { label: "Amount", key: "amount" },
         { label: "Phone No", key: "phone_no" },
     ];
@@ -165,13 +165,13 @@ function TopUp() {
                         })
                     const data = await res.json()
                     const offers = data.offers
-                    const carrierOffer = offers.find(offer => offer.plan_id === selectedCarrier);
+                    const carrierOffer = offers.find(offer => offer.company_id === selectedCarrier);
 
                     if (carrierOffer) {
                         setDiscountPercentage(carrierOffer.discount_percentage || 0);
                     } else {
                         setDiscountPercentage(0);
-                    }
+                    } 
                     if (data.status === 'success') {
                         message.success('Charges fetched successfully')
                     } else {
@@ -606,7 +606,7 @@ function TopUp() {
                                             >
                                                 <td className="px-10 py-3 font-semibold">{index <= 8 ? `0${index + 1}` : index + 1}</td>
                                                 <td className="px-10 py-3">{item.phone_no}</td>
-                                                <td className="px-10 py-3">{item.company_id}</td>
+                                                <td className="px-10 py-3">{item.company_name}</td>
                                                 <td className="px-10 py-3 text-green-600 font-semibold">
                                                     $ {item.amount}
                                                 </td>

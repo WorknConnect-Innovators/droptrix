@@ -186,7 +186,7 @@ function AddFunds() {
 
         setNewRecharge((prev) => ({
             ...prev,
-            payable_amount: payableCharges,
+            payable_amount: payableCharges?.toFixed(2),
         }));
 
         try {
@@ -663,7 +663,7 @@ function AddFunds() {
                                         <p className="flex justify-between font-semibold">
                                             <span>Total Payable:</span>
                                             <span>
-                                                $ {payableCharges}
+                                                $ {payableCharges?.toFixed(2)}
                                             </span>
                                         </p>
                                     </div>

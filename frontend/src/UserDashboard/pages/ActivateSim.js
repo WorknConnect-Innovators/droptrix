@@ -162,13 +162,14 @@ function ActivateSim() {
         try {
             const userData = localStorage.getItem('userData') ? JSON.parse(localStorage.getItem('userData')) : null
             if (!userData || !userData.username) return
-            const res = await fetch(`${process.env.REACT_APP_API_URL_PRODUCTION}/api/get-activation-data/`,
+            const res = await fetch(`${process.env.REACT_APP_API_URL_PRODUCTION}/api/get-user-activation-data/`,
                 {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ username: userData.username })
                 })
             const json = await res.json()
+            console.log('fetchUserActivations response:', json)
             if (json.status === 'success') {
                 // json.data_received is a list of activation objects (from backend view)
                 const mapped = (json.data_received || []).map((a) => ({
@@ -305,14 +306,14 @@ function ActivateSim() {
                 username,
                 plan_id: selectedPlan,
                 phone_no: simNumber,
-                amount_charged: Number(selectedPlanDetails?.plan_price || 0),
-                offer: selectedPlanDetails?.off_percentage || 0,
+                amount_charged: payableAmount,
+                amount: Number(selectedPlanDetails?.plan_price || 0),
                 emi: formData.simType === 'Sim' ? emi : '',
                 eid: formData.simType === 'E-Sim' ? eid : '',
                 iccid,
                 email: email || '',
-                postal_code: zipCode || '',
-                pinCode: pinCode || '',
+                postal_code: zipCode || 0,
+                pin_code: pinCode || 0,
             }
 
             console.log('Activate SIM payload:', payload)

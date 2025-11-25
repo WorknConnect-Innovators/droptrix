@@ -470,7 +470,7 @@ function UserDetails() {
                                 <thead>
                                     <tr>
                                         <th className="p-2 border">#</th>
-                                        <th className="p-2 border">Plan ID</th>
+                                        <th className="p-2 border">Carrier</th>
                                         <th className="p-2 border">Discount (%)</th>
                                     </tr>
                                 </thead>
@@ -486,7 +486,7 @@ function UserDetails() {
                                         userCarrierOffers.map((offer, index) => (
                                             <tr key={offer.id} className="hover:bg-gray-50">
                                                 <td className="p-2 border text-center">{index + 1}</td>
-                                                <td className="p-2 border">{offer.plan_id}</td>
+                                                <td className="p-2 border">{offer.company_name}</td>
                                                 <td className="p-2 border text-center">{offer.discount_percentage}%</td>
                                             </tr>
                                         ))
@@ -603,7 +603,7 @@ function UserDetails() {
                                 <thead>
                                     <tr>
                                         <th className="p-2 border">#</th>
-                                        <th className="p-2 border">Plan ID</th>
+                                        <th className="p-2 border">Name</th>
                                         <th className="p-2 border">Discount (%)</th>
                                     </tr>
                                 </thead>
@@ -619,7 +619,7 @@ function UserDetails() {
                                         userPlanOffers.map((offer, index) => (
                                             <tr key={offer.id} className="hover:bg-gray-50">
                                                 <td className="p-2 border text-center">{index + 1}</td>
-                                                <td className="p-2 border">{offer.plan_id}</td>
+                                                <td className="p-2 border">{offer.plan_name}</td>
                                                 <td className="p-2 border text-center">{offer.discount_percentage}%</td>
                                             </tr>
                                         ))
