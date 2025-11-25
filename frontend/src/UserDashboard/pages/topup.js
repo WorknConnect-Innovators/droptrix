@@ -31,6 +31,8 @@ function TopUp() {
     const [loadingCarriers, setLoadingCarriers] = useState(false);
     const [discountPercentage, setDiscountPercentage] = useState(0);
     const [payableAmount, setPayableAmount] = useState(0);
+    const [editingTopupId, setEditingTopupId] = useState(null);
+    const [isEditing, setIsEditing] = useState(false);
 
     const [selectedFilter, setSelectedFilter] = useState("company_name");
     const filterOptions = [
@@ -47,6 +49,7 @@ function TopUp() {
     const [currentItems, setCurrentItems] = useState([]);
     const [totalPages, setTotalPages] = useState(1);
     const [loading, setLoading] = useState(false);
+
 
     useEffect(() => {
         if (fromDashboardAdd) {
@@ -94,6 +97,21 @@ function TopUp() {
         }
     };
 
+    const startEdit = (item) => {
+        // Only allow edit if topup is pending
+        setIsEditing(true);
+        const isPending = item.request_topup === true || item.request_topup === 'True' || item.request_topup === 'true' || item.status === 'Pending' || item.pending_status === true;
+        if (!isPending) return message.error('Only pending top-ups can be edited.');
+
+        setEditingTopupId(item.id || item.topup_id || null);
+        setSelectedCarrier(item.company_id);
+        setAmount(Number(item.amount));
+        setPhoneNumber(item.phone_no);
+        setRephoneNumber(item.phone_no);
+        setPayableAmount(Number(item.payable_amount) || 0);
+        setIsAddingTopUp(true);
+    };
+
     const loadData = async () => {
         setLoading(true);
         try {
@@ -109,8 +127,6 @@ function TopUp() {
             setLoading(false)
         }
     };
-
-     console.log("Topup history:", topUpHistory);
 
     const filteredData = useMemo(() => {
         return topUpHistory
@@ -168,10 +184,10 @@ function TopUp() {
                     const carrierOffer = offers.find(offer => offer.company_id === selectedCarrier);
 
                     if (carrierOffer) {
-                        setDiscountPercentage(carrierOffer.discount_percentage || 0);
+                        setDiscountPercentage(Number(carrierOffer.discount_percentage) || 0);
                     } else {
                         setDiscountPercentage(0);
-                    } 
+                    }
                     if (data.status === 'success') {
                         message.success('Charges fetched successfully')
                     } else {
@@ -184,6 +200,8 @@ function TopUp() {
     }, [isAddingTopUp, selectedCarrier]);
 
     const handleSelect = (carrier) => {
+        // prevent changing carrier while editing an existing topup
+        if (editingTopupId) return;
         setSelectedCarrier(carrier.company_id);
         setError("");
     };
@@ -196,7 +214,7 @@ function TopUp() {
                 value - (value * discountPercentage) / 100;
 
             // round to 2 decimals but keep as NUMBER
-            const roundedAmount = Number(finalAmount.toFixed(2));
+            const roundedAmount = Number(finalAmount?.toFixed(2));
 
             setPayableAmount(roundedAmount);
             setError("");
@@ -244,11 +262,58 @@ function TopUp() {
         setError("");
 
         try {
+            const username = JSON.parse(localStorage.getItem("userData")).username;
+
+            if (editingTopupId) {
+                // update existing topup (carrier can't be changed)
+                const payload = {
+                    id: editingTopupId,
+                    company_id: selectedCarrier,
+                    amount: amount,
+                    phone_no: phoneNumber,
+                    username: username,
+                    request_topup: true,
+                    payable_amount: payableAmount,
+                };
+
+                const res = await fetch(
+                    `${process.env.REACT_APP_API_URL_PRODUCTION}/api/update-topup/`,
+                    {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify(payload),
+                    }
+                );
+
+                let data = {};
+                try { data = await res.json(); } catch { }
+
+                if (!res.ok || data.status === 'error') {
+                    return setError(data.error || data.message || 'Update failed.');
+                }
+
+                message.success('Top-up updated successfully!');
+
+                // reset edit state
+                setEditingTopupId(null);
+                setIsAddingTopUp(false);
+                loadData();
+                loadBalance();
+                setAmount("");
+                setPhoneNumber("");
+                setRephoneNumber("");
+                setSelectedCarrier(null);
+                setPayableAmount(0);
+                setIsProcessing(false);
+                return;
+            }
+
+            // create new topup
             const payload = {
                 company_id: selectedCarrier,
                 amount: amount,
                 phone_no: phoneNumber,
-                username: JSON.parse(localStorage.getItem("userData")).username,
+                username: username,
                 request_topup: true,
                 payable_amount: payableAmount,
             };
@@ -263,14 +328,10 @@ function TopUp() {
             );
 
             let data = {};
-            try {
-                data = await res.json();
-            } catch { }
+            try { data = await res.json(); } catch { }
 
             if (!res.ok) {
-                return setError(
-                    data.error || data.message || "Top-up failed. Please try again."
-                );
+                return setError(data.error || data.message || "Top-up failed. Please try again.");
             }
 
             message.success("Top-up successful!");
@@ -437,18 +498,19 @@ function TopUp() {
                                 return (
                                     <div
                                         key={index}
-                                        onClick={() => handleSelect(carrier)}
-                                        className={`border p-4 rounded-lg shadow transition cursor-pointer 
+                                        onClick={() => { if (!editingTopupId) handleSelect(carrier); }}
+                                        className={`border p-4 rounded-lg shadow transition 
                                         ${isSelected
-                                                ? "border-blue-500 ring-2 ring-blue-300 bg-blue-50"
-                                                : "hover:shadow-lg"
+                                                ? "border-blue-500 ring-2 ring-blue-300 bg-blue-50 cursor-default"
+                                                : editingTopupId ? "opacity-60 cursor-not-allowed" : "cursor-pointer hover:shadow-lg"
                                             }`}
                                     >
                                         <input
                                             type="radio"
                                             name="carrier"
                                             checked={isSelected}
-                                            onChange={() => handleSelect(carrier)}
+                                            onChange={() => { if (!editingTopupId) handleSelect(carrier); }}
+                                            disabled={!!editingTopupId}
                                             className="hidden"
                                         />
                                         <img
@@ -534,7 +596,7 @@ function TopUp() {
 
                                     <div className="flex justify-between text-sm text-gray-600 mb-3">
                                         <span>Discount ({discountPercentage}%)</span>
-                                        <span>- Rs. {(amount * discountPercentage / 100).toFixed(2)}</span>
+                                        <span>- Rs. {(amount * discountPercentage / 100)?.toFixed(2)}</span>
                                     </div>
 
                                     {/* Divider */}
@@ -550,6 +612,7 @@ function TopUp() {
                             )}
 
                             <div className="col-span-full flex justify-end">
+                                { }
                                 <button
                                     type="submit"
                                     disabled={isProcessing}
@@ -583,6 +646,7 @@ function TopUp() {
                                     <th className="px-10 py-3 text-left">Carrier</th>
                                     <th className="px-10 py-3 text-left">Amount</th>
                                     <th className="px-10 py-3 text-left">Status</th>
+                                    <th className="px-6 py-3 text-left">Actions</th>
                                 </tr>
                             </thead>
 
@@ -601,7 +665,7 @@ function TopUp() {
                                         .reverse()
                                         .map((item, index) => (
                                             <tr
-                                                key={item.recharge_id}
+                                                key={item.id || item.recharge_id || index}
                                                 className="border-t hover:bg-gray-50"
                                             >
                                                 <td className="px-10 py-3 font-semibold">{index <= 8 ? `0${index + 1}` : index + 1}</td>
@@ -612,14 +676,21 @@ function TopUp() {
                                                 </td>
 
                                                 <td className="px-10 py-3">
-                                                    {item.pending_status === false ? (
-                                                        <span className="px-3 py-1 bg-green-100 text-green-600 rounded-full text-xs">
-                                                            Approved
-                                                        </span>
+                                                    <p className={`px-4 py-1 rounded-full w-fit text-white  ${item.status === "Pending" ? "bg-yellow-600" : item.status === "Approved" ? "bg-green-600" : "bg-red-600"}`} > {item.status}</p>
+
+                                                </td>
+                                                <td className="px-6 py-3">
+                                                    {(item.status === "Pending") ? (
+                                                        <button
+                                                            onClick={() => startEdit(item)}
+                                                            className="px-3 py-1 bg-indigo-600 text-white rounded text-sm hover:bg-indigo-700"
+                                                        >
+                                                            Edit
+                                                        </button>
                                                     ) : (
-                                                        <span className="px-3 py-1 bg-yellow-100 text-yellow-600 rounded-full text-xs">
-                                                            Pending
-                                                        </span>
+                                                        <button disabled className="px-3 py-1 bg-gray-200 text-gray-500 rounded text-sm">
+                                                            Edit
+                                                        </button>
                                                     )}
                                                 </td>
                                             </tr>
@@ -676,7 +747,7 @@ function TopUp() {
                             ) : filteredData.length > 0 ? (
                                 filteredData.slice().reverse().map((item, index) => (
                                     <div
-                                        key={item.recharge_id}
+                                        key={item.id || item.recharge_id || index}
                                         className="border rounded-xl p-5 mb-4 bg-white shadow-sm hover:shadow-lg transition-all duration-200"
                                     >
                                         {/* Top Row: Number + Time */}
@@ -706,16 +777,31 @@ function TopUp() {
 
                                             <p className="text-sm text-gray-600" >{item.company_id}</p>
 
-                                            {/* Status Badge */}
-                                            {item.request_topup ? (
-                                                <span className="px-3 py-1 bg-yellow-100 text-yellow-700 rounded-full text-xs font-semibold">
-                                                    Pending
-                                                </span>
-                                            ) : (
-                                                <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-semibold">
-                                                    Approved
-                                                </span>
-                                            )}
+                                            <div className="flex items-center gap-2">
+                                                {/* Status Badge */}
+                                                {item.request_topup ? (
+                                                    <span className="px-3 py-1 bg-yellow-100 text-yellow-700 rounded-full text-xs font-semibold">
+                                                        Pending
+                                                    </span>
+                                                ) : (
+                                                    <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-semibold">
+                                                        Approved
+                                                    </span>
+                                                )}
+
+                                                {(item.request_topup === true || item.pending_status === true || item.status === 'Pending') ? (
+                                                    <button
+                                                        onClick={() => startEdit(item)}
+                                                        className="px-3 py-1 bg-indigo-600 text-white rounded text-sm hover:bg-indigo-700"
+                                                    >
+                                                        Edit
+                                                    </button>
+                                                ) : (
+                                                    <button disabled className="px-3 py-1 bg-gray-200 text-gray-500 rounded text-sm">
+                                                        Edit
+                                                    </button>
+                                                )}
+                                            </div>
                                         </div>
                                     </div>
                                 ))) : (

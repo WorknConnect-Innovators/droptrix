@@ -50,6 +50,7 @@ function ActivateSim() {
     });
 
     const [availableBalance, setAvailableBalance] = useState(0);
+    const [editingActivationId, setEditingActivationId] = useState(null);
 
     const getUserPlanOffer = async () => {
         try {
@@ -132,6 +133,7 @@ function ActivateSim() {
     const [sims, setSims] = useState([]);
 
     const handleSelectCarrier = (carrier) => {
+        if (editingActivationId) { message.info('Cannot change carrier while editing an activation'); return }
         setSelectedCarrier(carrier.company_id);
         setSelectedCarrierDetails(carrier);
         setSelectedPlan(null);
@@ -292,8 +294,8 @@ function ActivateSim() {
         // PIN code (optional always) - validate if present
         if (pinCode && !isDigits(pinCode)) { setError('PIN Code must contain digits only.'); return }
 
-        // Account balance check
-        if (selectedPlanDetails && typeof selectedPlanDetails.plan_price !== 'undefined') {
+        // Account balance check (skip when updating an existing activation)
+        if (!editingActivationId && selectedPlanDetails && typeof selectedPlanDetails.plan_price !== 'undefined') {
             const price = Number(selectedPlanDetails.plan_price)
             if (Number.isFinite(price) && availableBalance < price) { setError('Insufficient account balance'); return }
         }
@@ -305,6 +307,7 @@ function ActivateSim() {
             const payload = {
                 username,
                 plan_id: selectedPlan,
+                company_id: selectedCarrier,
                 phone_no: simNumber,
                 amount_charged: payableAmount,
                 amount: Number(selectedPlanDetails?.plan_price || 0),
@@ -316,7 +319,36 @@ function ActivateSim() {
                 pin_code: pinCode || 0,
             }
 
-            console.log('Activate SIM payload:', payload)
+            // If editing an existing activation, call update endpoint
+            if (editingActivationId) {
+                const updatePayload = { activation_id: editingActivationId, username, ...payload };
+                const res = await fetch(`${process.env.REACT_APP_API_URL_PRODUCTION}/api/update-activation/`, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(updatePayload)
+                });
+                const json = await res.json();
+                if (json.status === 'success') {
+                    message.success(json.message || 'Activation updated');
+                    // reset edit state
+                    setEditingActivationId(null);
+                    fetchUserActivations();
+                    setIsAddingSim(false)
+                    setSelectedCarrier(null)
+                    setSelectedPlan(null)
+                    setAddingDetails(false)
+                    setSimNumber('')
+                    setEid('')
+                    setIccid('')
+                    setEmi('')
+                    setZipCode('')
+                    setPinCode('')
+                    setEmail('')
+                    setError('')
+                    return;
+                } else {
+                    if (json.message) { message.info(json.message) } else { message.error('Failed to update activation') }
+                    return;
+                }
+            }
 
             const res = await fetch(`${process.env.REACT_APP_API_URL_PRODUCTION}/api/user-sim-activation/`, {
                 method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
@@ -349,6 +381,47 @@ function ActivateSim() {
         }
     }
 
+    const startEdit = async (sim) => {
+        try {
+            // fetch full activation records and find the one to edit
+            const res = await fetch(`${process.env.REACT_APP_API_URL_PRODUCTION}/api/get-activation-data/`);
+            const json = await res.json();
+            if (json.status !== 'success') return message.error('Failed to fetch activation data');
+            const act = (json.data || []).find(a => (a.activation_id === sim.id || a.activation_id === sim.id || a.id === sim.id));
+            if (!act) return message.error('Activation not found');
+            if (!act.pending) return message.error('Only pending activations can be edited');
+
+            setEditingActivationId(act.activation_id);
+            setSelectedCarrier(act.company_id);
+            const carrierObj = carriers.find(c => c.company_id === act.company_id) || null;
+            setSelectedCarrierDetails(carrierObj);
+
+            // load plans for the carrier and set selected plan details
+            const allPlans = await getPlansFromBackend();
+            const filteredPlans = allPlans.filter(p => p.company_id === act.company_id);
+            setPlans(filteredPlans);
+            setSelectedPlan(act.plan_id);
+            const planDet = filteredPlans.find(p => p.plan_id === act.plan_id) || null;
+            setSelectedPlanDetails(planDet);
+
+            setSimNumber(act.phone_no || '');
+            setEid(act.eid || '');
+            setIccid(act.iccid || '');
+            setEmi(act.emi || '');
+            setZipCode(act.postal_code || '');
+            setPinCode(act.pin_code || '');
+            setEmail(act.email || '');
+            setPayableAmount(Number(act.amount_charged) || 0);
+
+            setIsAddingSim(true);
+            setAddingDetails(true);
+            loadBalance();
+        } catch (err) {
+            console.error('startEdit error', err);
+            message.error('Failed to start editing');
+        }
+    }
+
     const cancelActivation = () => {
         setIsAddingSim(false);
         setSelectedCarrier(null);
@@ -362,6 +435,7 @@ function ActivateSim() {
         setPinCode("");
         setEmail("");
         setError("");
+        setEditingActivationId(null);
     }
 
     // Determine which fields carrier requires for the selected SIM type
@@ -578,12 +652,14 @@ function ActivateSim() {
 
                                         <button
                                             onClick={() => {
+                                                if (editingActivationId) { message.info('Cannot change carrier while editing'); return }
                                                 setSelectedCarrier(null);
                                                 setSelectedPlan(null);
                                                 setAddingDetails(false);
                                                 setError("");
                                             }}
-                                            className="mt-3 w-full bg-white border border-blue-600 text-blue-600 py-2 rounded-lg hover:bg-blue-100 transition"
+                                            className={`mt-3 w-full bg-white border border-blue-600 text-blue-600 py-2 rounded-lg ${editingActivationId ? 'opacity-50 cursor-not-allowed' : 'hover:bg-blue-100 transition'}`}
+                                            disabled={!!editingActivationId}
                                         >
                                             Change Carrier
                                         </button>
@@ -613,11 +689,13 @@ function ActivateSim() {
 
                                         <button
                                             onClick={() => {
+                                                if (editingActivationId) { message.info('Cannot change plan while editing'); return }
                                                 setSelectedPlan(null);
                                                 setAddingDetails(false);
                                                 setError("");
                                             }}
-                                            className="mt-3 w-full bg-white border border-blue-600 text-blue-600 py-2 rounded-lg hover:bg-blue-100 transition"
+                                            className={`mt-3 w-full bg-white border border-blue-600 text-blue-600 py-2 rounded-lg ${editingActivationId ? 'opacity-50 cursor-not-allowed' : 'hover:bg-blue-100 transition'}`}
+                                            disabled={!!editingActivationId}
                                         >
                                             Change Plan
                                         </button>
@@ -857,7 +935,7 @@ function ActivateSim() {
                                             onClick={handleActivateSim}
                                             className="mt-4 bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700"
                                         >
-                                            Confirm Activation
+                                            {editingActivationId ? 'Update Activation' : 'Confirm Activation'}
                                         </button>
                                     </div>
                                 </div>
@@ -912,7 +990,7 @@ function ActivateSim() {
                                                 </td>
 
                                                 <td className="px-10 py-3 flex justify-center gap-3">
-                                                    <button className="text-blue-600 hover:text-blue-800">
+                                                    <button onClick={() => startEdit(sim)} className="text-blue-600 hover:text-blue-800">
                                                         <Edit2 size={18} />
                                                     </button>
                                                     <button
