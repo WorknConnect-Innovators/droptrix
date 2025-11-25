@@ -148,7 +148,7 @@ class Activate_sim(models.Model):
 
 class Account_balance(models.Model):
     username = models.CharField(max_length=200)
-    account_balance_amount = models.DecimalField(max_digits=20, decimal_places=2)
+    account_balance_amount = models.DecimalField(max_digits=10, decimal_places=2)
     last_updated = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
