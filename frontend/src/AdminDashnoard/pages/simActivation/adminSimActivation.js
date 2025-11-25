@@ -68,7 +68,7 @@ function AdminSimActivation() {
     const approveActivation = async () => {
         if (!selectedActivation) return;
         try {
-            const res = await fetch(`${process.env.REACT_APP_API_URL_PRODUCTION}/api/approve_sim_activation/`, {
+            const res = await fetch(`${process.env.REACT_APP_API_URL_PRODUCTION}api/admin/approve-activation/`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ activation_id: selectedActivation.activation_id, username: selectedActivation.username }),
