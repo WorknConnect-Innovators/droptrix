@@ -72,5 +72,6 @@ urlpatterns = [
     path('api/get-user-activation-data/', views.get_user_activation_data, name='get_user_activation_data'),
     path('api/update-topup/', views.update_topup, name='update_topup'),
     path('api/update-recharge/', views.update_recharge, name='update_recharge'),
-    path('api/update-activation/', views.update_activation, name='update_activation')
+    path('api/update-activation/', views.update_activation, name='update_activation'),
+    path('api/update-carriers/', views.update_carriers, name='update_carriers')
 ]
