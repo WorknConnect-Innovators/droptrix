@@ -126,6 +126,7 @@ class Recharge(models.Model):
 
 class Activate_sim(models.Model):
     activation_id = models.CharField(max_length=200)
+    sim_type = models.CharField(max_length=200)
     username = models.CharField(max_length=200)
     plan_id = models.CharField(max_length=200)
     phone_no = models.CharField(max_length=200)

@@ -714,6 +714,7 @@ def user_sim_activation(request):
             plan_details = Plans.objects.filter(plan_id=data['plan_id']).first()
             sim_activation_data = Activate_sim(
                 activation_id=activation_id,
+                sim_type=data['sim_type'],
                 username=data['username'],
                 plan_id=data['plan_id'],
                 phone_no=data['phone_no'],
@@ -754,6 +755,7 @@ def get_activation_data(request):
         activation_all_data = [
             {
                 'activation_id': a.activation_id,
+                'sim_type': a.sim_type,
                 'username': a.username,
                 'plan_id': a.plan_id,
                 'plan_name': Plans.objects.filter(plan_id=a.plan_id).first().plan_name,
