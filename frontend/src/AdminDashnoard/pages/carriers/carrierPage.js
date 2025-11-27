@@ -80,7 +80,7 @@ function AdminCarrierPage() {
         }
 
         const payload = {
-            id: editId,
+            company_id: editId,
             name: carrierForm.name,
             description: carrierForm.description,
             logo_url: carrierForm.logo,
@@ -154,7 +154,7 @@ function AdminCarrierPage() {
     // Load data into modal for editing
     const handleEdit = (carrier) => {
         setIsEditing(true);
-        setEditId(carrier.id);
+        setEditId(carrier.company_id);
 
         setCarrierForm({
             name: carrier.name,
