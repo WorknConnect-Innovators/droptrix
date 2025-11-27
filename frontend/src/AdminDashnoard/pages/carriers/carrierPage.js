@@ -80,6 +80,7 @@ function AdminCarrierPage() {
         }
 
         const payload = {
+            id: editId,
             name: carrierForm.name,
             description: carrierForm.description,
             logo_url: carrierForm.logo,
@@ -92,9 +93,9 @@ function AdminCarrierPage() {
             if (isEditing) {
                 // Update
                 res = await fetch(
-                    `${process.env.REACT_APP_API_URL_PRODUCTION}/api/update-carriers/${editId}/`,
+                    `${process.env.REACT_APP_API_URL_PRODUCTION}/api/update-carriers/`,
                     {
-                        method: "PUT",
+                        method: "POST",
                         headers: { "Content-Type": "application/json" },
                         body: JSON.stringify(payload),
                     }
