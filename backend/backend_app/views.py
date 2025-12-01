@@ -883,7 +883,7 @@ def dashboard_summary_user(request):
         try:
             data = json.loads(request.body)
             username = data['username']
-            active_sims_qs = Activate_sim.objects.filter(username=username, pending=False)
+            active_sims_qs = Activate_sim.objects.filter(username=username, status='Approved')
             active_sims_count = active_sims_qs.count()
             active_sims = list(active_sims_qs.values())
             account_balance_obj = Account_balance.objects.filter(username=username).first()
