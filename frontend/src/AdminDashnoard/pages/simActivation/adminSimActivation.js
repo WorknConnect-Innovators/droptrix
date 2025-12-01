@@ -6,6 +6,8 @@ function AdminSimActivation() {
     const [activationData, setActivationData] = useState([]);
     const [selectedActivation, setSelectedActivation] = useState(null);
     const [showApproveModal, setShowApproveModal] = useState(false);
+    const [showEditModal, setShowEditModal] = useState(false);
+    const [editForm, setEditForm] = useState({});
 
     const [selectedFilter, setSelectedFilter] = useState("plan_id");
     const filterOptions = [
@@ -83,6 +85,76 @@ function AdminSimActivation() {
         } catch (err) {
             console.error(err);
             alert('Error approving activation');
+        }
+    };
+
+    // --- Admin edit handlers ---
+    const startEdit = (item) => {
+        // populate edit form but do not allow changing plan_id or plan_name
+        setSelectedActivation(item);
+        setEditForm({
+            activation_id: item.activation_id,
+            username: item.username,
+            email: item.email || "",
+            phone_no: item.phone_no || "",
+            simNumber: item.simNumber || "",
+            eid: item.eid || "",
+            iccid: item.iccid || "",
+            postal_code: item.postal_code || 0,
+            pin_code: item.pin_code || 0,
+            emi: item.emi || "",
+            amount_charged: item.amount_charged || item.amount || 0,
+            amount: item.amount || item.amount_charged || 0,
+            offer: item.offer || "",
+        });
+        setShowEditModal(true);
+    };
+
+    const cancelEdit = () => {
+        setShowEditModal(false);
+        setEditForm({});
+        setSelectedActivation(null);
+    };
+
+    const saveEditedActivation = async () => {
+        // basic validation: activation_id must exist
+        if (!editForm.activation_id) return alert('Missing activation id');
+        try {
+            // Build payload compatible with user update endpoint
+            const payload = {
+                activation_id: editForm.activation_id,
+                username: editForm.username,
+                plan_id: selectedActivation?.plan_id || editForm.plan_id || null,
+                company_id: selectedActivation?.company_id || editForm.company_id || null,
+                phone_no: editForm.phone_no || editForm.simNumber || '',
+                amount_charged: editForm.amount_charged || 0,
+                amount: editForm.amount || editForm.amount_charged || 0,
+                emi: editForm.emi || '',
+                eid: editForm.eid || '',
+                iccid: editForm.iccid || '',
+                email: editForm.email || '',
+                postal_code: editForm.postal_code || 0,
+                pin_code: editForm.pin_code || 0,
+            };
+
+            const res = await fetch(`${process.env.REACT_APP_API_URL_PRODUCTION}/api/update-activation/`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload),
+            });
+            const data = await res.json();
+            if (data.status === 'success') {
+                alert('Activation updated');
+                setShowEditModal(false);
+                setEditForm({});
+                setSelectedActivation(null);
+                loadData();
+            } else {
+                alert(data.message || 'Error updating activation');
+            }
+        } catch (err) {
+            console.error(err);
+            alert('Error updating activation');
         }
     };
 
@@ -178,7 +250,14 @@ function AdminSimActivation() {
                                         <td className="px-10 py-3 text-red-600 font-semibold">$ {item.amount}</td>
                                         <td className="px-10 py-3 text-green-600 font-semibold">$ {item.amount_charged}</td>
                                         <td className="px-10 py-3">{item.pending ? (<span className="px-3 py-1 bg-yellow-100 text-yellow-600 rounded-full text-xs">Pending</span>) : (<span className="px-3 py-1 bg-green-100 text-green-600 rounded-full text-xs">Approved</span>)}</td>
-                                        <td className="px-10 py-3">{item.pending && (<button onClick={() => { setSelectedActivation(item); setShowApproveModal(true); }} className="flex items-center gap-1 bg-blue-600 text-white px-3 py-1 rounded-lg text-xs hover:bg-blue-700">Approve</button>)}</td>
+                                        <td className="px-10 py-3 flex items-center gap-2">
+                                            {item.pending && (
+                                                <>
+                                                    <button onClick={() => { setSelectedActivation(item); setShowApproveModal(true); }} className="flex items-center gap-1 bg-blue-600 text-white px-3 py-1 rounded-lg text-xs hover:bg-blue-700">Approve</button>
+                                                    <button onClick={() => startEdit(item)} className="flex items-center gap-1 bg-yellow-500 text-white px-3 py-1 rounded-lg text-xs hover:bg-yellow-600">Edit</button>
+                                                </>
+                                            )}
+                                        </td>
                                     </tr>
                                 ))
                             ) : (
@@ -188,6 +267,7 @@ function AdminSimActivation() {
                             )}
                         </tbody>
                     </table>
+
 
                     {filteredData.slice().reverse().map((item, idx) => (
                         <div key={item.activation_id} className="md:hidden border rounded-xl shadow-sm p-4 mb-4 bg-white hover:shadow-md transition flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
@@ -201,6 +281,8 @@ function AdminSimActivation() {
                             <div>{item.pending ? (<span className="px-3 py-1 bg-yellow-100 text-yellow-700 rounded-full text-xs font-medium">Pending</span>) : (<span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-medium">Approved</span>)}</div>
 
                             <div>{item.pending && (<button onClick={() => { setSelectedActivation(item); setShowApproveModal(true); }} className="bg-blue-600 text-white px-3 py-1 rounded-lg text-sm">Approve</button>)}</div>
+
+                            <div>{item.pending && (<button onClick={() => startEdit(item)} className="bg-yellow-500 text-white px-3 py-1 rounded-lg text-sm">Edit</button>)}</div>
                         </div>
                     ))}
                 </div>
@@ -244,6 +326,79 @@ function AdminSimActivation() {
                         </div>
 
                         <button onClick={approveActivation} className="mt-6 w-full bg-green-600 text-white py-2 rounded-lg hover:bg-green-700">Approve Activation</button>
+                    </div>
+                </div>
+            )}
+
+            {showEditModal && selectedActivation && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
+                    <div className="bg-white w-[95%] max-w-2xl rounded-2xl shadow-lg p-6 relative">
+                        <button onClick={cancelEdit} className="absolute right-4 top-4 text-gray-500 hover:text-gray-900"><X size={22} /></button>
+
+                        <h2 className="text-xl font-semibold mb-4">Edit SIM Activation</h2>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+
+                            <div>
+                                <label className="text-xs text-gray-500">Username</label>
+                                <input value={editForm.username || ''} disabled className="w-full border rounded px-3 py-2 bg-gray-100 text-gray-600" />
+                            </div>
+
+                            <div>
+                                <label className="text-xs text-gray-500">Email</label>
+                                <input value={editForm.email || ''} disabled className="w-full border rounded px-3 py-2 bg-gray-100 text-gray-600" />
+                            </div>
+
+                            <div>
+                                <label className="text-xs text-gray-500">Phone No</label>
+                                <input value={editForm.phone_no || ''} onChange={(e) => setEditForm({ ...editForm, phone_no: e.target.value })} className="w-full border rounded px-3 py-2" />
+                            </div>
+
+                            <div>
+                                <label className="text-xs text-gray-500">SIM Number</label>
+                                <input value={editForm.simNumber || ''} onChange={(e) => setEditForm({ ...editForm, simNumber: e.target.value })} className="w-full border rounded px-3 py-2" />
+                            </div>
+
+                            <div>
+                                <label className="text-xs text-gray-500">EID</label>
+                                <input value={editForm.eid || ''} onChange={(e) => setEditForm({ ...editForm, eid: e.target.value })} className="w-full border rounded px-3 py-2" />
+                            </div>
+
+                            <div>
+                                <label className="text-xs text-gray-500">ICCID</label>
+                                <input value={editForm.iccid || ''} onChange={(e) => setEditForm({ ...editForm, iccid: e.target.value })} className="w-full border rounded px-3 py-2" />
+                            </div>
+
+                            <div>
+                                <label className="text-xs text-gray-500">Postal Code</label>
+                                <input type="number" value={editForm.postal_code || 0} onChange={(e) => setEditForm({ ...editForm, postal_code: e.target.value })} className="w-full border rounded px-3 py-2" />
+                            </div>
+
+                            <div>
+                                <label className="text-xs text-gray-500">Pin Code</label>
+                                <input value={editForm.pin_code || 0} onChange={(e) => setEditForm({ ...editForm, pin_code: e.target.value })} className="w-full border rounded px-3 py-2" />
+                            </div>
+
+                            <div>
+                                <label className="text-xs text-gray-500">EMI</label>
+                                <input value={editForm.emi || ''} onChange={(e) => setEditForm({ ...editForm, emi: e.target.value })} className="w-full border rounded px-3 py-2" />
+                            </div>
+
+                            <div>
+                                <label className="text-xs text-gray-500">Amount Charged</label>
+                                <input value={editForm.amount_charged || 0} disabled className="w-full border rounded px-3 py-2 bg-gray-100 text-gray-600" />
+                            </div>
+
+                            <div className="md:col-span-2">
+                                <label className="text-xs text-gray-500">Offer</label>
+                                <input value={editForm.offer || ''} onChange={(e) => setEditForm({ ...editForm, offer: e.target.value })} className="w-full border rounded px-3 py-2" />
+                            </div>
+                        </div>
+
+                        <div className="flex gap-3 mt-6">
+                            <button onClick={saveEditedActivation} className="flex-1 bg-indigo-600 text-white py-2 rounded-lg">Save Changes</button>
+                            <button onClick={cancelEdit} className="flex-1 bg-gray-200 text-gray-700 py-2 rounded-lg">Cancel</button>
+                        </div>
                     </div>
                 </div>
             )}
