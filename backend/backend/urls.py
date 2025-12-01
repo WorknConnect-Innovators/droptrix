@@ -73,5 +73,7 @@ urlpatterns = [
     path('api/update-topup/', views.update_topup, name='update_topup'),
     path('api/update-recharge/', views.update_recharge, name='update_recharge'),
     path('api/update-activation/', views.update_activation, name='update_activation'),
-    path('api/update-carriers/', views.update_carriers, name='update_carriers')
+    path('api/update-carriers/', views.update_carriers, name='update_carriers'),
+    path('api/cancel-sim-activation/', views.cancel_sim_activation, name='cancel_sim_activation'),
+    path('api/cancel-recharge/', views.cancel_recharge, name='cancel_recharge')
 ]

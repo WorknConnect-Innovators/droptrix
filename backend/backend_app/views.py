@@ -531,7 +531,10 @@ def cancel_topup(request):
                 history_message=history_message
             )
             user_balance_data = Account_balance.objects.filter(username=topup_data.username).first()
-            user_balance_data.account_balance_amount += topup_data.amount
+            if topup_data.amount <= topup_data.payable_amount:
+                user_balance_data.account_balance_amount += topup_data.amount
+            else:
+                user_balance_data.account_balance_amount += topup_data.payable_amount
             user_balance_data.last_updated = datetime.now()
             user_balance_data.save()
             topup_data.balance_history = user_balance_data.account_balance_amount
@@ -625,7 +628,7 @@ def user_recharge_account(request):
             history_message=f'You submitted a request for recharge of amount {data["amount"]}.'
             history_data = History(
                 username=data['username'],
-                history_type='Recharge History',
+                history_type='Recharge',
                 history_message=history_message,
                 history_balance=balance_data.account_balance_amount
             )
@@ -646,7 +649,7 @@ def get_recharge_data(request):
                 'payment_screenshot': r.payment_screenshot,
                 'username': r.username,
                 'timestamp': r.timestamp,
-                'approved': r.approved,
+                'status': r.status,
                 'balance_history': r.balance_history,
                 'payable_amount': r.payable_amount
             }
@@ -677,7 +680,7 @@ def admin_approve_recharge(request):
             recharge_id = data['recharge_id']
             username = data['username']
             recharge_data = Recharge.objects.filter(recharge_id=recharge_id).first()
-            recharge_data.approved = True
+            recharge_data.status = 'Approved'
             user_balance_data = Account_balance.objects.filter(username=username).first()
             user_balance_data.account_balance_amount += recharge_data.amount
             user_balance_data.last_updated = datetime.now()
@@ -688,12 +691,38 @@ def admin_approve_recharge(request):
             history_message = f"Admin approved your recharge of amount {recharge_data.amount}."
             history_data = History(
                 username=data['username'],
-                history_type='Recharge History',
+                history_type='Recharge',
                 history_message=history_message,
                 history_balance=balance_data.account_balance_amount
             )
             history_data.save()
             return JsonResponse({'status': 'success', 'data_received': recharge_data.recharge_id, 'account_balance': user_balance_data.account_balance_amount})
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+    return JsonResponse({'status': 'error', 'message': 'Invalid request method'}, status=400)
+
+
+@csrf_exempt
+def cancel_recharge(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            recharge_id = data['recharge_id']
+            recharge_amount = data['amount']
+            recharge_data = Recharge.objects.filter(recharge_id=recharge_id).first()
+            recharge_data.status = 'Canceled'
+            history_message=f'Your request for recharge of amount {recharge_amount} has canceled.'
+            history_data = History(
+                username=recharge_data.username,
+                history_type='Recharge',
+                history_message=history_message
+            )
+            user_balance_data = Account_balance.objects.filter(username=recharge_data.username).first()
+            recharge_data.balance_history = user_balance_data.account_balance_amount
+            history_data.history_balance = user_balance_data.account_balance_amount
+            recharge_data.save()
+            history_data.save()
+            return JsonResponse({'status': 'success', 'data_received': recharge_data.recharge_id})
         except Exception as e:
             return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
     return JsonResponse({'status': 'error', 'message': 'Invalid request method'}, status=400)
@@ -737,7 +766,7 @@ def user_sim_activation(request):
             history_message=f'You sent a request of sim activation for amount of {data["amount"]}.'
             history_data = History(
                 username=data['username'],
-                history_type='Sim Activation History',
+                history_type='Sim Activation',
                 history_message=history_message,
                 history_balance=balance_data.account_balance_amount
             )
@@ -761,7 +790,7 @@ def get_activation_data(request):
                 'plan_name': Plans.objects.filter(plan_id=a.plan_id).first().plan_name,
                 'phone_no': a.phone_no,
                 'amount_charged': a.amount_charged,
-                'pending': a.pending,
+                'pending': a.status,
                 'timestamp': a.timestamp,
                 'balance_history': a.balance_history,
                 'emi': a.emi,
@@ -788,11 +817,11 @@ def approve_sim_activation(request):
             activation_id = data['activation_id']
             activation_data = Activate_sim.objects.filter(activation_id=activation_id).first()
             balance_data = Account_balance.objects.filter(username=data['username']).first()
-            activation_data.pending = False
+            activation_data.status = 'Approved'
             activation_data.save()
             history_data = History(
                 username=data['username'],
-                history_type='Sim Activation History',
+                history_type='Sim Activation',
                 history_message='Your Sim Activation Approved.',
                 history_balance=balance_data.account_balance_amount
             )
@@ -811,6 +840,38 @@ def get_user_activation_data(request):
             username = data['username']
             activation_data = list(Activate_sim.objects.filter(username=username).values())
             return JsonResponse({'status': 'success', 'data_received': activation_data})
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+    return JsonResponse({'status': 'error', 'message': 'Invalid request method'}, status=400)
+
+
+@csrf_exempt
+def cancel_sim_activation(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            activation_id = data['activation_id']
+            amount = data['amount']
+            activation_data = Activate_sim.objects.filter(activation_id=activation_id).first()
+            activation_data.status = 'Canceled'
+            history_message=f'Your request for Sim Activation of amount {amount} has canceled.'
+            history_data = History(
+                username=activation_data.username,
+                history_type='Sim Activation',
+                history_message=history_message
+            )
+            user_balance_data = Account_balance.objects.filter(username=activation_data.username).first()
+            if activation_data.amount <= activation_data.amount_charged:
+                user_balance_data.account_balance_amount += activation_data.amount
+            else:
+                user_balance_data.account_balance_amount += activation_data.amount_charged
+            user_balance_data.last_updated = datetime.now()
+            user_balance_data.save()
+            activation_data.balance_history = user_balance_data.account_balance_amount
+            history_data.history_balance = user_balance_data.account_balance_amount
+            activation_data.save()
+            history_data.save()
+            return JsonResponse({'status': 'success', 'data_received': activation_data.activation_id})
         except Exception as e:
             return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
     return JsonResponse({'status': 'error', 'message': 'Invalid request method'}, status=400)
