@@ -34,6 +34,35 @@ function UserDetails() {
     const [loadingUserPlanOffers, setLoadingUserPlanOffers] = useState(false);
     const [loadingUserCarrierOffers, setLoadingUserCarrierOffers] = useState(false);
 
+    // Admin-on-behalf states: Account Fund, Topup, Activation
+    const [adminFundAmount, setAdminFundAmount] = useState("");
+    const [adminFundScreenshot, setAdminFundScreenshot] = useState("");
+    const [adminFundUploading, setAdminFundUploading] = useState(false);
+    const [adminFundSubmitting, setAdminFundSubmitting] = useState(false);
+    const [adminFundPayable, setAdminFundPayable] = useState(0);
+
+    const [adminTopupCarrier, setAdminTopupCarrier] = useState(null);
+    const [adminTopupAmount, setAdminTopupAmount] = useState("");
+    const [adminTopupPhone, setAdminTopupPhone] = useState("");
+    const [adminTopupSubmitting, setAdminTopupSubmitting] = useState(false);
+    const [adminTopupPayable, setAdminTopupPayable] = useState(0);
+    const [adminTopupCompanyDiscount, setAdminTopupCompanyDiscount] = useState(0);
+
+    const [adminActCarrier, setAdminActCarrier] = useState("");
+    const [adminActPlans, setAdminActPlans] = useState([]);
+    const [adminActPlan, setAdminActPlan] = useState("");
+    const [adminActSimType, setAdminActSimType] = useState("Sim");
+    const [adminActSimNumber, setAdminActSimNumber] = useState("");
+    const [adminActEid, setAdminActEid] = useState("");
+    const [adminActIccid, setAdminActIccid] = useState("");
+    const [adminActEmi, setAdminActEmi] = useState("");
+    const [adminActEmail, setAdminActEmail] = useState("");
+    const [adminActSubmitting, setAdminActSubmitting] = useState(false);
+    const [adminActPayable, setAdminActPayable] = useState(0);
+    const [adminActCarrierDetails, setAdminActCarrierDetails] = useState(null);
+    const [adminActZip, setAdminActZip] = useState("");
+    const [adminActPin, setAdminActPin] = useState("");
+
     const loadData = async () => {
         setLoadingUserData(true);
         try {
@@ -256,6 +285,240 @@ function UserDetails() {
         setCarrierOffersOpen(!carrierOffersOpen);
     };
 
+    // --- Admin handlers ---
+    useEffect(() => {
+        // when admin selects a carrier for activation, fetch plans
+        if (!adminActCarrier) return;
+        const fetchPlans = async () => {
+            try {
+                const result = await companyBasedPlans(adminActCarrier);
+                setAdminActPlans(result || []);
+            } catch (err) {
+                console.error('Failed to load admin plans', err);
+            }
+        };
+        fetchPlans();
+    }, [adminActCarrier]);
+
+    // When admin selects carrier for activation, find carrier details for required fields
+    useEffect(() => {
+        if (!adminActCarrier) { setAdminActCarrierDetails(null); return }
+        const c = carriers.find(x => x.company_id === adminActCarrier) || null;
+        setAdminActCarrierDetails(c);
+    }, [adminActCarrier, carriers]);
+
+    // When admin selects carrier for topup, compute any company-specific discount
+    useEffect(() => {
+        if (!adminTopupCarrier) { setAdminTopupCompanyDiscount(0); setAdminTopupPayable(0); return }
+        const compute = async () => {
+            // ensure we have user's company offers loaded
+            try {
+                const res = await fetch(`${process.env.REACT_APP_API_URL_PRODUCTION}/api/get-company-offers/`, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username: user.username })
+                });
+                const json = await res.json();
+                const offers = json.offers || [];
+                const myOffer = offers.find(o => String(o.company_id) === String(adminTopupCarrier));
+                const compDisc = myOffer ? Number(myOffer.discount_percentage || 0) : 0;
+                setAdminTopupCompanyDiscount(compDisc);
+            } catch (err) { console.error('Failed to load company offers for admin topup', err); setAdminTopupCompanyDiscount(0) }
+        };
+        compute();
+    }, [adminTopupCarrier, user]);
+
+    // compute payable for admin topup when amount, discounts or companyDiscount change
+    // NOTE: topups/recharges should not include 'charges' (tax) — only discounts apply
+    useEffect(() => {
+        const amt = Number(adminTopupAmount) || 0;
+        const comp = Number(adminTopupCompanyDiscount) || 0; // company-level discount only
+        // payable = amt * (1 - comp/100)
+        const payable = amt * (1 - (comp / 100));
+        setAdminTopupPayable(Number(payable.toFixed(2)));
+    }, [adminTopupAmount, adminTopupCompanyDiscount]);
+
+    // compute payable for admin activation when plan, planDiscount (user) change
+    useEffect(() => {
+        const planObj = adminActPlans.find(p => p.plan_id === adminActPlan) || null;
+        const price = Number(planObj?.plan_price || 0);
+        const pd = Number(planDiscount) || 0; // user-level plan discount set above
+        // find user specific plan offer
+        const userPlanOffer = (userPlanOffers || []).find(o => String(o.plan_id) === String(adminActPlan));
+        const uop = userPlanOffer ? Number(userPlanOffer.discount_percentage || 0) : 0;
+        const payable = price * (1 - (pd + uop) / 100);
+        setAdminActPayable(Number(payable.toFixed(2)));
+    }, [adminActPlan, adminActPlans, planDiscount, userPlanOffers]);
+
+    // compute payable for admin fund (add funds) — includes charges and discount
+    useEffect(() => {
+        const amt = Number(adminFundAmount) || 0;
+        // default fallbacks: charges 7%, discount 6% if backend values absent
+        const charges = (typeof rechargeCharges !== 'undefined' && Number(rechargeCharges) >= 0) ? Number(rechargeCharges) : 7;
+        const discount = (typeof rechargeDiscounts !== 'undefined' && Number(rechargeDiscounts) >= 0) ? Number(rechargeDiscounts) : 6;
+        const payable = amt * (1 + charges / 100 - discount / 100);
+        setAdminFundPayable(Number(payable.toFixed(2)));
+    }, [adminFundAmount, rechargeCharges, rechargeDiscounts]);
+
+    // Cloudinary upload helper (reused from user addFunds flow)
+    const handleCloudinaryUpload = async (file) => {
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("upload_preset", "droptrixAccountsPayments");
+
+        setAdminFundUploading(true);
+        try {
+            const res = await fetch(`https://api.cloudinary.com/v1_1/dyodgkvkr/image/upload`, { method: "POST", body: formData });
+            const data = await res.json();
+            setAdminFundUploading(false);
+            return data.secure_url || null;
+        } catch (error) {
+            console.error("Cloudinary upload failed:", error);
+            setAdminFundUploading(false);
+            return null;
+        }
+    };
+
+    const handleAdminFundFileChange = async (e) => {
+        const file = e.target.files && e.target.files[0];
+        if (!file) return;
+        const uploadedUrl = await handleCloudinaryUpload(file);
+        if (uploadedUrl) setAdminFundScreenshot(uploadedUrl);
+    };
+
+    const submitAdminFund = async () => {
+        const amount = Number(adminFundAmount);
+        if (!amount || isNaN(amount) || amount <= 0) { message.error('Enter a valid amount'); return }
+        setAdminFundSubmitting(true);
+        try {
+            const payload = {
+                username: user.username,
+                amount: amount,
+                payment_screenshot: adminFundScreenshot,
+                payable_amount: adminFundPayable,
+                approved: true,
+                status: 'Approved'
+            };
+            const res = await fetch(`${process.env.REACT_APP_API_URL_PRODUCTION}/api/user-recharge-account/`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
+            });
+            const data = await res.json();
+            if (data.status === 'success') {
+                message.success('Account fund added and approved');
+                setAdminFundAmount(''); setAdminFundScreenshot('');
+                loadData();
+            } else { message.error(data.message || 'Failed to add fund') }
+        } catch (err) { console.error(err); message.error('Server error') }
+        finally { setAdminFundSubmitting(false) }
+    }
+
+    const submitAdminTopup = async () => {
+        const amount = Number(adminTopupAmount);
+        if (!adminTopupCarrier) { message.error('Select carrier'); return }
+        if (!amount || isNaN(amount) || amount <= 0) { message.error('Enter valid amount'); return }
+        if (!adminTopupPhone) { message.error('Enter phone number'); return }
+        // check user's available balance
+        const available = Number(userData?.available_balance || 0);
+        if (available < adminTopupPayable) { message.error('Insufficient user balance for this top-up'); return }
+        setAdminTopupSubmitting(true);
+        try {
+            const payload = {
+                company_id: adminTopupCarrier,
+                amount: amount,
+                phone_no: adminTopupPhone,
+                username: user.username,
+                request_topup: false,
+                status: 'Approved',
+                payable_amount: adminTopupPayable
+            };
+            const res = await fetch(`${process.env.REACT_APP_API_URL_PRODUCTION}/api/add-topup/`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
+            });
+            const data = await res.json();
+            if (res.ok && data.status !== 'error') {
+                message.success('Top-up added & approved');
+                setAdminTopupCarrier(null); setAdminTopupAmount(''); setAdminTopupPhone('');
+                // update available balance if backend returned it
+                if (data.account_balance !== undefined) {
+                    setUserData(prev => ({ ...(prev || {}), available_balance: data.account_balance }));
+                } else {
+                    loadData();
+                }
+            } else { message.error(data.message || 'Failed to add topup') }
+        } catch (err) { console.error(err); message.error('Server error') }
+        finally { setAdminTopupSubmitting(false) }
+    }
+
+    const submitAdminActivation = async () => {
+        if (!adminActCarrier) { message.error('Select carrier'); return }
+        if (!adminActPlan) { message.error('Select plan'); return }
+        if (!adminActSimNumber) { message.error('Enter SIM number'); return }
+        // check available balance before activation
+        const available = Number(userData?.available_balance || 0);
+        if (available < adminActPayable) { message.error('Insufficient user balance for this activation'); return }
+        // validation per carrier required fields
+        const req = (adminActCarrierDetails && adminActSimType === 'E-Sim') ? (adminActCarrierDetails.esim_required_fields || []) : (adminActCarrierDetails && adminActSimType === 'Sim') ? (adminActCarrierDetails.physical_required_fields || []) : [];
+        const isDigits = (s) => /^\d+$/.test(s || "");
+        const isValidEmail = (s) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test((s||"").trim());
+
+        if (req.includes('phone_no') && !adminActSimNumber) { message.error('SIM number is required'); return }
+        if (req.includes('iccid')) {
+            if (!adminActIccid) { message.error('ICCID is required'); return }
+            if (!isDigits(adminActIccid) || adminActIccid.length !== 32) { message.error('ICCID must be exactly 32 digits'); return }
+        }
+        if (adminActSimType === 'E-Sim') {
+            if (req.includes('eid')) {
+                if (!adminActEid) { message.error('EID is required'); return }
+                if (!isDigits(adminActEid) || adminActEid.startsWith('0') || adminActEid.length > 10) { message.error('Invalid EID'); return }
+            }
+        }
+        if (adminActSimType === 'Sim') {
+            if (req.includes('emi')) {
+                if (!adminActEmi) { message.error('EMI is required'); return }
+                if (!isDigits(adminActEmi) || adminActEmi.length > 15) { message.error('Invalid EMI'); return }
+            }
+        }
+        if (req.includes('postal_code')) {
+            if (!adminActZip) { message.error('Postal/ZIP code is required'); return }
+            if (!isDigits(adminActZip)) { message.error('ZIP code must be digits only'); return }
+        }
+        if (req.includes('email') && adminActEmail && !isValidEmail(adminActEmail)) { message.error('Enter a valid email'); return }
+
+        setAdminActSubmitting(true);
+        try {
+            const selectedPlanObj = adminActPlans.find(p => p.plan_id === adminActPlan) || {};
+            const payload = {
+                username: user.username,
+                sim_type: adminActSimType,
+                plan_id: adminActPlan,
+                company_id: adminActCarrier,
+                phone_no: adminActSimNumber,
+                amount_charged: adminActPayable,
+                amount: Number(selectedPlanObj.plan_price || 0),
+                emi: adminActEmi || '',
+                eid: adminActEid || '',
+                iccid: adminActIccid || '',
+                email: adminActEmail || '',
+                postal_code: adminActZip || 0,
+                pin_code: adminActPin || 0,
+                approved: true,
+                status: 'Approved'
+            };
+            const res = await fetch(`${process.env.REACT_APP_API_URL_PRODUCTION}/api/user-sim-activation/`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
+            });
+            const data = await res.json();
+            if (data.status === 'success') {
+                message.success('SIM activated and approved');
+                setAdminActCarrier(''); setAdminActPlan(''); setAdminActSimNumber(''); setAdminActEid(''); setAdminActIccid(''); setAdminActEmi(''); setAdminActEmail('');
+                if (data.account_balance !== undefined) {
+                    setUserData(prev => ({ ...(prev || {}), available_balance: data.account_balance }));
+                } else {
+                    loadData();
+                }
+            } else { message.error(data.message || 'Failed to activate SIM') }
+        } catch (err) { console.error(err); message.error('Server error') }
+        finally { setAdminActSubmitting(false) }
+    }
+
 
     return (
         <div className="space-y-8">
@@ -342,6 +605,173 @@ function UserDetails() {
                     </div>
                 </div>
 
+            </div>
+
+            {/* Admin — Add on behalf of user: Account Fund */}
+            <div className="relative bg-white border py-6 px-5 rounded-md shadow-md">
+                <label className="absolute bg-white px-2 -top-3 font-semibold uppercase text-sm">Admin — Account Fund</label>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label className="text-sm">Amount ($)</label>
+                        <input type="number" value={adminFundAmount} onChange={e => setAdminFundAmount(e.target.value)} className="w-full border rounded-md px-3 py-2 mt-1" />
+                    </div>
+                    <div>
+                        <label className="text-sm">Payment Screenshot (optional)</label>
+                        {adminFundScreenshot ? (
+                            <div className="flex items-center gap-3 mt-2">
+                                <img src={adminFundScreenshot} alt="screenshot" className="w-24 h-16 object-cover rounded-md border" />
+                                <button onClick={() => setAdminFundScreenshot('')} className="text-sm text-red-600">Remove</button>
+                            </div>
+                        ) : (
+                            <input type="file" accept="image/*" onChange={handleAdminFundFileChange} className="w-full border rounded-md px-3 py-2 mt-1 text-sm" />
+                        )}
+                        {adminFundUploading && <div className="text-sm text-blue-600 mt-2">Uploading...</div>}
+                    </div>
+                </div>
+
+                <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+                    <div>
+                        <div className="text-sm text-gray-600">Charges: {rechargeCharges ?? 7}%</div>
+                        <div className="text-sm text-gray-600">User Discount: {rechargeDiscounts ?? 6}%</div>
+                    </div>
+                    <div>
+                        <div className="text-sm text-gray-600">Payable Amount</div>
+                        <div className="text-xl font-semibold">${adminFundPayable}</div>
+                    </div>
+                    <div className="text-right">
+                        <button onClick={submitAdminFund} disabled={adminFundSubmitting || adminFundUploading} className={`mt-2 px-4 py-2 rounded-md text-white ${(adminFundSubmitting || adminFundUploading) ? 'bg-gray-400' : 'bg-blue-600 hover:bg-blue-700'}`}>
+                            {adminFundSubmitting ? 'Submitting...' : adminFundUploading ? 'Uploading...' : 'Add & Approve'}
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            {/* Admin — SIM Topup */}
+            <div className="relative bg-white border py-6 px-5 rounded-md shadow-md">
+                <label className="absolute bg-white px-2 -top-3 font-semibold uppercase text-sm">Admin — SIM Topup</label>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                        <label className="text-sm">Select Carrier</label>
+                        <select value={adminTopupCarrier || ''} onChange={e => setAdminTopupCarrier(e.target.value)} className="w-full border rounded-md px-3 py-2 mt-1">
+                            <option value="">Select Carrier</option>
+                            {carriers.map(c => (<option key={c.company_id} value={c.company_id}>{c.name}</option>))}
+                        </select>
+                    </div>
+                    <div>
+                        <label className="text-sm">Amount ($)</label>
+                        <input type="number" value={adminTopupAmount} onChange={e => setAdminTopupAmount(e.target.value)} className="w-full border rounded-md px-3 py-2 mt-1" />
+                    </div>
+                    <div>
+                        <label className="text-sm">Phone Number</label>
+                        <input type="text" value={adminTopupPhone} onChange={e => setAdminTopupPhone(e.target.value)} className="w-full border rounded-md px-3 py-2 mt-1" />
+                    </div>
+                </div>
+
+                <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+                    <div>
+                        <div className="text-sm text-gray-600">Company Discount: {adminTopupCompanyDiscount}%</div>
+                    </div>
+                    <div>
+                        <div className="text-sm text-gray-600">Payable Amount</div>
+                        <div className="text-xl font-semibold">${adminTopupPayable}</div>
+                    </div>
+                    <div className="text-right">
+                        <div className="text-sm text-gray-600">User Balance: ${userData?.available_balance ?? 0}</div>
+                        <button onClick={submitAdminTopup} disabled={adminTopupSubmitting} className={`mt-2 px-4 py-2 rounded-md text-white ${adminTopupSubmitting ? 'bg-gray-400' : 'bg-blue-600 hover:bg-blue-700'}`}>
+                            {adminTopupSubmitting ? 'Submitting...' : 'Add & Approve'}
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            {/* Admin — SIM Activation */}
+            <div className="relative bg-white border py-6 px-5 rounded-md shadow-md">
+                <label className="absolute bg-white px-2 -top-3 font-semibold uppercase text-sm">Admin — SIM Activation</label>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                        <label className="text-sm">Select Carrier</label>
+                        <select value={adminActCarrier || ''} onChange={e => setAdminActCarrier(e.target.value)} className="w-full border rounded-md px-3 py-2 mt-1">
+                            <option value="">Select Carrier</option>
+                            {carriers.map(c => (<option key={c.company_id} value={c.company_id}>{c.name}</option>))}
+                        </select>
+                    </div>
+                    <div>
+                        <label className="text-sm">Select Plan</label>
+                        <select value={adminActPlan || ''} onChange={e => setAdminActPlan(e.target.value)} className="w-full border rounded-md px-3 py-2 mt-1">
+                            <option value="">Select Plan</option>
+                            {adminActPlans.map(p => (<option key={p.plan_id} value={p.plan_id}>{p.plan_name} - ${p.plan_price}</option>))}
+                        </select>
+                    </div>
+                    <div>
+                        <label className="text-sm">SIM Type</label>
+                        <select value={adminActSimType} onChange={e => setAdminActSimType(e.target.value)} className="w-full border rounded-md px-3 py-2 mt-1">
+                            <option value="Sim">Sim</option>
+                            <option value="E-Sim">E-Sim</option>
+                        </select>
+                    </div>
+                </div>
+
+                {/* Additional activation fields that depend on carrier requirements */}
+                <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {/** derive required fields from selected carrier details */}
+                    {(() => {
+                        const req = (adminActCarrierDetails && adminActSimType === 'E-Sim') ? (adminActCarrierDetails.esim_required_fields || []) : (adminActCarrierDetails && adminActSimType === 'Sim') ? (adminActCarrierDetails.physical_required_fields || []) : [];
+                        return (
+                            <>
+                                <div>
+                                    <label className="text-sm">SIM Number {req.includes('phone_no') && <span className="text-xs text-gray-500">(required)</span>}</label>
+                                    <input type="text" value={adminActSimNumber} onChange={e => setAdminActSimNumber(e.target.value)} className={`w-full border rounded-md px-3 py-2 mt-1 ${adminActCarrierDetails && !req.includes('phone_no') ? 'bg-gray-100 text-gray-500' : ''}`} disabled={adminActCarrierDetails && !req.includes('phone_no')} />
+                                </div>
+
+                                <div>
+                                    <label className="text-sm">ICCID {req.includes('iccid') && <span className="text-xs text-gray-500">(required 32 digits)</span>}</label>
+                                    <input type="text" value={adminActIccid} onChange={e => setAdminActIccid(e.target.value.replace(/\D/g, '').slice(0,32))} className={`w-full border rounded-md px-3 py-2 mt-1 ${adminActCarrierDetails && !req.includes('iccid') ? 'bg-gray-100 text-gray-500' : ''}`} disabled={adminActCarrierDetails && !req.includes('iccid')} />
+                                </div>
+
+                                <div>
+                                    <label className="text-sm">EID {req.includes('eid') && <span className="text-xs text-gray-500">(required)</span>}</label>
+                                    <input type="text" value={adminActEid} onChange={e => setAdminActEid(e.target.value.replace(/\D/g, '').slice(0,10))} className={`w-full border rounded-md px-3 py-2 mt-1 ${adminActCarrierDetails && !req.includes('eid') ? 'bg-gray-100 text-gray-500' : ''}`} disabled={adminActCarrierDetails && !req.includes('eid')} />
+                                </div>
+
+                                <div>
+                                    <label className="text-sm">EMI {req.includes('emi') && <span className="text-xs text-gray-500">(required)</span>}</label>
+                                    <input type="text" value={adminActEmi} onChange={e => setAdminActEmi(e.target.value.replace(/\D/g, '').slice(0,15))} className={`w-full border rounded-md px-3 py-2 mt-1 ${adminActCarrierDetails && !req.includes('emi') ? 'bg-gray-100 text-gray-500' : ''}`} disabled={adminActCarrierDetails && !req.includes('emi')} />
+                                </div>
+
+                                <div>
+                                    <label className="text-sm">ZIP / Postal Code {req.includes('postal_code') && <span className="text-xs text-gray-500">(required)</span>}</label>
+                                    <input type="text" value={adminActZip} onChange={e => setAdminActZip(e.target.value.replace(/\D/g, '').slice(0,10))} className={`w-full border rounded-md px-3 py-2 mt-1 ${adminActCarrierDetails && !req.includes('postal_code') ? 'bg-gray-100 text-gray-500' : ''}`} disabled={adminActCarrierDetails && !req.includes('postal_code')} />
+                                </div>
+
+                                <div>
+                                    <label className="text-sm">PIN Code</label>
+                                    <input type="text" value={adminActPin} onChange={e => setAdminActPin(e.target.value.replace(/\D/g, '').slice(0,10))} className={`w-full border rounded-md px-3 py-2 mt-1 ${adminActCarrierDetails && !req.includes('pinCode') ? 'bg-gray-100 text-gray-500' : ''}`} disabled={adminActCarrierDetails && !req.includes('pinCode')} />
+                                </div>
+
+                                <div className="md:col-span-3">
+                                    <label className="text-sm">Email {req.includes('email') && <span className="text-xs text-gray-500">(required)</span>}</label>
+                                    <input type="email" value={adminActEmail} onChange={e => setAdminActEmail(e.target.value)} className={`w-full border rounded-md px-3 py-2 mt-1 ${adminActCarrierDetails && !req.includes('email') ? 'bg-gray-100 text-gray-500' : ''}`} disabled={adminActCarrierDetails && !req.includes('email')} />
+                                </div>
+                            </>
+                        )
+                    })()}
+                </div>
+
+                <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+                    <div>
+                        <div className="text-sm text-gray-600">Plan Price: ${(() => { const p = adminActPlans.find(pp => pp.plan_id === adminActPlan); return p ? p.plan_price : 0 })()}</div>
+                    </div>
+                    <div>
+                        <div className="text-sm text-gray-600">Payable Amount</div>
+                        <div className="text-xl font-semibold">${adminActPayable}</div>
+                    </div>
+                    <div className="text-right">
+                        <div className="text-sm text-gray-600">User Balance: ${userData?.available_balance ?? 0}</div>
+                        <button onClick={submitAdminActivation} disabled={adminActSubmitting} className={`mt-2 px-4 py-2 rounded-md text-white ${adminActSubmitting ? 'bg-gray-400' : 'bg-blue-600 hover:bg-blue-700'}`}>
+                            {adminActSubmitting ? 'Submitting...' : 'Activate & Approve'}
+                        </button>
+                    </div>
+                </div>
             </div>
 
             <div className="relative bg-white border py-10 px-5 rounded-md shadow-md">
