@@ -16,6 +16,7 @@ function ActivateSim() {
     const [selectedCarrier, setSelectedCarrier] = useState(null);
     const [plans, setPlans] = useState([]);
     const [selectedPlan, setSelectedPlan] = useState(null);
+    const [selectedSim, setSelectedSim] = useState("Sim");
 
     const [addingDetails, setAddingDetails] = useState(false);
     const [selectedPlanDetails, setSelectedPlanDetails] = useState(null);
@@ -171,19 +172,18 @@ function ActivateSim() {
                     body: JSON.stringify({ username: userData.username })
                 })
             const json = await res.json()
-            console.log('fetchUserActivations response:', json)
             if (json.status === 'success') {
-                // json.data_received is a list of activation objects (from backend view)
                 const mapped = (json.data_received || []).map((a) => ({
                     id: a.activation_id || a.id,
                     simNumber: a.phone_no,
                     carrier: a.company_id || a.company_id || 'Unknown',
                     EID: a.eid || '',
-                    status: a.pending ? 'Pending' : 'Active',
+                    status: a.status,
                     plan_id: a.plan_id,
                     amount_charged: a.amount_charged,
                     email: a.email,
-                    timestamp: a.timestamp
+                    timestamp: a.timestamp,
+                    simType: a.sim_type || 'Sim',
                 }))
                 setSims(mapped)
             }
@@ -306,6 +306,7 @@ function ActivateSim() {
             const username = userData?.username || ''
             const payload = {
                 username,
+                sim_type: formData.simType,
                 plan_id: selectedPlan,
                 company_id: selectedCarrier,
                 phone_no: simNumber,
@@ -403,6 +404,7 @@ function ActivateSim() {
             setSelectedPlan(act.plan_id);
             const planDet = filteredPlans.find(p => p.plan_id === act.plan_id) || null;
             setSelectedPlanDetails(planDet);
+            setSelectedSim(act.sim_type || "Sim");
 
             setSimNumber(act.phone_no || '');
             setEid(act.eid || '');
@@ -436,6 +438,7 @@ function ActivateSim() {
         setEmail("");
         setError("");
         setEditingActivationId(null);
+        setSelectedSim("Sim");
     }
 
     // Determine which fields carrier requires for the selected SIM type
@@ -961,11 +964,12 @@ function ActivateSim() {
                             <table className="w-full  text-sm text-gray-700 lg:inline-table hidden">
                                 <thead className="bg-blue-50 text-gray-600 uppercase text-xs">
                                     <tr>
+                                        <th className="px-10 py-3 text-left">Date</th>
                                         <th className="px-10 py-3 text-left">SIM Number</th>
                                         <th className="px-10 py-3 text-left">Carrier</th>
                                         <th className="px-10 py-3 text-left">EID</th>
                                         <th className="px-10 py-3 text-left">Status</th>
-                                        <th className="px-10 py-3 text-center">Actions</th>
+                                        <th className="px-10 py-3 text-end">Actions</th>
                                     </tr>
                                 </thead>
 
@@ -973,6 +977,7 @@ function ActivateSim() {
                                     {currentItems.length > 0 ? (
                                         filteredSims.map((sim) => (
                                             <tr key={sim.id} className="border-t hover:bg-gray-50 transition">
+                                                <td className="px-10 py-3">{new Date(sim.timestamp).toLocaleDateString()}</td>
                                                 <td className="px-10 py-3 font-medium">{sim.simNumber}</td>
                                                 <td className="px-10 py-3">{sim.carrier}</td>
                                                 <td className="px-10 py-3">{sim.EID}</td>
@@ -980,7 +985,7 @@ function ActivateSim() {
                                                 <td className="px-10 py-3">
                                                     <span
                                                         className={`px-3 py-1 rounded-full text-xs font-medium 
-                                                    ${sim.status === "Active"
+                                                    ${sim.status === "Approved"
                                                                 ? "bg-green-100 text-green-600"
                                                                 : "bg-red-100 text-red-600"
                                                             }`}
@@ -989,10 +994,12 @@ function ActivateSim() {
                                                     </span>
                                                 </td>
 
-                                                <td className="px-10 py-3 flex justify-center gap-3">
-                                                    <button onClick={() => startEdit(sim)} className="text-blue-600 hover:text-blue-800">
-                                                        <Edit2 size={18} />
-                                                    </button>
+                                                <td className="px-10 py-3 flex justify-end gap-3">
+                                                    {sim.status === "Pending" && (
+                                                        <button onClick={() => startEdit(sim)} className="text-blue-600 hover:text-blue-800">
+                                                            <Edit2 size={18} />
+                                                        </button>
+                                                    )}
                                                     <button
                                                         onClick={() => handleDelete(sim.id)}
                                                         className="text-red-600 hover:text-red-800"
