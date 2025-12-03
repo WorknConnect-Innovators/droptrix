@@ -14,6 +14,11 @@ from django.core.mail import EmailMessage
 from django.core.mail import EmailMultiAlternatives
 from django.forms.models import model_to_dict
 from decimal import Decimal
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from .models import Chat
+from .serializers import ChatSerializer
 
 
 @csrf_exempt
@@ -1315,3 +1320,17 @@ def update_carriers(request):
         except Exception as e:
             return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
     return JsonResponse({'status': 'error', 'message': 'Invalid request method'}, status=400)
+
+
+def get_user_chat(request, user_id):
+    if request.method == 'GET':
+        """
+        Get chat room + messages for a given user.
+        """
+        try:
+            chat = Chat.objects.get(user_id=user_id)
+        except Chat.DoesNotExist:
+            return Response({"error": "Chat not found for this user."}, status=404)
+
+        serializer = ChatSerializer(chat)
+        return Response(serializer.data, status=200)
