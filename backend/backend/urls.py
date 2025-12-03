@@ -75,5 +75,6 @@ urlpatterns = [
     path('api/update-activation/', views.update_activation, name='update_activation'),
     path('api/update-carriers/', views.update_carriers, name='update_carriers'),
     path('api/cancel-sim-activation/', views.cancel_sim_activation, name='cancel_sim_activation'),
-    path('api/cancel-recharge/', views.cancel_recharge, name='cancel_recharge')
+    path('api/cancel-recharge/', views.cancel_recharge, name='cancel_recharge'),
+    path('api/delete-user/', views.delete_user, name='delete_user')
 ]

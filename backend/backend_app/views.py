@@ -207,6 +207,20 @@ def get_signup(request):
     return JsonResponse({'status': 'error', 'message': 'Only GET method is allowed'})
 
 
+@csrf_exempt
+def delete_user(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            username = data['username']
+            user_data = Signup.objects.filter(username=username).first()
+            user_data.delete()
+            return JsonResponse({'status': 'success', 'data_received': user_data.id})
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+    return JsonResponse({'status': 'error', 'message': 'Invalid request method'}, status=400)
+
+
 def ver_code():
     letters_and_digits = string.ascii_letters + string.digits
     code = ''.join(random.choice(letters_and_digits) for i in range(6))
@@ -502,7 +516,7 @@ def add_topup(request):
                 history_message=history_message,
             )
             user_balance_data = Account_balance.objects.filter(username=data['username']).first()
-            user_balance_data.account_balance_amount -= topup_data.payable_amount
+            user_balance_data.account_balance_amount -= Decimal(str(topup_data.payable_amount))
             user_balance_data.last_updated = datetime.now()
             history_data.history_balance = user_balance_data.account_balance_amount
             topup_data.balance_history = user_balance_data.account_balance_amount
