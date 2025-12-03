@@ -7,11 +7,12 @@ function AdminTopups() {
     const [selectedTopup, setSelectedTopup] = useState(null);
     const [showApproveModal, setShowApproveModal] = useState(false);
 
-    const [selctedFilter, setSelectedFilter] = useState("company_id");
+    const [selctedFilter, setSelectedFilter] = useState("company_name");
     const filterOptions = [
-        { label: "Carrier", key: "company_id" },
+        { label: "Carrier", key: "company_name" },
         { label: "Amount", key: "amount" },
         { label: "Phone No", key: "phone_no" },
+        { label: "Username", key: "username" },
     ];
     const [isFilterOpen, setIsFilterOpen] = useState(false);
     const [preFilter, setPreFilter] = useState('all');
@@ -42,8 +43,9 @@ function AdminTopups() {
     const filteredData = React.useMemo(() => {
         return topupHistory
             .filter((item) => {
-                if (preFilter === "approved" && item.status !== 'Approved') return false;
-                if (preFilter === "pending" && item.status === 'Approved') return false;
+                if (preFilter === "approved" && item.status !== "Approved") return false;
+                if (preFilter === "pending" && item.status === "Approved") return false;
+                if (preFilter === "cancelled" && item.status !== "Canceled") return false;
                 return true;
             })
             .filter((item) => {
@@ -136,7 +138,9 @@ function AdminTopups() {
                     <div className="border rounded-lg text-sm w-fit">
                         <button onClick={() => setPreFilter('all')} className={`rounded-l-lg px-4 py-2 border-r ${preFilter === 'all' ? "bg-blue-500 text-white" : "hover:bg-gray-100"}`}>All</button>
                         <button onClick={() => setPreFilter('approved')} className={`px-4 py-2 border-r ${preFilter === 'approved' ? "bg-blue-500 text-white" : "hover:bg-gray-100"}`}>Approved</button>
-                        <button onClick={() => setPreFilter('pending')} className={`rounded-r-lg px-4 py-2 ${preFilter === 'pending' ? "bg-blue-500 text-white" : "hover:bg-gray-100"}`}>Pending</button>
+                        <button onClick={() => setPreFilter('pending')} className={`px-4 py-2 ${preFilter === 'pending' ? "bg-blue-500 text-white" : "hover:bg-gray-100"}`}>Pending</button>
+                        <button onClick={() => setPreFilter('cancelled')} className={`rounded-r-lg px-4 py-2 ${preFilter === 'cancelled' ? "bg-blue-500 text-white" : "hover:bg-gray-100"}`}>Cancelled</button>
+
                     </div>
 
                     <div className="flex items-center gap-3">
@@ -193,9 +197,16 @@ function AdminTopups() {
                                         <td className="px-10 py-3">{item.phone_no}</td>
                                         <td className="px-10 py-3 text-red-600 font-semibold">$ {item.amount}</td>
                                         <td className="px-10 py-3 text-green-600 font-semibold">$ {item.payable_amount}</td>
-                                        <td className="px-10 py-3">{item.status === 'Approved' ? (<span className="px-3 py-1 bg-green-100 text-green-600 rounded-full text-xs">Approved</span>) : (<span className="px-3 py-1 bg-yellow-100 text-yellow-600 rounded-full text-xs">Pending</span>)}</td>
+                                        <td className="px-10 py-3">{item.status === 'Approved' ? (
+                                            <span className="px-3 py-1 bg-green-100 text-green-600 rounded-full text-xs">Approved</span>
+                                        ) : item.status === 'Pending' ? (
+                                            <span className="px-3 py-1 bg-yellow-100 text-yellow-600 rounded-full text-xs">Pending</span>
+                                        ) : item.status === 'Canceled' ? (
+                                            <span className="px-3 py-1 bg-red-100 text-red-600 rounded-full text-xs">Canceled</span>
+                                        ) : null}
+                                        </td>
                                         <td className="px-10 py-3">
-                                            {item.status !== 'Approved' && (
+                                            {item.status === 'Pending' && (
                                                 <div className="flex gap-2">
                                                     <button onClick={() => { setSelectedTopup(item); setShowApproveModal(true); }} className="flex items-center gap-1 bg-blue-600 text-white px-3 py-1 rounded-lg text-xs hover:bg-blue-700"><CheckCircle size={14} /> Approve</button>
                                                     <button onClick={() => { setSelectedTopup(item); setShowApproveModal(true); }} className="flex items-center gap-1 bg-red-600 text-white px-3 py-1 rounded-lg text-xs hover:bg-red-700">Cancel</button>

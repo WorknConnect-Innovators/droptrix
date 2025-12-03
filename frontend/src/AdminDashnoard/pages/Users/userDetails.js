@@ -337,16 +337,49 @@ function UserDetails() {
     }, [adminTopupAmount, adminTopupCompanyDiscount]);
 
     // compute payable for admin activation when plan, planDiscount (user) change
+    // Use a single discount source to avoid double-counting (admin-set planDiscount overrides user offer)
     useEffect(() => {
         const planObj = adminActPlans.find(p => p.plan_id === adminActPlan) || null;
         const price = Number(planObj?.plan_price || 0);
-        const pd = Number(planDiscount) || 0; // user-level plan discount set above
+        const pd = Number(planDiscount) || 0; // admin/user-set plan discount (may be an override)
         // find user specific plan offer
         const userPlanOffer = (userPlanOffers || []).find(o => String(o.plan_id) === String(adminActPlan));
         const uop = userPlanOffer ? Number(userPlanOffer.discount_percentage || 0) : 0;
-        const payable = price * (1 - (pd + uop) / 100);
+        // prefer explicit planDiscount (admin override) if present, otherwise use user's plan offer
+        const totalDiscount = pd > 0 ? pd : uop;
+        const payable = price * (1 - (totalDiscount / 100));
         setAdminActPayable(Number(payable.toFixed(2)));
     }, [adminActPlan, adminActPlans, planDiscount, userPlanOffers]);
+
+    // When admin selects a plan, immediately fetch the user's plan offers and set the discount for that plan
+    useEffect(() => {
+        if (!adminActPlan) return;
+        const fetchPlanOffer = async () => {
+            setLoadingUserPlanOffers(true);
+            try {
+                const res = await fetch(`${process.env.REACT_APP_API_URL_PRODUCTION}/api/get-user-offers/`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: user.username })
+                });
+                const data = await res.json();
+                const offers = data.offers || [];
+                setUserPlanOffers(offers);
+
+                const found = offers.find(o => String(o.plan_id) === String(adminActPlan));
+                if (found) {
+                    setPlanDiscount(Number(found.discount_percentage || 0));
+                } else {
+                    setPlanDiscount(0);
+                }
+            } catch (err) {
+                console.error('Failed to fetch plan offers for admin activation', err);
+            } finally {
+                setLoadingUserPlanOffers(false);
+            }
+        };
+        fetchPlanOffer();
+    }, [adminActPlan, user.username]);
 
     // compute payable for admin fund (add funds) — includes charges and discount
     useEffect(() => {

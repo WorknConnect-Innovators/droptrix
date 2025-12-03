@@ -29,7 +29,7 @@ function AdminSimActivation() {
             const res = await fetch(`${process.env.REACT_APP_API_URL_PRODUCTION}/api/get-activation-data/`);
             const data = await res.json();
             if (data.status === "success") {
-                setActivationData(data.data);
+                setActivationData(data.data || []);
             }
         } catch (err) {
             console.error(err);
@@ -40,11 +40,13 @@ function AdminSimActivation() {
         loadData();
     }, []);
 
+    // Filtered data (unsorted)
     const filteredData = React.useMemo(() => {
         return activationData
             .filter((item) => {
-                if (preFilter === 'approved' && item.pending) return false;
-                if (preFilter === 'pending' && !item.pending) return false;
+                if (preFilter === 'approved' && item.pending !== 'Approved') return false;
+                if (preFilter === 'pending' && item.pending !== 'Pending') return false;
+                if (preFilter === 'cancelled' && item.pending !== 'Canceled' && item.pending !== 'Cancelled') return false; // tolerate both spellings
                 return true;
             })
             .filter((item) => {
@@ -56,16 +58,28 @@ function AdminSimActivation() {
             });
     }, [activationData, selectedFilter, searchTerm, preFilter]);
 
+    // Pagination: reverse once (to get newest-first) then paginate the reversed list
     useEffect(() => {
-        const indexOfLastItem = currentPage * itemsPerPage;
+        // create reversed (newest-first) array
+        const sorted = filteredData.slice().reverse();
+
+        const computedTotalPages = Math.max(1, Math.ceil(sorted.length / itemsPerPage));
+        setTotalPages(computedTotalPages);
+
+        // clamp currentPage if it went out of range after filtering/search
+        const clampedPage = Math.min(currentPage, computedTotalPages);
+        if (clampedPage !== currentPage) setCurrentPage(clampedPage);
+
+        const indexOfLastItem = clampedPage * itemsPerPage;
         const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-        setCurrentItems(filteredData.slice(indexOfFirstItem, indexOfLastItem));
-        setTotalPages(Math.max(1, Math.ceil(filteredData.length / itemsPerPage)));
+
+        setCurrentItems(sorted.slice(indexOfFirstItem, indexOfLastItem));
     }, [filteredData, currentPage, itemsPerPage]);
 
+    // whenever user changes search/filter, reset to page 1 (and clamp will handle edge cases)
     useEffect(() => {
         setCurrentPage(1);
-    }, [searchTerm, selectedFilter, preFilter]);
+    }, [searchTerm, selectedFilter, preFilter, itemsPerPage]);
 
     const approveActivation = async () => {
         if (!selectedActivation) return;
@@ -90,7 +104,6 @@ function AdminSimActivation() {
 
     // --- Admin edit handlers ---
     const startEdit = (item) => {
-        // populate edit form but do not allow changing plan_id or plan_name
         setSelectedActivation(item);
         setEditForm({
             activation_id: item.activation_id,
@@ -117,10 +130,8 @@ function AdminSimActivation() {
     };
 
     const saveEditedActivation = async () => {
-        // basic validation: activation_id must exist
         if (!editForm.activation_id) return alert('Missing activation id');
         try {
-            // Build payload compatible with user update endpoint
             const payload = {
                 activation_id: editForm.activation_id,
                 username: editForm.username,
@@ -179,7 +190,8 @@ function AdminSimActivation() {
                     <div className="border rounded-lg text-sm w-fit">
                         <button onClick={() => setPreFilter('all')} className={`rounded-l-lg px-4 py-2 border-r ${preFilter === 'all' ? "bg-blue-500 text-white" : "hover:bg-gray-100"}`}>All</button>
                         <button onClick={() => setPreFilter('approved')} className={`px-4 py-2 border-r ${preFilter === 'approved' ? "bg-blue-500 text-white" : "hover:bg-gray-100"}`}>Approved</button>
-                        <button onClick={() => setPreFilter('pending')} className={`rounded-r-lg px-4 py-2 ${preFilter === 'pending' ? "bg-blue-500 text-white" : "hover:bg-gray-100"}`}>Pending</button>
+                        <button onClick={() => setPreFilter('pending')} className={`px-4 py-2 border-r ${preFilter === 'pending' ? "bg-blue-500 text-white" : "hover:bg-gray-100"}`}>Pending</button>
+                        <button onClick={() => setPreFilter('cancelled')} className={`rounded-r-lg px-4 py-2 ${preFilter === 'cancelled' ? "bg-blue-500 text-white" : "hover:bg-gray-100"}`}>Cancelled</button>
                     </div>
 
                     <div className="flex items-center gap-3">
@@ -233,58 +245,72 @@ function AdminSimActivation() {
                         </thead>
 
                         <tbody>
-                            {filteredData.length > 0 ? (
-                                currentItems.slice().reverse().map((item, idx) => (
-                                    <tr key={item.activation_id} className="border-t hover:bg-gray-50">
-                                        <td className="px-10 py-3 font-semibold sticky left-0 bg-white">{idx <= 8 ? `0${idx + 1}` : idx + 1}</td>
-                                        <td className="px-10 py-3 font-semibold">{item.username}</td>
-                                        <td className="px-10 py-3">{item.email}</td>
-                                        <td className="px-10 py-3 whitespace-nowrap">{item.plan_name}</td>
-                                        <td className="px-10 py-3">{item.phone_no}</td>
-                                        <td className="px-10 py-3">{item.emi}</td>
-                                        <td className="px-10 py-3">{item.eid}</td>
-                                        <td className="px-10 py-3">{item.iccid}</td>
-                                        <td className="px-10 py-3">{item.postal_code}</td>
-                                        <td className="px-10 py-3">{item.pin_code}</td>
-                                        <td className="px-10 py-3 whitespace-nowrap ">{new Date(item.timestamp).toLocaleString()}</td>
-                                        <td className="px-10 py-3 text-red-600 font-semibold">$ {item.amount}</td>
-                                        <td className="px-10 py-3 text-green-600 font-semibold">$ {item.amount_charged}</td>
-                                        <td className="px-10 py-3">{item.pending ? (<span className="px-3 py-1 bg-yellow-100 text-yellow-600 rounded-full text-xs">Pending</span>) : (<span className="px-3 py-1 bg-green-100 text-green-600 rounded-full text-xs">Approved</span>)}</td>
-                                        <td className="px-10 py-3 flex items-center gap-2">
-                                            {item.pending && (
-                                                <>
-                                                    <button onClick={() => { setSelectedActivation(item); setShowApproveModal(true); }} className="flex items-center gap-1 bg-blue-600 text-white px-3 py-1 rounded-lg text-xs hover:bg-blue-700">Approve</button>
-                                                    <button onClick={() => startEdit(item)} className="flex items-center gap-1 bg-yellow-500 text-white px-3 py-1 rounded-lg text-xs hover:bg-yellow-600">Edit</button>
-                                                </>
-                                            )}
-                                        </td>
-                                    </tr>
-                                ))
+                            {currentItems.length > 0 ? (
+                                currentItems.map((item, idx) => {
+                                    const absoluteIndex = (currentPage - 1) * itemsPerPage + idx;
+                                    return (
+                                        <tr key={item.activation_id} className="border-t hover:bg-gray-50">
+                                            <td className="px-10 py-3 font-semibold sticky left-0 bg-white">{absoluteIndex < 9 ? `0${absoluteIndex + 1}` : absoluteIndex + 1}</td>
+                                            <td className="px-10 py-3 font-semibold">{item.username}</td>
+                                            <td className="px-10 py-3">{item.email}</td>
+                                            <td className="px-10 py-3 whitespace-nowrap">{item.plan_name}</td>
+                                            <td className="px-10 py-3">{item.phone_no}</td>
+                                            <td className="px-10 py-3">{item.emi}</td>
+                                            <td className="px-10 py-3">{item.eid}</td>
+                                            <td className="px-10 py-3">{item.iccid}</td>
+                                            <td className="px-10 py-3">{item.postal_code}</td>
+                                            <td className="px-10 py-3">{item.pin_code}</td>
+                                            <td className="px-10 py-3 whitespace-nowrap ">{new Date(item.timestamp).toLocaleString()}</td>
+                                            <td className="px-10 py-3 text-red-600 font-semibold">$ {item.amount}</td>
+                                            <td className="px-10 py-3 text-green-600 font-semibold">$ {item.amount_charged}</td>
+                                            <td className="px-10 py-3">
+                                                {item.pending === 'Pending' ? (
+                                                    <span className="px-3 py-1 bg-yellow-100 text-yellow-600 rounded-full text-xs">Pending</span>
+                                                ) : item.pending === 'Approved' ? (
+                                                    <span className="px-3 py-1 bg-green-100 text-green-600 rounded-full text-xs">Approved</span>
+                                                ) : item.pending === 'Canceled' || item.pending === 'Cancelled' ? (
+                                                    <span className="px-3 py-1 bg-red-100 text-red-600 rounded-full text-xs">Cancelled</span>
+                                                ) : null}
+                                            </td>
+                                            <td className="px-10 py-3 flex items-center gap-2">
+                                                {item.pending === 'Pending' && (
+                                                    <>
+                                                        <button onClick={() => { setSelectedActivation(item); setShowApproveModal(true); }} className="flex items-center gap-1 bg-blue-600 text-white px-3 py-1 rounded-lg text-xs hover:bg-blue-700">Approve</button>
+                                                        <button onClick={() => startEdit(item)} className="flex items-center gap-1 bg-yellow-500 text-white px-3 py-1 rounded-lg text-xs hover:bg-yellow-600">Edit</button>
+                                                    </>
+                                                )}
+                                            </td>
+                                        </tr>
+                                    );
+                                })
                             ) : (
                                 <tr>
-                                    <td colSpan="8" className="px-10 py-6 text-center text-gray-500">No results found.</td>
+                                    <td colSpan="15" className="px-10 py-6 text-center text-gray-500">No results found.</td>
                                 </tr>
                             )}
                         </tbody>
                     </table>
 
+                    {/* mobile list - use currentItems for consistent paging */}
+                    {currentItems.map((item, idx) => {
+                        const absoluteIndex = (currentPage - 1) * itemsPerPage + idx;
+                        return (
+                            <div key={item.activation_id} className="md:hidden border rounded-xl shadow-sm p-4 mb-4 bg-white hover:shadow-md transition flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
+                                <div className="flex flex-col sm:flex-row sm:items-center sm:gap-6">
+                                    <div className="text-gray-700 font-bold text-lg">#{absoluteIndex + 1}</div>
+                                    <div className="text-gray-500 text-sm">{item.username}</div>
+                                </div>
 
-                    {filteredData.slice().reverse().map((item, idx) => (
-                        <div key={item.activation_id} className="md:hidden border rounded-xl shadow-sm p-4 mb-4 bg-white hover:shadow-md transition flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
-                            <div className="flex flex-col sm:flex-row sm:items-center sm:gap-6">
-                                <div className="text-gray-700 font-bold text-lg">#{idx + 1}</div>
-                                <div className="text-gray-500 text-sm">{item.username}</div>
+                                <div className="text-green-600 font-semibold text-lg">$ {item.amount_charged}</div>
+
+                                <div>{item.pending === 'Pending' ? (<span className="px-3 py-1 bg-yellow-100 text-yellow-700 rounded-full text-xs font-medium">Pending</span>) : item.pending === 'Approved' ? (<span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-medium">Approved</span>) : (<span className="px-3 py-1 bg-red-100 text-red-700 rounded-full text-xs font-medium">Cancelled</span>)}</div>
+
+                                <div>{item.pending === 'Pending' && (<button onClick={() => { setSelectedActivation(item); setShowApproveModal(true); }} className="bg-blue-600 text-white px-3 py-1 rounded-lg text-sm">Approve</button>)}</div>
+
+                                <div>{item.pending === 'Pending' && (<button onClick={() => startEdit(item)} className="bg-yellow-500 text-white px-3 py-1 rounded-lg text-sm">Edit</button>)}</div>
                             </div>
-
-                            <div className="text-green-600 font-semibold text-lg">$ {item.amount_charged}</div>
-
-                            <div>{item.pending ? (<span className="px-3 py-1 bg-yellow-100 text-yellow-700 rounded-full text-xs font-medium">Pending</span>) : (<span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-medium">Approved</span>)}</div>
-
-                            <div>{item.pending && (<button onClick={() => { setSelectedActivation(item); setShowApproveModal(true); }} className="bg-blue-600 text-white px-3 py-1 rounded-lg text-sm">Approve</button>)}</div>
-
-                            <div>{item.pending && (<button onClick={() => startEdit(item)} className="bg-yellow-500 text-white px-3 py-1 rounded-lg text-sm">Edit</button>)}</div>
-                        </div>
-                    ))}
+                        );
+                    })}
                 </div>
 
                 <div className="flex justify-between items-center mt-2 sticky bottom-0 bg-white md:px-8 px-4 pt-3 z-20 border-t">

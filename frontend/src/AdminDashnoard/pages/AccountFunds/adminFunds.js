@@ -42,8 +42,9 @@ function AdminFunds() {
     const filteredData = React.useMemo(() => {
         return rechargeHistory
             .filter((item) => {
-                if (preFilter === "approved" && !item.approved) return false;
-                if (preFilter === "pending" && item.approved) return false;
+                if (preFilter === "approved" && item.status !== "Approved") return false;
+                if (preFilter === "pending" && item.status !== "Pending") return false;
+                if (preFilter === "canceled" && item.status !== "Canceled" && item.status !== "Cancelled") return false;
                 return true;
             })
             .filter((item) => {
@@ -122,7 +123,9 @@ function AdminFunds() {
                     <div className="border rounded-lg text-sm w-fit">
                         <button onClick={() => setPreFilter('all')} className={`rounded-l-lg px-4 py-2 border-r ${preFilter === 'all' ? "bg-blue-500 text-white" : "hover:bg-gray-100"}`} >All</button>
                         <button onClick={() => setPreFilter('approved')} className={`px-4 py-2 border-r ${preFilter === 'approved' ? "bg-blue-500 text-white" : "hover:bg-gray-100"}`} >Approved</button>
-                        <button onClick={() => setPreFilter('pending')} className={`rounded-r-lg px-4 py-2 ${preFilter === 'pending' ? "bg-blue-500 text-white" : "hover:bg-gray-100"}`} >Pending</button>
+                        <button onClick={() => setPreFilter('pending')} className={`px-4 py-2 ${preFilter === 'pending' ? "bg-blue-500 text-white" : "hover:bg-gray-100"}`} >Pending</button>
+                        <button onClick={() => setPreFilter('canceled')} className={`rounded-r-lg px-4 py-2 ${preFilter === 'canceled' ? "bg-blue-500 text-white" : "hover:bg-gray-100"}`} >Cancelled</button>
+
                     </div>
 
                     <div className="flex items-center gap-3">
@@ -180,7 +183,7 @@ function AdminFunds() {
                                 <th className="px-10 py-3 text-left">Username</th>
                                 <th className="px-10 py-3 text-left">Time</th>
                                 <th className="px-10 py-3 text-left">Amount</th>
-                                 <th className="px-10 py-3 text-left">Paid Amount</th>
+                                <th className="px-10 py-3 text-left">Paid Amount</th>
                                 <th className="px-10 py-3 text-left">Screenshot</th>
                                 <th className="px-10 py-3 text-left">Status</th>
                                 <th className="px-10 py-3 text-left">Action</th>
@@ -195,15 +198,17 @@ function AdminFunds() {
                                         <td className="px-10 py-3 font-semibold">{item.username}</td>
                                         <td className="px-10 py-3">{new Date(item.timestamp).toLocaleString()}</td>
                                         <td className="px-10 py-3 text-red-600 font-semibold">$ {item.amount}</td>
-                                         <td className="px-10 py-3 text-green-600 font-semibold">$ {item.payable_amount}</td>
+                                        <td className="px-10 py-3 text-green-600 font-semibold">$ {item.payable_amount}</td>
                                         <td className="px-10 py-3">
                                             <a href={item.payment_screenshot} target="_blank" rel="noreferrer" className="text-blue-600 underline">View</a>
                                         </td>
                                         <td className="px-10 py-3">
-                                            {item.approved ? (
+                                            {item.status === "Approved" ? (
                                                 <span className="px-3 py-1 bg-green-100 text-green-600 rounded-full text-xs">Approved</span>
-                                            ) : (
+                                            ) : item.status === "Pending" ? (
                                                 <span className="px-3 py-1 bg-yellow-100 text-yellow-600 rounded-full text-xs">Pending</span>
+                                            ) : (
+                                                <span className="px-3 py-1 bg-red-100 text-red-600 rounded-full text-xs">Cancelled</span>
                                             )}
                                         </td>
                                         <td className="px-10 py-3">
