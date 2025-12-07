@@ -1,7 +1,7 @@
 Django
 gunicorn
 whitenoise
---upgrade PyMySQL
+PyMySQL
 djangorestframework
 django-cors-headers
 PyJWT
