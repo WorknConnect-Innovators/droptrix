@@ -1,7 +1,7 @@
 Django
 gunicorn
 whitenoise
-PyMySQL=2.2.1
+PyMySQL==2.2.1
 djangorestframework
 django-cors-headers
 PyJWT
