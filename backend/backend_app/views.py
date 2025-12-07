@@ -19,6 +19,8 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from .models import Chat
 from .serializers import ChatSerializer
+import pymysql
+pymysql.install_as_MySQLdb()
 
 
 @csrf_exempt
