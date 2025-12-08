@@ -117,8 +117,10 @@ CHANNEL_LAYERS = {
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.mysql",
-        "OPTIONS": {
-            'charset': 'utf8mb4'
+        'OPTIONS': {
+            'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
+            'read_default_file': '/etc/my.cnf',
+            'client_class': 'pymysql.cursors.DictCursor',
         },
         "NAME": "u647796282_droptrix_test",
         "USER": "u647796282_droptrix_test",
