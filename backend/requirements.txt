@@ -1,5 +1,5 @@
 Django
-PyMySQL==2.2.1
+PyMySQL
 djangorestframework
 django-cors-headers
 PyJWT
