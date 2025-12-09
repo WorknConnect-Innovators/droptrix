@@ -1,10 +1,9 @@
 Django
-gunicorn
-whitenoise
-PyMySQL
+PyMySQL==2.2.1
 djangorestframework
 django-cors-headers
 PyJWT
 channels
 channels-redis
 daphne
+whitenoise
