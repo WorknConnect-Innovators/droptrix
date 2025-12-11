@@ -77,10 +77,13 @@ WSGI_APPLICATION = "backend.wsgi.application"
 ASGI_APPLICATION = "backend.asgi.application"
 
 CHANNEL_LAYERS = {
-    "default": {
-        "BACKEND": "channels_redis.core.RedisChannelLayer",
-        "CONFIG": {"hosts": ["redis://localhost:6379"]},
-    }
+    'default': {
+        'BACKEND': 'channels.layers.InMemoryChannelLayer',  # For local testing, use Redis for production
+        # 'BACKEND': 'channels_redis.core.RedisChannelLayer',
+        # 'CONFIG': {
+        #     "hosts": [('127.0.0.1', 6379)],
+        # },
+    },
 }
 
 # ---------- DATABASE (CLEAN, VERCEL SAFE) ----------
