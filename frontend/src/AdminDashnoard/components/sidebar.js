@@ -2,6 +2,7 @@ import { HomeIcon, LayoutDashboardIcon, LogOutIcon, FolderIcon, UsersIcon, Chevr
 import React, { useEffect, useState } from 'react'
 import { FaMoneyBill, FaPlaneSlash, FaSimCard } from 'react-icons/fa'
 import { Link } from 'react-router-dom'
+import { MdOutlineSupportAgent } from "react-icons/md";
 
 function Sidebar() {
     const userType = localStorage.getItem("userData") ? JSON.parse(localStorage.getItem("userData")).user_type : null;
@@ -52,6 +53,18 @@ function Sidebar() {
             icon: <CircleDollarSign size={26} />,
             hasaccess: ["superadmin", "admin"],
             route: "/dashboard/user-funds"
+        },
+        {
+            label: "Chat Support",
+            icon: <MdOutlineSupportAgent size={26} />,
+            hasaccess: ["user"],
+            route: "/dashboard/chat-support"
+        },
+        {
+            label: "Chat Support",
+            icon: <MdOutlineSupportAgent size={26} />,
+            hasaccess: ["superadmin", "admin"],
+            route: "/dashboard/admin-chat-support"
         },
         {
             label: "Manage",

@@ -19,7 +19,7 @@ export default function Login() {
         setError("");
 
         try {
-            const response = await fetch("https://droptrix.vercel.app/api/login/", {
+            const response = await fetch("http://127.0.0.1:8000/api/login/", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",

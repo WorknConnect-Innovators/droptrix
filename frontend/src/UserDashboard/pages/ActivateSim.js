@@ -55,7 +55,7 @@ function ActivateSim() {
 
     const getUserPlanOffer = async () => {
         try {
-            const res = await fetch(`${process.env.REACT_APP_API_URL_PRODUCTION}/api/get-user-offers/`,
+            const res = await fetch(`${process.env.REACT_APP_API_URL}/api/get-user-offers/`,
                 {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -77,7 +77,7 @@ function ActivateSim() {
     const loadBalance = async () => {
         try {
             const res = await fetch(
-                `${process.env.REACT_APP_API_URL_PRODUCTION}/api/get-user-account-balance/`,
+                `${process.env.REACT_APP_API_URL}/api/get-user-account-balance/`,
                 {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
@@ -165,7 +165,7 @@ function ActivateSim() {
         try {
             const userData = localStorage.getItem('userData') ? JSON.parse(localStorage.getItem('userData')) : null
             if (!userData || !userData.username) return
-            const res = await fetch(`${process.env.REACT_APP_API_URL_PRODUCTION}/api/get-user-activation-data/`,
+            const res = await fetch(`${process.env.REACT_APP_API_URL}/api/get-user-activation-data/`,
                 {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -323,7 +323,7 @@ function ActivateSim() {
             // If editing an existing activation, call update endpoint
             if (editingActivationId) {
                 const updatePayload = { activation_id: editingActivationId, username, ...payload };
-                const res = await fetch(`${process.env.REACT_APP_API_URL_PRODUCTION}/api/update-activation/`, {
+                const res = await fetch(`${process.env.REACT_APP_API_URL}/api/update-activation/`, {
                     method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(updatePayload)
                 });
                 const json = await res.json();
@@ -351,7 +351,7 @@ function ActivateSim() {
                 }
             }
 
-            const res = await fetch(`${process.env.REACT_APP_API_URL_PRODUCTION}/api/user-sim-activation/`, {
+            const res = await fetch(`${process.env.REACT_APP_API_URL}/api/user-sim-activation/`, {
                 method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
             })
             const json = await res.json()
@@ -385,7 +385,7 @@ function ActivateSim() {
     const startEdit = async (sim) => {
         try {
             // fetch full activation records and find the one to edit
-            const res = await fetch(`${process.env.REACT_APP_API_URL_PRODUCTION}/api/get-activation-data/`);
+            const res = await fetch(`${process.env.REACT_APP_API_URL}/api/get-activation-data/`);
             const json = await res.json();
             if (json.status !== 'success') return message.error('Failed to fetch activation data');
             const act = (json.data || []).find(a => (a.activation_id === sim.id || a.activation_id === sim.id || a.id === sim.id));

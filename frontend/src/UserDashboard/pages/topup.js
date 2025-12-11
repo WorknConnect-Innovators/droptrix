@@ -78,7 +78,7 @@ function TopUp() {
     const loadBalance = async () => {
         try {
             const res = await fetch(
-                `${process.env.REACT_APP_API_URL_PRODUCTION}/api/get-user-account-balance/`,
+                `${process.env.REACT_APP_API_URL}/api/get-user-account-balance/`,
                 {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
@@ -115,7 +115,7 @@ function TopUp() {
     const loadData = async () => {
         setLoading(true);
         try {
-            const res = await fetch(`${process.env.REACT_APP_API_URL_PRODUCTION}/api/get-topup/`);
+            const res = await fetch(`${process.env.REACT_APP_API_URL}/api/get-topup/`);
             const data = await res.json();
 
             if (data.status === "success") {
@@ -173,7 +173,7 @@ function TopUp() {
             const username = JSON.parse(localStorage.getItem("userData")).username;
             const getUserCarrierOffers = async () => {
                 try {
-                    const res = await fetch(`${process.env.REACT_APP_API_URL_PRODUCTION}/api/get-company-offers/`,
+                    const res = await fetch(`${process.env.REACT_APP_API_URL}/api/get-company-offers/`,
                         {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
@@ -277,7 +277,7 @@ function TopUp() {
                 };
 
                 const res = await fetch(
-                    `${process.env.REACT_APP_API_URL_PRODUCTION}/api/update-topup/`,
+                    `${process.env.REACT_APP_API_URL}/api/update-topup/`,
                     {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
@@ -319,7 +319,7 @@ function TopUp() {
             };
 
             const res = await fetch(
-                `${process.env.REACT_APP_API_URL_PRODUCTION}/api/add-topup/`,
+                `${process.env.REACT_APP_API_URL}/api/add-topup/`,
                 {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },

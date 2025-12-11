@@ -25,7 +25,7 @@ export default function UserChargesBulk() {
 
   const loadUsers = async () => {
     try {
-      const res = await fetch(`${process.env.REACT_APP_API_URL_PRODUCTION}/api/get-signup-data/`)
+      const res = await fetch(`${process.env.REACT_APP_API_URL}/api/get-signup-data/`)
       const data = await res.json()
       if (data.status === 'success') setUsers(data.data.filter(u => u.user_type === 'user'))
     } catch (err) { console.error(err) }
@@ -91,7 +91,7 @@ export default function UserChargesBulk() {
         recharge_discount: dr,
         sim_activation_discount: ds
       }
-      const res = await fetch(`${process.env.REACT_APP_API_URL_PRODUCTION}/api/update-charges-discount/`, {
+      const res = await fetch(`${process.env.REACT_APP_API_URL}/api/update-charges-discount/`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
       })
       const data = await res.json()

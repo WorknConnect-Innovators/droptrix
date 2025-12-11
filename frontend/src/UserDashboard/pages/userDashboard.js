@@ -21,7 +21,7 @@ function UserDashboard() {
         const username = JSON.parse(localStorage.getItem('userData'))?.username;
         if (!username) return setError("User not found");
         try {
-            const res = await fetch(`${process.env.REACT_APP_API_URL_PRODUCTION}/api/user-dashboard-summary/`, {
+            const res = await fetch(`${process.env.REACT_APP_API_URL}/api/user-dashboard-summary/`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ username }),
@@ -127,13 +127,15 @@ function UserDashboard() {
     // Prepare transaction messages
     const transactions = transaction_history?.recharge_history?.map((tx) => ({
         id: tx.id,
-        desc: tx.approved
+        desc: tx.status === "Approved"
             ? `Your account credited with $${tx.amount}`
-            : `Top-up request of $${tx.amount} is pending`,
-        amount: tx.approved ? `+$${tx.amount}` : `-$${tx.amount}`,
+            : tx.status === "Pending" ? `Recharge request of $${tx.amount}`
+                : tx.status === 'Canceled' && `Recharge request of $${tx.amount} is cancelled`,
+        amount: tx.status === 'Approved' ? `+$${tx.amount}` : `$${tx.amount}`,
         date: new Date(tx.timestamp).toLocaleDateString("en-US", { day: "numeric", month: "short", year: "numeric" })
     })) || [];
 
+    console.log("transaction history", transaction_history);
     return (
         <div className="space-y-4">
 
@@ -163,7 +165,7 @@ function UserDashboard() {
             </div>
 
             {/* Main Grid */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 lg:grid-cols-3 lg:gap-x-4 gap-y-4">
 
                 {/* Left Panel — SIM Actions */}
                 <div className="w-full bg-white shadow-lg rounded-2xl p-6 space-y-5 h-full">
@@ -241,7 +243,7 @@ function UserDashboard() {
                                 <div className="font-medium text-gray-800">{tx.desc}</div>
                                 <div className="text-xs text-gray-500">{tx.date}</div>
                             </div>
-                            <div className={`font-semibold ${tx.amount.startsWith('+') ? 'text-green-600' : 'text-red-600'}`}>{tx.amount}</div>
+                            <div className={`font-semibold ${tx.amount.startsWith('+') ? 'text-green-600' : 'text-blue-600'}`}>{tx.amount}</div>
                         </div>
                     )) : <div className="text-gray-400 text-center py-10">No recent activity</div>}
                 </div>

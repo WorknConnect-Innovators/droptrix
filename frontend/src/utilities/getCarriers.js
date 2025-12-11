@@ -1,7 +1,7 @@
 export const getCarriersFromBackend = async () => {
     try {
         const res = await fetch(
-            `${process.env.REACT_APP_API_URL_PRODUCTION}/api/get-carriers/`
+            `${process.env.REACT_APP_API_URL}/api/get-carriers/`
         );
         const data = await res.json();
 

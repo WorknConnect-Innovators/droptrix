@@ -50,7 +50,7 @@ function AdminPlansPage() {
     const getCarriersFromBackend = async () => {
         try {
             const res = await fetch(
-                `${process.env.REACT_APP_API_URL_PRODUCTION}/api/get-carriers/`
+                `${process.env.REACT_APP_API_URL}/api/get-carriers/`
             );
             const data = await res.json();
 
@@ -74,7 +74,7 @@ function AdminPlansPage() {
     const getPlansFromBackend = async () => {
         try {
             const res = await fetch(
-                `${process.env.REACT_APP_API_URL_PRODUCTION}/api/get-plans/`
+                `${process.env.REACT_APP_API_URL}/api/get-plans/`
             );
             const data = await res.json();
 
@@ -117,7 +117,7 @@ function AdminPlansPage() {
         }
         try {
             const res = await fetch(
-                `${process.env.REACT_APP_API_URL_PRODUCTION}/api/add-plans/`,
+                `${process.env.REACT_APP_API_URL}/api/add-plans/`,
                 {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
@@ -190,7 +190,7 @@ function AdminPlansPage() {
 
         try {
             const res = await fetch(
-                `${process.env.REACT_APP_API_URL_PRODUCTION}/api/update-plans/`,
+                `${process.env.REACT_APP_API_URL}/api/update-plans/`,
                 {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },

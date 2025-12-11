@@ -24,7 +24,7 @@ function AdminFunds() {
     // ======================================================
     const loadData = async () => {
         try {
-            const res = await fetch(`${process.env.REACT_APP_API_URL_PRODUCTION}/api/get-all-recharge-data/`);
+            const res = await fetch(`${process.env.REACT_APP_API_URL}/api/get-all-recharge-data/`);
             const data = await res.json();
 
             if (data.status === "success") {
@@ -72,7 +72,7 @@ function AdminFunds() {
         if (!selectedRecharge) return;
 
         try {
-            const res = await fetch(`${process.env.REACT_APP_API_URL_PRODUCTION}/api/admin/approve-recharge/`, {
+            const res = await fetch(`${process.env.REACT_APP_API_URL}/api/admin/approve-recharge/`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({

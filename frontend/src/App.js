@@ -25,6 +25,8 @@ import UsersPage from './AdminDashnoard/pages/Users/usersPage'
 import AddAdmin from './AdminDashnoard/pages/Admin/addAdmin'
 import UserChargesBulk from './AdminDashnoard/pages/Taxes/userChargesBulk'
 import UserDetails from './AdminDashnoard/pages/Users/userDetails'
+import UserChat from './pages/ChatSupport/userChat'
+import AdminChat from './pages/ChatSupport/adminChat'
 
 function App() {
 
@@ -62,6 +64,8 @@ function App() {
           <Route path="add-admin" element={<AddAdmin />} />
           <Route path='user-charges' element={<UserChargesBulk />} />
           <Route path='user-details' element={<UserDetails />} />
+          <Route path='chat-support' element={<UserChat />} />
+          <Route path='admin-chat-support' element={<AdminChat />} />
         </Route>
       </Routes>
     </Router>

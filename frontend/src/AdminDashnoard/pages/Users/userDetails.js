@@ -66,7 +66,7 @@ function UserDetails() {
     const loadData = async () => {
         setLoadingUserData(true);
         try {
-            const res = await fetch(`${process.env.REACT_APP_API_URL_PRODUCTION}/api/user-dashboard-summary/`, {
+            const res = await fetch(`${process.env.REACT_APP_API_URL}/api/user-dashboard-summary/`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ username: user.username }),
@@ -87,7 +87,7 @@ function UserDetails() {
         setLoadingChargesData(true);
         try {
             const res = await fetch(
-                `${process.env.REACT_APP_API_URL_PRODUCTION}/api/get-user-charges-discount/`,
+                `${process.env.REACT_APP_API_URL}/api/get-user-charges-discount/`,
                 {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
@@ -128,7 +128,7 @@ function UserDetails() {
                 recharge_charges: Cr,
                 recharge_discount: Dr,
             }
-            const res = await fetch(`${process.env.REACT_APP_API_URL_PRODUCTION}/api/update-charges-discount/`,
+            const res = await fetch(`${process.env.REACT_APP_API_URL}/api/update-charges-discount/`,
                 {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -155,7 +155,7 @@ function UserDetails() {
                 discount_percentage: Number(carrierDiscounts),
             }
             console.log(payload)
-            const res = await fetch(`${process.env.REACT_APP_API_URL_PRODUCTION}/api/add-company-offer/`,
+            const res = await fetch(`${process.env.REACT_APP_API_URL}/api/add-company-offer/`,
                 {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -182,7 +182,7 @@ function UserDetails() {
                 plan_id: selectedPlan,
                 discount_percentage: Number(planDiscount),
             }
-            const res = await fetch(`${process.env.REACT_APP_API_URL_PRODUCTION}/api/add-user-offer/`,
+            const res = await fetch(`${process.env.REACT_APP_API_URL}/api/add-user-offer/`,
                 {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -234,7 +234,7 @@ function UserDetails() {
     const getUserPlanOffers = async () => {
         setLoadingUserPlanOffers(true);
         try {
-            const res = await fetch(`${process.env.REACT_APP_API_URL_PRODUCTION}/api/get-user-offers/`,
+            const res = await fetch(`${process.env.REACT_APP_API_URL}/api/get-user-offers/`,
                 {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -261,7 +261,7 @@ function UserDetails() {
     const getUserCarrierOffers = async () => {
         setLoadingUserCarrierOffers(true);
         try {
-            const res = await fetch(`${process.env.REACT_APP_API_URL_PRODUCTION}/api/get-company-offers/`,
+            const res = await fetch(`${process.env.REACT_APP_API_URL}/api/get-company-offers/`,
                 {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -313,7 +313,7 @@ function UserDetails() {
         const compute = async () => {
             // ensure we have user's company offers loaded
             try {
-                const res = await fetch(`${process.env.REACT_APP_API_URL_PRODUCTION}/api/get-company-offers/`, {
+                const res = await fetch(`${process.env.REACT_APP_API_URL}/api/get-company-offers/`, {
                     method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username: user.username })
                 });
                 const json = await res.json();
@@ -357,7 +357,7 @@ function UserDetails() {
         const fetchPlanOffer = async () => {
             setLoadingUserPlanOffers(true);
             try {
-                const res = await fetch(`${process.env.REACT_APP_API_URL_PRODUCTION}/api/get-user-offers/`, {
+                const res = await fetch(`${process.env.REACT_APP_API_URL}/api/get-user-offers/`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ username: user.username })
@@ -379,7 +379,7 @@ function UserDetails() {
             }
         };
         fetchPlanOffer();
-    }, [adminActPlan, user.username]);
+    }, [adminActPlan, user]);
 
     // compute payable for admin fund (add funds) — includes charges and discount
     useEffect(() => {
@@ -430,7 +430,7 @@ function UserDetails() {
                 approved: true,
                 status: 'Approved'
             };
-            const res = await fetch(`${process.env.REACT_APP_API_URL_PRODUCTION}/api/user-recharge-account/`, {
+            const res = await fetch(`${process.env.REACT_APP_API_URL}/api/user-recharge-account/`, {
                 method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
             });
             const data = await res.json();
@@ -462,7 +462,7 @@ function UserDetails() {
                 status: 'Approved',
                 payable_amount: adminTopupPayable
             };
-            const res = await fetch(`${process.env.REACT_APP_API_URL_PRODUCTION}/api/add-topup/`, {
+            const res = await fetch(`${process.env.REACT_APP_API_URL}/api/add-topup/`, {
                 method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
             });
             const data = await res.json();
@@ -490,7 +490,7 @@ function UserDetails() {
         // validation per carrier required fields
         const req = (adminActCarrierDetails && adminActSimType === 'E-Sim') ? (adminActCarrierDetails.esim_required_fields || []) : (adminActCarrierDetails && adminActSimType === 'Sim') ? (adminActCarrierDetails.physical_required_fields || []) : [];
         const isDigits = (s) => /^\d+$/.test(s || "");
-        const isValidEmail = (s) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test((s||"").trim());
+        const isValidEmail = (s) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test((s || "").trim());
 
         if (req.includes('phone_no') && !adminActSimNumber) { message.error('SIM number is required'); return }
         if (req.includes('iccid')) {
@@ -535,7 +535,7 @@ function UserDetails() {
                 approved: true,
                 status: 'Approved'
             };
-            const res = await fetch(`${process.env.REACT_APP_API_URL_PRODUCTION}/api/user-sim-activation/`, {
+            const res = await fetch(`${process.env.REACT_APP_API_URL}/api/user-sim-activation/`, {
                 method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
             });
             const data = await res.json();
@@ -758,27 +758,27 @@ function UserDetails() {
 
                                 <div>
                                     <label className="text-sm">ICCID {req.includes('iccid') && <span className="text-xs text-gray-500">(required 32 digits)</span>}</label>
-                                    <input type="text" value={adminActIccid} onChange={e => setAdminActIccid(e.target.value.replace(/\D/g, '').slice(0,32))} className={`w-full border rounded-md px-3 py-2 mt-1 ${adminActCarrierDetails && !req.includes('iccid') ? 'bg-gray-100 text-gray-500' : ''}`} disabled={adminActCarrierDetails && !req.includes('iccid')} />
+                                    <input type="text" value={adminActIccid} onChange={e => setAdminActIccid(e.target.value.replace(/\D/g, '').slice(0, 32))} className={`w-full border rounded-md px-3 py-2 mt-1 ${adminActCarrierDetails && !req.includes('iccid') ? 'bg-gray-100 text-gray-500' : ''}`} disabled={adminActCarrierDetails && !req.includes('iccid')} />
                                 </div>
 
                                 <div>
                                     <label className="text-sm">EID {req.includes('eid') && <span className="text-xs text-gray-500">(required)</span>}</label>
-                                    <input type="text" value={adminActEid} onChange={e => setAdminActEid(e.target.value.replace(/\D/g, '').slice(0,10))} className={`w-full border rounded-md px-3 py-2 mt-1 ${adminActCarrierDetails && !req.includes('eid') ? 'bg-gray-100 text-gray-500' : ''}`} disabled={adminActCarrierDetails && !req.includes('eid')} />
+                                    <input type="text" value={adminActEid} onChange={e => setAdminActEid(e.target.value.replace(/\D/g, '').slice(0, 10))} className={`w-full border rounded-md px-3 py-2 mt-1 ${adminActCarrierDetails && !req.includes('eid') ? 'bg-gray-100 text-gray-500' : ''}`} disabled={adminActCarrierDetails && !req.includes('eid')} />
                                 </div>
 
                                 <div>
                                     <label className="text-sm">EMI {req.includes('emi') && <span className="text-xs text-gray-500">(required)</span>}</label>
-                                    <input type="text" value={adminActEmi} onChange={e => setAdminActEmi(e.target.value.replace(/\D/g, '').slice(0,15))} className={`w-full border rounded-md px-3 py-2 mt-1 ${adminActCarrierDetails && !req.includes('emi') ? 'bg-gray-100 text-gray-500' : ''}`} disabled={adminActCarrierDetails && !req.includes('emi')} />
+                                    <input type="text" value={adminActEmi} onChange={e => setAdminActEmi(e.target.value.replace(/\D/g, '').slice(0, 15))} className={`w-full border rounded-md px-3 py-2 mt-1 ${adminActCarrierDetails && !req.includes('emi') ? 'bg-gray-100 text-gray-500' : ''}`} disabled={adminActCarrierDetails && !req.includes('emi')} />
                                 </div>
 
                                 <div>
                                     <label className="text-sm">ZIP / Postal Code {req.includes('postal_code') && <span className="text-xs text-gray-500">(required)</span>}</label>
-                                    <input type="text" value={adminActZip} onChange={e => setAdminActZip(e.target.value.replace(/\D/g, '').slice(0,10))} className={`w-full border rounded-md px-3 py-2 mt-1 ${adminActCarrierDetails && !req.includes('postal_code') ? 'bg-gray-100 text-gray-500' : ''}`} disabled={adminActCarrierDetails && !req.includes('postal_code')} />
+                                    <input type="text" value={adminActZip} onChange={e => setAdminActZip(e.target.value.replace(/\D/g, '').slice(0, 10))} className={`w-full border rounded-md px-3 py-2 mt-1 ${adminActCarrierDetails && !req.includes('postal_code') ? 'bg-gray-100 text-gray-500' : ''}`} disabled={adminActCarrierDetails && !req.includes('postal_code')} />
                                 </div>
 
                                 <div>
                                     <label className="text-sm">PIN Code</label>
-                                    <input type="text" value={adminActPin} onChange={e => setAdminActPin(e.target.value.replace(/\D/g, '').slice(0,10))} className={`w-full border rounded-md px-3 py-2 mt-1 ${adminActCarrierDetails && !req.includes('pinCode') ? 'bg-gray-100 text-gray-500' : ''}`} disabled={adminActCarrierDetails && !req.includes('pinCode')} />
+                                    <input type="text" value={adminActPin} onChange={e => setAdminActPin(e.target.value.replace(/\D/g, '').slice(0, 10))} className={`w-full border rounded-md px-3 py-2 mt-1 ${adminActCarrierDetails && !req.includes('pinCode') ? 'bg-gray-100 text-gray-500' : ''}`} disabled={adminActCarrierDetails && !req.includes('pinCode')} />
                                 </div>
 
                                 <div className="md:col-span-3">

@@ -3,7 +3,7 @@
 export const getPlansFromBackend = async () => {
     try {
         const res = await fetch(
-            `${process.env.REACT_APP_API_URL_PRODUCTION}/api/get-plans/`
+            `${process.env.REACT_APP_API_URL}/api/get-plans/`
         );
         const data = await res.json();
 
@@ -23,7 +23,7 @@ export const getPlansFromBackend = async () => {
 export const companyBasedPlans = async (companyID) => {
     try {
         const res = await fetch(
-            `${process.env.REACT_APP_API_URL_PRODUCTION}/api/get-plans/`
+            `${process.env.REACT_APP_API_URL}/api/get-plans/`
         );
         const data = await res.json();
 
@@ -44,7 +44,7 @@ export const companyBasedPlans = async (companyID) => {
 export const getIDBasedPlans = async (planID) => {
     try {
         const res = await fetch(
-            `${process.env.REACT_APP_API_URL_PRODUCTION}/api/get-plans/`
+            `${process.env.REACT_APP_API_URL}/api/get-plans/`
         );
         const data = await res.json();
 

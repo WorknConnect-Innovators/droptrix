@@ -25,7 +25,7 @@ function AddAdmin() {
 
   const loadAdmins = async () => {
     try {
-      const res = await fetch(`${process.env.REACT_APP_API_URL_PRODUCTION}/api/get-signup-data/`)
+      const res = await fetch(`${process.env.REACT_APP_API_URL}/api/get-signup-data/`)
       const data = await res.json()
       if (data.status === 'success') {
         // filter to admins only (user_type === 'admin')
@@ -69,7 +69,7 @@ function AddAdmin() {
     setLoading(true)
     try {
       const payload = { ...formData, user_type: 'admin' }
-      const res = await fetch(`${process.env.REACT_APP_API_URL_PRODUCTION}/api/signup/`, {
+      const res = await fetch(`${process.env.REACT_APP_API_URL}/api/signup/`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
       })
       const data = await res.json()
@@ -77,6 +77,23 @@ function AddAdmin() {
         message.success('Admin added')
         setShowAddModal(false)
         setFormData({ username: '', full_name: '', email: '', password: '' })
+        loadAdmins()
+      } else {
+        message.error(data.message || data.error || 'Failed')
+      }
+    } catch (err) { console.error(err); message.error('Server error') }
+    finally { setLoading(false) }
+  }
+
+  const DeleteAdmin = async (username) => {
+    setLoading(true)
+    try {
+      const res = await fetch(`${process.env.REACT_APP_API_URL}/api/delete-user/`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username })
+      })
+      const data = await res.json()
+      if (res.ok) {
+        message.success('Admin Deleted!')
         loadAdmins()
       } else {
         message.error(data.message || data.error || 'Failed')
@@ -100,7 +117,7 @@ function AddAdmin() {
           </div>
 
           <div className="flex items-center gap-3">
-            <button onClick={() => setShowAddModal(true)} className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"><Plus size={16}/> Add Admin</button>
+            <button onClick={() => setShowAddModal(true)} className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"><Plus size={16} /> Add Admin</button>
 
             <div className="relative">
               <div onClick={() => setIsFilterOpen(!isFilterOpen)} className="flex items-center gap-2 border border-gray-300 rounded-lg px-3 py-2 cursor-pointer text-gray-700 hover:text-gray-900 hover:bg-gray-100">
@@ -126,7 +143,7 @@ function AddAdmin() {
         </div>
       </div>
 
-      <div className="flex flex-col md:h-[59vh] h-[54vh] w-full">
+      <div className="flex flex-col md:h-[70vh] h-[54vh] w-full">
         <div className="flex-1 overflow-y-auto w-full md:px-0 px-4">
           <table className="w-full text-sm text-gray-700 lg:inline-table hidden">
             <thead className="bg-blue-50 text-gray-600 uppercase text-xs sticky top-0 z-10">
@@ -135,6 +152,7 @@ function AddAdmin() {
                 <th className="px-10 py-3 text-left">Username</th>
                 <th className="px-10 py-3 text-left">Full Name</th>
                 <th className="px-10 py-3 text-left">Email</th>
+                <th className="px-10 py-3 text-left">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -145,11 +163,14 @@ function AddAdmin() {
                     <td className="px-10 py-3 font-semibold">{u.username}</td>
                     <td className="px-10 py-3">{u.full_name}</td>
                     <td className="px-10 py-3">{u.email}</td>
+                    <td className="px-10 py-3">
+                      <button onClick={() => DeleteAdmin(u.username)} className="text-red-600 hover:underline">Delete</button>
+                    </td>
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td colSpan="4" className="px-10 py-6 text-center text-gray-500">No admins found.</td>
+                  <td colSpan="5" className="px-10 py-6 text-center text-gray-500">No admins found.</td>
                 </tr>
               )}
             </tbody>
@@ -171,11 +192,11 @@ function AddAdmin() {
           <div className="text-gray-600 text-sm">Total Admins: {filteredData.length}</div>
           {totalPages > 1 && (
             <div className="flex items-center gap-2">
-              <button disabled={currentPage === 1} onClick={() => setCurrentPage(currentPage - 1)} className="w-8 h-8 flex items-center justify-center rounded-md border border-gray-300 disabled:opacity-40 hover:bg-gray-100 transition"><ChevronLeft size={18} className="text-gray-600"/></button>
+              <button disabled={currentPage === 1} onClick={() => setCurrentPage(currentPage - 1)} className="w-8 h-8 flex items-center justify-center rounded-md border border-gray-300 disabled:opacity-40 hover:bg-gray-100 transition"><ChevronLeft size={18} className="text-gray-600" /></button>
               <div className="flex items-center gap-1">{Array.from({ length: totalPages }, (_, i) => i + 1).map(num => (
                 <button key={num} onClick={() => setCurrentPage(num)} className={`w-8 h-8 flex items-center justify-center rounded-md border text-sm transition shadow-sm ${currentPage === num ? 'bg-indigo-100 text-indigo-600 border-indigo-300' : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-100'}`}>{num}</button>
               ))}</div>
-              <button disabled={currentPage === totalPages} onClick={() => setCurrentPage(currentPage + 1)} className="w-8 h-8 flex items-center justify-center rounded-md border border-gray-300 disabled:opacity-40 hover:bg-gray-100 transition"><ChevronRight size={18} className="text-gray-600"/></button>
+              <button disabled={currentPage === totalPages} onClick={() => setCurrentPage(currentPage + 1)} className="w-8 h-8 flex items-center justify-center rounded-md border border-gray-300 disabled:opacity-40 hover:bg-gray-100 transition"><ChevronRight size={18} className="text-gray-600" /></button>
             </div>
           )}
           <select className="border rounded-lg md:px-4 px-2 py-2 text-gray-600 text-sm md:block hidden" value={itemsPerPage} onChange={e => { setItemsPerPage(Number(e.target.value)); setCurrentPage(1) }}>
@@ -190,7 +211,7 @@ function AddAdmin() {
       {showAddModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
           <div className="bg-white w-[90%] max-w-lg rounded-2xl shadow-lg relative p-6">
-            <button onClick={() => setShowAddModal(false)} className="absolute right-4 top-4 text-gray-500 hover:text-gray-900"><X size={22}/></button>
+            <button onClick={() => setShowAddModal(false)} className="absolute right-4 top-4 text-gray-500 hover:text-gray-900"><X size={22} /></button>
             <h2 className="text-xl font-semibold mb-4">Add Admin</h2>
 
             <div className="space-y-3 text-sm">

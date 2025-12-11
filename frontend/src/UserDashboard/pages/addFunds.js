@@ -52,7 +52,7 @@ function AddFunds() {
     const loadBalance = async () => {
         try {
             const res = await fetch(
-                `${process.env.REACT_APP_API_URL_PRODUCTION}/api/get-user-account-balance/`,
+                `${process.env.REACT_APP_API_URL}/api/get-user-account-balance/`,
                 {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
@@ -72,7 +72,7 @@ function AddFunds() {
     const loadData = async () => {
         setLoading(true);
         try {
-            const res = await fetch(`${process.env.REACT_APP_API_URL_PRODUCTION}/api/get-user-recharge-data/`, {
+            const res = await fetch(`${process.env.REACT_APP_API_URL}/api/get-user-recharge-data/`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ username: user?.username }),
@@ -190,7 +190,7 @@ function AddFunds() {
         }));
 
         try {
-            const res = await fetch(`${process.env.REACT_APP_API_URL_PRODUCTION}/api/user-recharge-account/`, {
+            const res = await fetch(`${process.env.REACT_APP_API_URL}/api/user-recharge-account/`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(newRecharge),

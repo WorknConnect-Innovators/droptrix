@@ -53,7 +53,7 @@ function UsersPage() {
 
     const loadUsers = async () => {
         try {
-            const res = await fetch(`${process.env.REACT_APP_API_URL_PRODUCTION}/api/get-signup-data/`);
+            const res = await fetch(`${process.env.REACT_APP_API_URL}/api/get-signup-data/`);
             const data = await res.json();
             const filterData = data.data.filter(user => user.user_type === 'user');
             if (data.status === 'success') setUsers(filterData);
@@ -105,7 +105,7 @@ function UsersPage() {
                 recharge_discount: Dr,
                 sim_activation_discount: Ds
             }
-            const res = await fetch(`${process.env.REACT_APP_API_URL_PRODUCTION}/api/update-charges-discount/`,
+            const res = await fetch(`${process.env.REACT_APP_API_URL}/api/update-charges-discount/`,
                 {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -129,7 +129,7 @@ function UsersPage() {
         setSelectedUser(user);
         try {
             const res = await fetch(
-                `${process.env.REACT_APP_API_URL_PRODUCTION}/api/get-user-charges-discount/`,
+                `${process.env.REACT_APP_API_URL}/api/get-user-charges-discount/`,
                 {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },

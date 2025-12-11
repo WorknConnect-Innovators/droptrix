@@ -26,7 +26,7 @@ function AdminSimActivation() {
     // Load activation data
     const loadData = async () => {
         try {
-            const res = await fetch(`${process.env.REACT_APP_API_URL_PRODUCTION}/api/get-activation-data/`);
+            const res = await fetch(`${process.env.REACT_APP_API_URL}/api/get-activation-data/`);
             const data = await res.json();
             if (data.status === "success") {
                 setActivationData(data.data || []);
@@ -84,7 +84,7 @@ function AdminSimActivation() {
     const approveActivation = async () => {
         if (!selectedActivation) return;
         try {
-            const res = await fetch(`${process.env.REACT_APP_API_URL_PRODUCTION}/api/admin/approve-activation/`, {
+            const res = await fetch(`${process.env.REACT_APP_API_URL}/api/admin/approve-activation/`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ activation_id: selectedActivation.activation_id, username: selectedActivation.username }),
@@ -148,7 +148,7 @@ function AdminSimActivation() {
                 pin_code: editForm.pin_code || 0,
             };
 
-            const res = await fetch(`${process.env.REACT_APP_API_URL_PRODUCTION}/api/update-activation/`, {
+            const res = await fetch(`${process.env.REACT_APP_API_URL}/api/update-activation/`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload),

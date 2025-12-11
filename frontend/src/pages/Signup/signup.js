@@ -62,7 +62,7 @@ function SignupPage() {
   const handleSubmit = async () => {
 
     try {
-      const response = await fetch("https://droptrix.vercel.app/api/signup/", {
+      const response = await fetch("http://127.0.0.1:8000/api/signup/", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -93,7 +93,7 @@ function SignupPage() {
     setLoading(true);
     if (!validateForm()) return;
     try {
-      const response = await fetch("https://droptrix.vercel.app/api/verify-email/", {
+      const response = await fetch("http://127.0.0.1:8000/api/verify-email/", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

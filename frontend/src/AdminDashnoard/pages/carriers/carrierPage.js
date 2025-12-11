@@ -33,7 +33,7 @@ function AdminCarrierPage() {
     const getCarriersFromBackend = async () => {
         try {
             const res = await fetch(
-                `${process.env.REACT_APP_API_URL_PRODUCTION}/api/get-carriers/`
+                `${process.env.REACT_APP_API_URL}/api/get-carriers/`
             );
             const data = await res.json();
 
@@ -93,7 +93,7 @@ function AdminCarrierPage() {
             if (isEditing) {
                 // Update
                 res = await fetch(
-                    `${process.env.REACT_APP_API_URL_PRODUCTION}/api/update-carriers/`,
+                    `${process.env.REACT_APP_API_URL}/api/update-carriers/`,
                     {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
@@ -103,7 +103,7 @@ function AdminCarrierPage() {
             } else {
                 // Add
                 res = await fetch(
-                    `${process.env.REACT_APP_API_URL_PRODUCTION}/api/add-carriers/`,
+                    `${process.env.REACT_APP_API_URL}/api/add-carriers/`,
                     {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },

@@ -1,7 +1,7 @@
 export const loadDiscountCharges = async (username, type) => {
     try {
         const res = await fetch(
-            `${process.env.REACT_APP_API_URL_PRODUCTION}/api/get-user-charges-discount/`,
+            `${process.env.REACT_APP_API_URL}/api/get-user-charges-discount/`,
             {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
