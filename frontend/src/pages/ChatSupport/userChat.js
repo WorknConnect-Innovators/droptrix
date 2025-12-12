@@ -4,12 +4,14 @@ export default function UserChat() {
     const ws = useRef(null);
     const [messages, setMessages] = useState([]);
     const [input, setInput] = useState("");
-    const [username, setUsername] = useState(1);
+    const [username, setUsername] = useState('');
 
     useEffect(() => {
         const userData = localStorage.getItem("userData");
         if (userData) {
-            const parsedData = JSON.parse(userData);        }
+            const parsedData = JSON.parse(userData);
+            setUsername(parsedData.username);
+        }
     }, [])
 
     // ---------------- CONNECT SOCKET ----------------
