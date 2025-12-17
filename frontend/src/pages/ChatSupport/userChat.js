@@ -4,7 +4,6 @@ export default function UserChat() {
     const ws = useRef(null);
     const [messages, setMessages] = useState([]);
     const [input, setInput] = useState("");
-
     const [username, setUsername] = useState(null);
 
     useEffect(() => {
