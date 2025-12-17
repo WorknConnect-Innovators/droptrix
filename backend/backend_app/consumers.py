@@ -13,40 +13,24 @@ def admin_group():
 
 
 class ChatConsumer(AsyncWebsocketConsumer):
-    """
-    Handles chat for regular Signup users.
-    URL: /ws/chat/<username>/
-    """
 
     async def connect(self):
         self.username = self.scope["url_route"]["kwargs"]["username"]
 
-        # Fetch the Signup user manually
+        # Fetch Signup user using username
         self.signup_user = await database_sync_to_async(self.get_signup_user)(self.username)
 
         if not self.signup_user:
             await self.close()
             return
 
-        # User ID for groups
         self.user_id = self.signup_user.id
         self.group_name = user_group(self.user_id)
 
-        # Join user group + admin group
         await self.channel_layer.group_add(self.group_name, self.channel_name)
         await self.channel_layer.group_add(admin_group(), self.channel_name)
 
         await self.accept()
-
-        # Notify admin that user is online
-        await self.channel_layer.group_send(
-            admin_group(),
-            {
-                "type": "user.presence",
-                "user_id": self.user_id,
-                "status": "online",
-            },
-        )
 
     async def disconnect(self, close_code):
         await self.channel_layer.group_discard(self.group_name, self.channel_name)

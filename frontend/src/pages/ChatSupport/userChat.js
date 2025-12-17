@@ -4,27 +4,32 @@ export default function UserChat() {
     const ws = useRef(null);
     const [messages, setMessages] = useState([]);
     const [input, setInput] = useState("");
-    const [username, setUsername] = useState(1);
+
+    const [username, setUsername] = useState(null);
 
     useEffect(() => {
         const userData = localStorage.getItem("userData");
         if (userData) {
-            const parsedData = JSON.parse(userData);        }
-    }, [])
+            const parsed = JSON.parse(userData);
+            setUsername(parsed.username); // MUST exist
+        }
+    }, []);
 
     // ---------------- CONNECT SOCKET ----------------
     useEffect(() => {
-        ws.current = new WebSocket(
-            `ws://127.0.0.1:8000/ws/chat/user_${username}/`
-        );
+    if (!username) return;
 
-        ws.current.onmessage = (event) => {
-            const data = JSON.parse(event.data);
-            setMessages(prev => [...prev, data]);
-        };
+    ws.current = new WebSocket(
+        `ws://127.0.0.1:8000/ws/chat/${username}/`
+    );
 
-        return () => ws.current.close();
-    }, [username]);
+    ws.current.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+        setMessages(prev => [...prev, data]);
+    };
+
+    return () => ws.current?.close();
+}, [username]);
 
     const sendMessage = () => {
         if (!input.trim()) return;
