@@ -69,7 +69,9 @@ class ChatConsumer(AsyncWebsocketConsumer):
         payload = {
             "type": "chat.message",
             "message": message_text,
+            "sender": self.username,
             "sender_id": self.user_id,
+            "sender_is_admin": False,
             "timestamp": message.timestamp.isoformat(),
             "message_id": message.id,
             "chat_id": chat.id,
@@ -163,6 +165,7 @@ class AdminConsumer(AsyncWebsocketConsumer):
         payload = {
             "type": "chat.message",
             "message": message_text,
+            "sender": self.admin_user.username,
             "sender_id": self.admin_id,
             "sender_is_admin": True,
             "target_username": target_username,

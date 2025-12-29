@@ -2,7 +2,7 @@ from django.shortcuts import render
 from django.http import JsonResponse, HttpResponse
 import json
 from django.views.decorators.csrf import csrf_exempt
-from backend_app.models import Feedback, Newsletter, Signup, Carriers, Plans, Payasyougo, Topup, Recharge, Activate_sim, Account_balance, History, Charges_and_Discount, Default_charged_discount, Plan_offers, Company_offers
+from backend_app.models import Feedback, Newsletter, Signup, Carriers, Plans, Payasyougo, Topup, Recharge, Activate_sim, Account_balance, History, Charges_and_Discount, Default_charged_discount, Plan_offers, Company_offers, Message
 from django.core.mail import send_mail
 import random
 import string
@@ -1326,14 +1326,53 @@ def update_carriers(request):
 
 
 def get_user_chat(request, user_id):
+    """
+    Get chat room + messages for a given user.
+    """
     if request.method == 'GET':
-        """
-        Get chat room + messages for a given user.
-        """
         try:
             chat = Chat.objects.get(user_id=user_id)
+            serializer = ChatSerializer(chat)
+            return JsonResponse(serializer.data, status=200, safe=False)
         except Chat.DoesNotExist:
-            return Response({"error": "Chat not found for this user."}, status=404)
+            return JsonResponse({"messages": []}, status=200)
+        except Exception as e:
+            return JsonResponse({"error": str(e)}, status=500)
+    return JsonResponse({'status': 'error', 'message': 'Invalid request method'}, status=400)
 
-        serializer = ChatSerializer(chat)
-        return Response(serializer.data, status=200)
+
+@csrf_exempt
+def get_all_chats(request):
+    """
+    Get all chat rooms with their messages (for admin).
+    """
+    if request.method == 'GET':
+        try:
+            chats = Chat.objects.all().prefetch_related('messages', 'user')
+            chat_list = []
+            
+            for chat in chats:
+                messages = []
+                for msg in chat.messages.all():
+                    messages.append({
+                        'id': msg.id,
+                        'text': msg.text,
+                        'sender_username': msg.sender.username,
+                        'sender_name': msg.sender.full_name,
+                        'timestamp': msg.timestamp.isoformat(),
+                        'read': msg.read
+                    })
+                
+                chat_list.append({
+                    'id': chat.id,
+                    'user_id': chat.user.id,
+                    'user_username': chat.user.username,
+                    'user_name': chat.user.full_name,
+                    'created_at': chat.created_at.isoformat(),
+                    'messages': messages
+                })
+            
+            return JsonResponse({'chats': chat_list}, status=200)
+        except Exception as e:
+            return JsonResponse({"error": str(e)}, status=500)
+    return JsonResponse({'status': 'error', 'message': 'Invalid request method'}, status=400)

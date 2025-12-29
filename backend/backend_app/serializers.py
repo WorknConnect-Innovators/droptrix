@@ -2,7 +2,8 @@ from rest_framework import serializers
 from .models import Message, Chat
 
 class MessageSerializer(serializers.ModelSerializer):
-    sender_name = serializers.CharField(source="sender.name", read_only=True)  # adjust if field is different
+    sender_username = serializers.CharField(source="sender.username", read_only=True)
+    sender_name = serializers.CharField(source="sender.full_name", read_only=True)
 
     class Meta:
         model = Message
@@ -10,6 +11,7 @@ class MessageSerializer(serializers.ModelSerializer):
             "id",
             "chat",
             "sender",
+            "sender_username",
             "sender_name",
             "text",
             "timestamp",

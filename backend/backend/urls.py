@@ -77,5 +77,6 @@ urlpatterns = [
     path('api/cancel-sim-activation/', views.cancel_sim_activation, name='cancel_sim_activation'),
     path('api/cancel-recharge/', views.cancel_recharge, name='cancel_recharge'),
     path('api/delete-user/', views.delete_user, name='delete_user'),
-    path("chat/<int:user_id>/", views.get_user_chat, name="get_user_chat"),
+    path("api/chat/<int:user_id>/", views.get_user_chat, name="get_user_chat"),
+    path("api/admin/chats/", views.get_all_chats, name="get_all_chats"),
 ]
