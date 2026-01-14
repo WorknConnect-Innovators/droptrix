@@ -100,7 +100,7 @@ function TopUp() {
     const startEdit = (item) => {
         // Only allow edit if topup is pending
         setIsEditing(true);
-        const isPending = item.request_topup === true || item.request_topup === 'True' || item.request_topup === 'true' || item.status === 'Pending' || item.pending_status === true;
+        const isPending = item.status === 'Pending';
         if (!isPending) return message.error('Only pending top-ups can be edited.');
 
         setEditingTopupId(item.id || item.topup_id || null);
@@ -132,8 +132,9 @@ function TopUp() {
         return topUpHistory
             .filter((item) => {
                 // 🔹 Step 1: Apply preFilter (status-based filtering)
-                if (preFilter === "approved" && !item.pending_status) return false;
-                if (preFilter === "pending" && item.pending_status) return false;
+                if (preFilter === "approved" && item.status !== "Approved") return false;
+                if (preFilter === "pending" && item.status !== "Pending") return false;
+                if (preFilter === "cancelled" && item.status !== "Canceled") return false;
 
                 return true;
             })
@@ -424,12 +425,21 @@ function TopUp() {
                             </button>
                             <button
                                 onClick={() => setPreFilter("pending")}
-                                className={`rounded-r-lg px-4 py-2 ${preFilter === "pending"
+                                className={`px-4 py-2 border-r ${preFilter === "pending"
                                     ? "bg-blue-500 text-white"
                                     : "hover:bg-gray-100"
                                     }`}
                             >
                                 Pending
+                            </button>
+                            <button
+                                onClick={() => setPreFilter("cancelled")}
+                                className={`rounded-r-lg px-4 py-2 ${preFilter === "cancelled"
+                                    ? "bg-blue-500 text-white"
+                                    : "hover:bg-gray-100"
+                                    }`}
+                            >
+                                Canceled
                             </button>
                         </div>
 
@@ -586,12 +596,12 @@ function TopUp() {
                             )}
 
                             {(amount !== 0 || amount !== '') && (
-                                <div className="bg-gray-50 p-5 rounded-xl shadow-sm border mt-4">
+                                <div className="bg-gray-50 col-span-full w-full p-5 rounded-xl shadow-sm border mt-4">
                                     <h3 className="text-lg font-semibold text-gray-700 mb-3">Amount Summary</h3>
 
                                     <div className="flex justify-between text-sm text-gray-600 mb-2">
                                         <span>Base Amount</span>
-                                        <span>Rs. {amount?.toFixed(2)}</span>
+                                        <span>Rs. {amount}</span>
                                     </div>
 
                                     <div className="flex justify-between text-sm text-gray-600 mb-3">
@@ -778,26 +788,17 @@ function TopUp() {
                                             <p className="text-sm text-gray-600" >{item.company_id}</p>
 
                                             <div className="flex items-center gap-2">
-                                                {/* Status Badge */}
-                                                {item.request_topup ? (
-                                                    <span className="px-3 py-1 bg-yellow-100 text-yellow-700 rounded-full text-xs font-semibold">
-                                                        Pending
-                                                    </span>
-                                                ) : (
-                                                    <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-semibold">
-                                                        Approved
-                                                    </span>
-                                                )}
+                                                <p className={`px-4 py-1 rounded-full w-fit text-white text-sm  ${item.status === "Pending" ? "bg-yellow-600" : item.status === "Approved" ? "bg-green-600" : "bg-red-600"}`} > {item.status}</p>
 
                                                 {(item.request_topup === true || item.pending_status === true || item.status === 'Pending') ? (
                                                     <button
                                                         onClick={() => startEdit(item)}
-                                                        className="px-3 py-1 bg-indigo-600 text-white rounded text-sm hover:bg-indigo-700"
+                                                        className="px-3 py-1 rounded-full bg-indigo-600 text-white text-sm hover:bg-indigo-700"
                                                     >
                                                         Edit
                                                     </button>
                                                 ) : (
-                                                    <button disabled className="px-3 py-1 bg-gray-200 text-gray-500 rounded text-sm">
+                                                    <button disabled className="px-3 py-1 bg-gray-200 text-gray-500 rounded-full text-sm">
                                                         Edit
                                                     </button>
                                                 )}

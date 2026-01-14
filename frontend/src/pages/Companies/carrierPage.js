@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
+import { SkeletonBlock } from "../Skeletons/skeletonBloack";
 
 export default function CarrierPage() {
 
@@ -45,7 +46,7 @@ export default function CarrierPage() {
     return (
         <div className="pb-20">
             {/* Header */}
-            <div className="text-center mb-12 bg-gradient-to-b pt-14 pb-6 from-blue-100 to-white ">
+            <div className="text-center mb-12 bg-gradient-to-b pt-14 pb-6 from-blue-100 to-white px-4 ">
                 <h1 className="text-4xl font-extrabold text-gray-800 mb-3">
                     Choose Your Global Carrier
                 </h1>
@@ -57,8 +58,10 @@ export default function CarrierPage() {
             {/* Carrier Cards */}
 
             {loading ? (
-                <div className="flex justify-center items-center h-48">
-                    <div className="loader ease-linear rounded-full border-4 border-t-8 border-gray-200 h-16 w-16"></div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 px-20 md:h-60 h-[600px]">
+                    {[1, 2, 3, 4].map((i) => (
+                        <SkeletonBlock key={i} className="h-full w-full rounded-xl" />
+                    ))}
                 </div>
             ) : carriers.length === 0 ? (
                 <div className="text-center text-gray-600">

@@ -1,9 +1,29 @@
-import React from "react";
+import React, { useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { Globe, Zap, Clock } from "lucide-react";
+import { Link } from "react-router-dom";
 
 const HeroSection = () => {
+
+    const searchData = [
+        { type: "country", name: "United States", link: "/carriers" },
+        { type: "provider", name: "AT&T", link: "/companies/AT&T" },
+        { type: "provider", name: "T-Mobile", link: "/companies/T-Mobile" },
+        { type: "provider", name: "Lyca Mobile", link: "/companies/Lyca Mobile" },
+    ];
+
+    const [query, setQuery] = useState("");
+
+    const results = useMemo(() => {
+        if (!query) return [];
+        return searchData.filter(item =>
+            item.name.toLowerCase().includes(query.toLowerCase())
+        );
+    }, [query]);
+
     return (
+
+
         <section className="relative overflow-hidden bg-gradient-to-r from-[#0072ff] to-[#00c6a7] text-white py-24">
             {/* Content */}
             <div className="relative container mx-auto px-6 text-center">
@@ -27,19 +47,50 @@ const HeroSection = () => {
                 </motion.p>
 
                 {/* Search Bar */}
-                <motion.div
-                    className="flex items-center w-full sm:w-[550px] mx-auto bg-white/15 backdrop-blur-md rounded-full px-5 py-3 shadow-sm hover:shadow-md transition-all duration-300"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 0.4, duration: 0.8 }}
-                >
-                    <Globe className="text-white opacity-80 mr-3" size={20} />
-                    <input
-                        type="text"
-                        placeholder="Search by country or provider..."
-                        className="bg-transparent w-full outline-none text-white placeholder-white/70"
-                    />
-                </motion.div>
+                <div className="relative w-full sm:w-[550px] mx-auto">
+                    <motion.div
+                        className="flex items-center w-full sm:w-[550px] mx-auto bg-white/15 backdrop-blur-md rounded-full px-5 py-3 shadow-sm hover:shadow-md transition-all duration-300"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: 0.4, duration: 0.8 }}
+                    >
+                        <Globe className="text-white opacity-80 mr-3" size={20} />
+                        <input
+                            type="text"
+                            value={query}
+                            onChange={(e) => setQuery(e.target.value)}
+                            placeholder="Search by country or provider..."
+                            className="bg-transparent w-full outline-none text-white placeholder-white/70"
+                        />
+                    </motion.div>
+
+                    {query && (
+                        <div className="absolute text-left w-full mt-2 bg-white text-black rounded-xl shadow-lg overflow-hidden z-10">
+                            {results.length > 0 ? (
+                                results.map((item, i) => (
+                                    <div
+                                        key={i}
+                                        className="px-5 py-2 hover:bg-gray-100 cursor-pointer text-sm"
+                                    >
+                                        {item.type === "country" ? (
+                                            <Link to={item.link}>
+                                                Explore carrier plans in <b>{item.name}</b>
+                                            </Link>
+                                        ) : (
+                                            <Link to={item.link}>
+                                                Explore plans by <b>{item.name}</b>
+                                            </Link>
+                                        )}
+                                    </div>
+                                ))
+                            ) : (
+                                <div className="px-5 py-3 text-sm text-gray-500">
+                                    ❌ No related result found
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </div>
 
                 {/* Stats Section */}
                 <motion.div

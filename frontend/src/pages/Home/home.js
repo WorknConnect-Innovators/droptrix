@@ -49,17 +49,17 @@ function HomePage() {
                             </div>
                             {/* Plans */}
                             <div className="flex flex-col items-center w-full">
-                                <div className="w-16 h-16 flex items-center justify-center bg-blue-600 rounded-full text-white shadow-md">
+                                <Link to="/plans/Prepaid" className="w-16 h-16 flex items-center justify-center bg-blue-600 rounded-full text-white shadow-md">
                                     <CardSim className="w-8 h-8" />
-                                </div>
+                                </Link>
                                 <span className="mt-3 font-medium text-gray-800">Plans</span>
                             </div>
 
                             {/* Activate SIM */}
                             <div className="flex flex-col items-center w-full">
-                                <div className="w-16 h-16 flex items-center justify-center bg-blue-600 rounded-full text-white shadow-md">
+                                <Link to="/plans/Company" className="w-16 h-16 flex items-center justify-center bg-blue-600 rounded-full text-white shadow-md">
                                     <Power className="w-8 h-8" />
-                                </div>
+                                </Link>
                                 <span className="mt-3 font-medium text-gray-800">Activate SIM</span>
                             </div>
 
@@ -86,36 +86,36 @@ function HomePage() {
             <ChoiceSection />
             <WhyUs />
 
-            <div className="bg-blue-600 text-white text-center py-8 px-6 lg:px-40 md:px-20 sm:px-10 text-xl font-semibold flex items-center justify-center gap-3">
+            <div className="bg-blue-600 text-white text-center py-8 px-6 lg:px-40 md:px-20 sm:px-10 md:text-xl font-semibold flex items-center justify-center gap-3">
                 {/* Icon before text */}
                 <BadgeDollarSign className="w-7 h-7 text-white" />
 
-                <span>Enjoy the lowest prices</span>
+                <span className="whitespace-nowrap ">Enjoy the lowest prices</span>
 
                 {/* View Plans with arrow animation */}
                 <a
                     href="/plans"
                     className="ml-4 flex items-center gap-2 group transition duration-300"
                 >
-                    <span className="underline decoration-2 underline-offset-2">View Plans</span>
+                    <span className="whitespace-nowrap  underline decoration-2 underline-offset-2">View Plans</span>
                     <ArrowRight className="w-6 h-6 transform transition-transform duration-300 group-hover:translate-x-2" />
                 </a>
             </div>
 
             <FAQSection />
 
-            <div className="bg-blue-600 text-white text-center py-8 px-6 lg:px-40 md:px-20 sm:px-10 text-xl font-semibold flex items-center justify-center gap-3">
+            <div className="bg-blue-600 text-white text-center py-8 px-6 lg:px-40 md:px-20 sm:px-10 md:text-xl text-sm font-semibold flex items-center justify-center gap-3">
                 {/* Icon before text */}
                 <Users className="w-7 h-7 text-white" />
 
-                <span>Our Team is here to help you</span>
+                <span className="whitespace-nowrap">Our Team is here to help you</span>
 
                 {/* Contact Us with arrow animation */}
                 <a
                     href="/contact"
                     className="ml-4 flex items-center gap-2 group transition duration-300"
                 >
-                    <span className="underline decoration-2 underline-offset-2">Contact Us</span>
+                    <span className="whitespace-nowrap underline decoration-2 underline-offset-2">Contact Us</span>
                     <ArrowRight className="w-6 h-6 transform transition-transform duration-300 group-hover:translate-x-2" />
                 </a>
             </div>

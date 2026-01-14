@@ -35,6 +35,7 @@ function AddFunds() {
     const [chargesPercentage, setChargesPercentage] = useState(0);
     const [discountPercentage, setDiscountPercentage] = useState(0);
     const [payableCharges, setPayableCharges] = useState(0);
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     useEffect(() => {
         if (fromDashboardAdd) {
@@ -98,8 +99,8 @@ function AddFunds() {
         return rechargeHistory
             .filter((item) => {
                 // 🔹 Step 1: Apply preFilter (status-based filtering)
-                if (preFilter === "approved" && !item.approved) return false;
-                if (preFilter === "pending" && item.approved) return false;
+                if (preFilter === "approved" && item.status !== "Approved") return false;
+                if (preFilter === "pending" && item.status !== "Pending") return false;
 
                 return true;
             })
@@ -184,6 +185,8 @@ function AddFunds() {
             return;
         }
 
+        setIsSubmitting(true)
+
         setNewRecharge((prev) => ({
             ...prev,
             payable_amount: payableCharges?.toFixed(2),
@@ -210,13 +213,16 @@ function AddFunds() {
                 setStep(1);
 
                 loadData();
+            } else {
+                message.error("Submitting response failed! Try again later");
             }
         } catch (error) {
             console.error(error);
             message.error("Error submitting recharge");
+        } finally {
+            setIsSubmitting(false);
         }
     };
-
 
     const viewScreenshot = (url) => {
         setViewingScreenshot(true);
@@ -359,15 +365,7 @@ function AddFunds() {
                                             View
                                         </td>
                                         <td className="px-10 py-3">
-                                            {item.approved ? (
-                                                <span className="px-3 py-1 bg-green-100 text-green-600 rounded-full text-xs">
-                                                    Approved
-                                                </span>
-                                            ) : (
-                                                <span className="px-3 py-1 bg-yellow-100 text-yellow-600 rounded-full text-xs">
-                                                    Pending
-                                                </span>
-                                            )}
+                                            <p className={`px-4 py-1 rounded-full w-fit text-white  ${item.status === "Pending" ? "bg-yellow-600" : item.status === "Approved" ? "bg-green-600" : "bg-red-600"}`} > {item.status}</p>
                                         </td>
                                     </tr>
                                 ))
@@ -733,10 +731,10 @@ function AddFunds() {
 
                                         <button
                                             onClick={submitRecharge}
-                                            disabled={!newRecharge.payment_screenshot || uploading}
-                                            className={`bg-blue-600 px-5 py-2 text-white rounded-lg hover:bg-blue-700 ${!newRecharge.payment_screenshot || uploading ? "opacity-50 cursor-not-allowed" : ""} `}
+                                            disabled={!newRecharge.payment_screenshot || uploading || isSubmitting}
+                                            className={`bg-blue-600 px-5 py-2 text-white rounded-lg hover:bg-blue-700 ${!newRecharge.payment_screenshot || uploading || isSubmitting ? "opacity-50 cursor-not-allowed" : ""} `}
                                         >
-                                            Submit
+                                            {isSubmitting ? "Submitting..." : "Submit"}
                                         </button>
                                     </div>
                                 </div>

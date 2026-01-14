@@ -1,11 +1,12 @@
 import { X, Menu } from "lucide-react";
 import React, { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { HomeIcon, LogOutIcon, FolderIcon, ChevronDown, ChevronRight, CompassIcon, BanknoteArrowUp, CircleDollarSign } from 'lucide-react'
 import { FaPlaneSlash, FaSimCard } from 'react-icons/fa'
 import { MdOutlineSupportAgent } from "react-icons/md";
 
 function MobileSidebar() {
+    const Navigate = useNavigate();
     const userType = localStorage.getItem("userData")
         ? JSON.parse(localStorage.getItem("userData")).user_type
         : null;
@@ -129,6 +130,7 @@ function MobileSidebar() {
                                 onClick={() => {
                                     if (link.submenu) setOpenSubmenu(prev => !prev);
                                     else {
+                                        Navigate(link.route);
                                         setSelectedLink(link.label);
                                         setOpen(false);
                                     }

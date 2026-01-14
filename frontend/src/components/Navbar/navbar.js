@@ -14,6 +14,7 @@ export default function Navbar() {
   const [open, setOpen] = useState(false);
   const [hoveredNav, setHoveredNav] = useState(null);
   const dropdownTimeout = useRef(null);
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   const dropdowns = {
     plans: {
@@ -113,7 +114,10 @@ export default function Navbar() {
             </div>
           )}
         </div>
-        <button className="lg:hidden p-2 rounded hover:bg-gray-100">
+        <button
+          onClick={() => setMobileOpen(!mobileOpen)}
+          className="lg:hidden p-2 rounded hover:bg-gray-100"
+        >
           <Menu className="w-7 h-7 text-blue-900" />
         </button>
       </div>
@@ -159,6 +163,61 @@ export default function Navbar() {
           </div>
         </div>
       )}
+
+      {/* MOBILE MENU */}
+      {mobileOpen && (
+        <div className="lg:hidden absolute top-full left-0 w-full bg-white border-t shadow-md">
+          <ul className="flex flex-col p-6 gap-4 text-blue-900 font-semibold">
+
+            <li>
+              <Link to="/plans/Prepaid" onClick={() => setMobileOpen(false)}>
+                Plans
+              </Link>
+            </li>
+
+            <li>
+              <Link to="/carriers" onClick={() => setMobileOpen(false)}>
+                Carriers
+              </Link>
+            </li>
+
+            <li>
+              <Link to="/how-it-works" onClick={() => setMobileOpen(false)}>
+                How it works
+              </Link>
+            </li>
+
+            <li>
+              <Link to="/contact" onClick={() => setMobileOpen(false)}>
+                Contact
+              </Link>
+            </li>
+
+            <hr />
+
+            <li>
+              <Link
+                to="/login"
+                className="flex items-center gap-2"
+                onClick={() => setMobileOpen(false)}
+              >
+                <LogIn className="w-4 h-4" /> Login
+              </Link>
+            </li>
+
+            <li>
+              <Link
+                to="/signup"
+                className="flex items-center gap-2"
+                onClick={() => setMobileOpen(false)}
+              >
+                <UserPlus className="w-4 h-4" /> Sign Up
+              </Link>
+            </li>
+          </ul>
+        </div>
+      )}
+
     </nav>
   );
 }

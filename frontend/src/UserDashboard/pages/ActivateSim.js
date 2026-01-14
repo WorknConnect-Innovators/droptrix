@@ -196,8 +196,8 @@ function ActivateSim() {
         return sims
             .filter((item) => {
                 // 🔹 Step 1: Apply preFilter (status-based filtering)
-                if (preFilter === "approved" && !item.approved) return false;
-                if (preFilter === "pending" && item.approved) return false;
+                if (preFilter === "approved" && item.status === "Approved") return false;
+                if (preFilter === "pending" && item.status === "Pending") return false;
 
                 return true;
             })
