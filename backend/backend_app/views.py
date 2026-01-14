@@ -19,6 +19,8 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from .models import Chat
 from .serializers import ChatSerializer
+from rest_framework.generics import ListAPIView
+from backend_app.serializers import MessageSerializer
 import pymysql
 pymysql.install_as_MySQLdb()
 
@@ -1376,3 +1378,18 @@ def get_all_chats(request):
         except Exception as e:
             return JsonResponse({"error": str(e)}, status=500)
     return JsonResponse({'status': 'error', 'message': 'Invalid request method'}, status=400)
+
+
+class MessagesBySenderAPIView(ListAPIView):
+    serializer_class = MessageSerializer
+    permission_classes = []   # ❌ No authentication
+
+    def get_queryset(self):
+        sender_id = self.request.query_params.get("sender_id")
+
+        queryset = Message.objects.all()
+
+        if sender_id:
+            queryset = queryset.filter(sender_id=sender_id)
+
+        return queryset.select_related("sender", "chat")
