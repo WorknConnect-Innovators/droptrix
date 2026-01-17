@@ -1,9 +1,12 @@
 import React from "react";
-import { Bell, MessageSquare, ChevronRight, Home, User, MenuSquare } from "lucide-react";
+import { Bell, MessageSquare, ChevronRight, Home, User } from "lucide-react";
 import { useLocation, Link } from "react-router-dom";
 
 function AdminTopnav() {
     const location = useLocation();
+    const localUser = localStorage.getItem("userData")
+    const user = localUser ? JSON.parse(localUser) : null;
+    const [userModalOpen, setUserModalOpen] = React.useState(false);
 
     // Create breadcrumb path dynamically
     const pathSegments = location.pathname.split("/").filter(Boolean);
@@ -58,15 +61,22 @@ function AdminTopnav() {
                 </div>
 
                 {/* Profile */}
-                <div className="flex items-center space-x-2 cursor-pointer bg-gray-100 shadow-inner hover:bg-gray-200 p-1 rounded-full transition">
-                    <div className="w-9 h-9 rounded-full object-cover flex items-center justify-center bg-blue-500 text-white font-semibold">
-                        A
+                <div className="relative">
+                    <div onClick={() => setUserModalOpen(!userModalOpen)} className="flex items-center space-x-2 cursor-pointer bg-gray-100 shadow-inner hover:bg-gray-200 p-1 rounded-full transition">
+                        <div className="w-9 h-9 rounded-full object-cover flex items-center justify-center bg-blue-500 text-white font-semibold">
+                            {user ? user.full_name.charAt(0).toUpperCase() : "U"}
+                        </div>
+                        <User size={18} className="text-gray-500 sm:hidden md:block" />
                     </div>
-                    <User size={18} className="text-gray-500 sm:hidden md:block" />
-                </div>
 
-                <div className="md:hidden block">
-                    <MenuSquare size={28} className="md:hidden block cursor-pointer" />
+                    {userModalOpen && (
+                        <div className="absolute right-0 mt-2 w-48 bg-white border rounded-md shadow-lg z-50">
+                            <div className="p-4 border-b">
+                                <p className="font-semibold">{user ? user.full_name : "User"}</p>
+                                <p className="text-sm text-gray-500">{user ? user.email : "user@example.com"}</p>
+                            </div>
+                        </div>
+                    )}
                 </div>
             </div>
         </div>

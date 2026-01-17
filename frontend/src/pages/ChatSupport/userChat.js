@@ -31,7 +31,7 @@ export default function UserChat() {
 
         setLoading(false);
 
-        fetch(`http://127.0.0.1:8000/api/chat/${userData.id}/`)
+        fetch(`${process.env.REACT_APP_API_URL}/api/chat/${userData.id}/`)
             .then(res => res.json())
             .then(data => {
                 if (data.messages) {
@@ -202,7 +202,7 @@ export default function UserChat() {
                         </div>
                     ))}
 
-                    {!isConnected && (
+                    {(!isConnected && Object.keys(groupedMessages).length !== 0) && (
                         <div className="flex w-full justify-center items-center">
                             <p className="bg-blue-50 rounded-md px-4 py-1 w-fit text-gray-500 text-sm">Sorry! we are unavailable now</p>
                         </div>

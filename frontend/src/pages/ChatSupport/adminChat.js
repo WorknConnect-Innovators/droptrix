@@ -4,10 +4,7 @@ export default function AdminChat() {
     const ws = useRef(null);
     const messagesEndRef = useRef(null);
     const user = localStorage.getItem("userData");
-
     const ADMIN_USERNAME = JSON.parse(user)?.username;
-
-    console.log(ADMIN_USERNAME)
 
     const [users, setUsers] = useState({});
     const [allMessages, setAllMessages] = useState([]);
@@ -15,6 +12,34 @@ export default function AdminChat() {
     const [input, setInput] = useState("");
     const [isConnected, setIsConnected] = useState(false);
 
+    const formatDateLabel = (timestamp) => {
+        const msgDate = new Date(timestamp);
+        const today = new Date();
+        const yesterday = new Date();
+        yesterday.setDate(today.getDate() - 1);
+
+        const isToday = msgDate.toDateString() === today.toDateString();
+        const isYesterday = msgDate.toDateString() === yesterday.toDateString();
+
+        if (isToday) return "Today";
+        if (isYesterday) return "Yesterday";
+
+        return msgDate.toLocaleDateString(undefined, {
+            day: "2-digit",
+            month: "short",
+            year: "numeric",
+        });
+    };
+
+    const formatTime = (timestamp) => {
+        return new Date(timestamp).toLocaleTimeString([], {
+            hour: "2-digit",
+            minute: "2-digit",
+        });
+    };
+
+
+    /* ---------------- WebSocket Logic (unchanged) ---------------- */
     useEffect(() => {
         if (!ADMIN_USERNAME) return;
 
@@ -22,32 +47,26 @@ export default function AdminChat() {
             `ws://127.0.0.1:8000/ws/chat/admin/?username=${ADMIN_USERNAME}`
         );
 
-        ws.current.onopen = () => {
-            setIsConnected(true);
-            console.log("Admin WebSocket connected");
-        };
-
+        ws.current.onopen = () => setIsConnected(true);
         ws.current.onmessage = (e) => {
             const data = JSON.parse(e.data);
-            console.log("Received:", data);
 
-            // Handle presence updates
             if (data.status) {
                 setUsers(prev => ({
                     ...prev,
-                    [data.username]: { lastMessage: prev[data.username]?.lastMessage || "", status: data.status }
+                    [data.username]: {
+                        lastMessage: prev[data.username]?.lastMessage || "",
+                        status: data.status
+                    }
                 }));
                 return;
             }
 
-            // Handle chat messages
             if (data.type === "chat.message") {
-                // Determine which user this message is associated with
                 const chatUser = data.sender_is_admin
-                    ? data.target_username  // Admin sent to this user
-                    : data.sender;           // User sent the message
+                    ? data.target_username
+                    : data.sender;
 
-                // Update user list with last message
                 setUsers(prev => ({
                     ...prev,
                     [chatUser]: {
@@ -56,79 +75,97 @@ export default function AdminChat() {
                     }
                 }));
 
-                // Add message to all messages
-                setAllMessages(prev => [...prev, {
-                    message: data.message,
-                    sender: data.sender,
-                    sender_is_admin: data.sender_is_admin,
-                    chatUser: chatUser,
-                    timestamp: data.timestamp
-                }]);
+                setAllMessages(prev => {
+                    const existingOptimistic = prev.find(m =>
+                        m.optimistic &&
+                        m.message === data.message &&
+                        m.chatUser === chatUser
+                    );
+
+                    if (existingOptimistic) {
+                        return prev.map(m =>
+                            m === existingOptimistic
+                                ? { ...m, optimistic: false, timestamp: data.timestamp }
+                                : m
+                        );
+                    }
+
+                    return [...prev, {
+                        message: data.message,
+                        sender: data.sender,
+                        sender_is_admin: data.sender_is_admin,
+                        chatUser,
+                        timestamp: data.timestamp
+                    }];
+                });
+
             }
         };
 
-        ws.current.onerror = (error) => {
-            console.error("WebSocket error:", error);
-        };
-
-        ws.current.onclose = () => {
-            setIsConnected(false);
-            console.log("Admin WebSocket disconnected");
-        };
-
+        ws.current.onclose = () => setIsConnected(false);
         return () => ws.current?.close();
     }, [ADMIN_USERNAME]);
 
-    // Auto-scroll to bottom when messages change
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }, [allMessages, selectedUser]);
 
-    // Load all chat rooms and messages on mount
+    /* ---------------- Initial Load ---------------- */
     useEffect(() => {
         fetch("http://127.0.0.1:8000/api/admin/chats/")
             .then(res => res.json())
             .then(data => {
-                if (data.chats) {
-                    const usersData = {};
-                    const messages = [];
+                const usersData = {};
+                const messages = [];
 
-                    data.chats.forEach(chat => {
-                        const username = chat.user_username;
-                        const chatMessages = chat.messages || [];
+                data.chats?.forEach(chat => {
+                    usersData[chat.user_username] = {
+                        lastMessage: chat.messages?.at(-1)?.text || "",
+                        status: "offline"
+                    };
 
-                        if (chatMessages.length > 0) {
-                            const lastMsg = chatMessages[chatMessages.length - 1];
-                            usersData[username] = {
-                                lastMessage: lastMsg.text,
-                                status: "offline"
-                            };
-
-                            // Add all messages to the messages array
-                            chatMessages.forEach(msg => {
-                                messages.push({
-                                    message: msg.text,
-                                    sender: msg.sender_username,
-                                    sender_is_admin: msg.sender_username === ADMIN_USERNAME,
-                                    chatUser: username,
-                                    timestamp: msg.timestamp
-                                });
-                            });
-                        } else {
-                            usersData[username] = { lastMessage: "", status: "offline" };
-                        }
+                    chat.messages?.forEach(msg => {
+                        messages.push({
+                            message: msg.text,
+                            sender: msg.sender_username,
+                            sender_is_admin: msg.sender_username === ADMIN_USERNAME,
+                            chatUser: chat.user_username,
+                            timestamp: msg.timestamp
+                        });
                     });
+                });
 
-                    setUsers(usersData);
-                    setAllMessages(messages);
-                }
-            })
-            .catch(err => console.error("Failed to load chats:", err));
+                setUsers(usersData);
+                setAllMessages(messages);
+            });
     }, [ADMIN_USERNAME]);
 
     const sendMessage = () => {
         if (!input.trim() || !selectedUser || !isConnected) return;
 
+        const optimisticMessage = {
+            message: input,
+            sender: ADMIN_USERNAME,
+            sender_is_admin: true,
+            chatUser: selectedUser,
+            timestamp: new Date().toISOString(),
+            optimistic: true,
+        };
+
+        // ✅ Show message immediately
+        setAllMessages(prev => [...prev, optimisticMessage]);
+
+        // ✅ Update sidebar instantly
+        setUsers(prev => ({
+            ...prev,
+            [selectedUser]: {
+                ...prev[selectedUser],
+                lastMessage: input,
+                status: "online",
+            }
+        }));
+
+        // ✅ Send to backend
         ws.current.send(JSON.stringify({
             message: input,
             target_username: selectedUser
@@ -137,99 +174,114 @@ export default function AdminChat() {
         setInput("");
     };
 
-    const handleKeyPress = (e) => {
-        if (e.key === 'Enter' && !e.shiftKey) {
-            e.preventDefault();
-            sendMessage();
-        }
-    };
 
     const selectedUserMessages = allMessages.filter(m => m.chatUser === selectedUser);
 
+    const groupedMessages = selectedUserMessages.reduce((acc, msg) => {
+        const dateKey = new Date(msg.timestamp).toDateString();
+        if (!acc[dateKey]) acc[dateKey] = [];
+        acc[dateKey].push(msg);
+        return acc;
+    }, {});
+
     return (
-        <div className="grid grid-cols-4 h-screen">
-            {/* User List Sidebar */}
-            <div className="bg-gray-100 p-4 border-r overflow-y-auto">
-                <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-xl font-bold">Users</h2>
-                    <span className={`w-3 h-3 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`}></span>
+        <div className="h-[calc(100vh-8rem)] overflow-hidden grid grid-cols-4 bg-gray-100 border-2">
+            {/* ---------------- Sidebar ---------------- */}
+            <aside className="col-span-1 bg-white border-r sticky top-0 h-[calc(100vh-8rem)] flex flex-col">
+                <div className="p-4 border-b flex justify-between items-center">
+                    <h2 className="font-bold text-lg">Users</h2>
+                    <span className={`w-3 h-3 rounded-full ${isConnected ? "bg-green-500" : "bg-red-500"}`} />
                 </div>
-                {Object.keys(users).length === 0 ? (
-                    <p className="text-gray-500 text-sm">No conversations yet</p>
-                ) : (
-                    Object.keys(users).map(u => (
+
+                <div className="flex-1 overflow-y-auto p-3 space-y-2">
+                    {Object.keys(users).map(u => (
                         <div
                             key={u}
                             onClick={() => setSelectedUser(u)}
-                            className={`p-3 mb-2 cursor-pointer rounded-xl transition-all ${selectedUser === u ? "bg-blue-600 text-white" : "bg-white hover:bg-gray-50"
+                            className={`p-3 rounded-xl cursor-pointer transition 
+                                ${selectedUser === u
+                                    ? "bg-green-600 text-white shadow"
+                                    : "bg-gray-50 hover:bg-gray-100"
                                 }`}
                         >
-                            <div className="font-semibold">{u}</div>
-                            <div className={`text-sm truncate ${selectedUser === u ? 'opacity-90' : 'opacity-70'}`}>
-                                {users[u].lastMessage || "No messages"}
+                            <div className="flex justify-between items-center">
+                                <p className="font-semibold">{u}</p>
+                                <span className={`text-xs ${users[u].status === "online" ? "text-green-400" : "text-gray-400"}`}>
+                                    ●
+                                </span>
                             </div>
+                            <p className="text-sm truncate opacity-80">
+                                {users[u].lastMessage || "No messages"}
+                            </p>
                         </div>
-                    ))
-                )}
-            </div>
+                    ))}
+                </div>
+            </aside>
 
-            {/* Chat Area */}
-            <div className="col-span-3 flex flex-col">
-                {/* Chat Header */}
-                <div className="p-4 border-b font-bold bg-white shadow-sm">
+            {/* ---------------- Chat Area ---------------- */}
+            <section className="col-span-3 flex flex-col h-[calc(100vh-8rem)]">
+                {/* Header */}
+                <div className="sticky top-0 bg-white border-b p-4 font-semibold shadow-sm z-10">
                     {selectedUser ? `Chat with ${selectedUser}` : "Select a user to start chatting"}
                 </div>
 
                 {/* Messages */}
-                <div className="flex-1 p-4 overflow-y-auto bg-gray-50">
-                    {!selectedUser ? (
-                        <div className="flex items-center justify-center h-full text-gray-400">
-                            <p>Select a conversation from the sidebar</p>
-                        </div>
-                    ) : selectedUserMessages.length === 0 ? (
-                        <div className="flex items-center justify-center h-full text-gray-400">
-                            <p>No messages yet. Start the conversation!</p>
-                        </div>
-                    ) : (
-                        selectedUserMessages.map((m, i) => (
-                            <div
-                                key={i}
-                                className={`p-3 my-2 max-w-[70%] rounded-xl ${m.sender_is_admin
-                                        ? "bg-green-600 text-white ml-auto"
-                                        : "bg-gray-300"
-                                    }`}
-                            >
-                                {m.message}
+                <div className="flex-1 overflow-y-auto p-6 space-y-3 bg-gray-50">
+                    {Object.entries(groupedMessages).map(([date, msgs]) => (
+                        <div key={date}>
+                            {/* Date Divider */}
+                            <div className="flex justify-center my-4">
+                                <span className="text-xs bg-gray-200 px-3 py-1 rounded-full text-gray-600">
+                                    {formatDateLabel(date)}
+                                </span>
                             </div>
-                        ))
-                    )}
+
+                            {/* Messages */}
+                            {msgs.map((m, i) => (
+                                <div key={i} className={`my-2 max-w-[65%] w-fit ${m.sender_is_admin ? "ml-auto" : "mr-auto"}`}>
+                                    <div
+                                        className={`px-4 py-2 rounded-2xl text-sm shadow relative ${m.sender_is_admin
+                                            ? "bg-green-600 text-white"
+                                            : "bg-white"
+                                            }`}
+                                    >
+                                        <p>{m.message}</p>
+
+                                    </div>
+                                    {/* Time */}
+                                    < span
+                                        className={`block text-[10px] mt-1 text-right text-gray-500`}
+                                    >
+                                        {formatTime(m.timestamp)}
+                                    </span>
+                                </div>
+                            ))}
+                        </div>
+                    ))}
+
                     <div ref={messagesEndRef} />
                 </div>
 
-                {/* Input Area */}
-                {selectedUser && (
-                    <div className="p-3 border-t flex gap-2 bg-white">
-                        <input
-                            className="flex-1 border rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500"
-                            value={input}
-                            onChange={e => setInput(e.target.value)}
-                            onKeyPress={handleKeyPress}
-                            placeholder="Type a message..."
-                            disabled={!isConnected}
-                        />
-                        <button
-                            onClick={sendMessage}
-                            disabled={!isConnected || !input.trim()}
-                            className={`px-4 rounded-xl ${isConnected && input.trim()
-                                    ? "bg-green-600 text-white hover:bg-green-700"
-                                    : "bg-gray-300 text-gray-500 cursor-not-allowed"
-                                }`}
-                        >
-                            Send
-                        </button>
-                    </div>
-                )}
-            </div>
-        </div>
+                {/* Input */}
+                {
+                    selectedUser && (
+                        <div className="sticky bottom-0 bg-white border-t p-3 flex gap-2">
+                            <input
+                                className="flex-1 rounded-xl border px-4 py-2 focus:ring-2 focus:ring-green-500 outline-none"
+                                value={input}
+                                onChange={e => setInput(e.target.value)}
+                                placeholder="Type a message..."
+                            />
+                            <button
+                                onClick={sendMessage}
+                                className="bg-green-600 text-white px-5 rounded-xl hover:bg-green-700 transition"
+                            >
+                                Send
+                            </button>
+                        </div>
+                    )
+                }
+            </section >
+        </div >
     );
 }
