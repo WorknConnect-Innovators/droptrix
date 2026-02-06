@@ -1,8 +1,15 @@
 Droptrix Website Reviews
 
 User Dashboard
+<<<<<<< HEAD
 - User Account Recharge - All OK
 - User Sim Topup - When I edit top up and decrease amount it needs to add into the total balance but it is decreasing the balance.
 - Verify email issue on signup
   /api/verify-email/
 - Add Plan Name and Carrier Name (Plan_id, Company_id)
+=======
+User Account Recharge - All OK
+User Sim Topup - When I edit top up and decrease amount it needs to add into the total balance but it is decreasing the balance. (Fixed)
+Verify email issue on signup - Working OK
+/api/verify-email/
+>>>>>>> 0c72c545d4f6fd23ca7d94dadd56661eb2cb66a7

@@ -1234,7 +1234,10 @@ def update_topup(request):
                 aditional_payable_amount = abs(topup_data.payable_amount - Decimal(str(data['payable_amount'])))
                 if aditional_payable_amount > balance_data.account_balance_amount:
                     return JsonResponse({'status': 'success', 'message': 'Insufficient balance. Please recharge your account.'})
-                balance_data.account_balance_amount -= aditional_payable_amount
+                if data['payable_amount'] <= topup_data.payable_amount:
+                    balance_data.account_balance_amount += aditional_payable_amount
+                else:
+                    balance_data.account_balance_amount -= aditional_payable_amount
                 balance_data.save()
                 topup_data.balance_history = balance_data.account_balance_amount
                 topup_data.payable_amount = data['payable_amount']
@@ -1390,6 +1393,6 @@ class MessagesBySenderAPIView(ListAPIView):
         queryset = Message.objects.all()
 
         if sender_id:
-            queryset = queryset.filter(sender_id=sender_id)
+            queryset = queryset.filter(sender__username=sender_id)
 
         return queryset.select_related("sender", "chat")
