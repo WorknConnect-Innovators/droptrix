@@ -39,17 +39,19 @@ class ChatConsumer(AsyncWebsocketConsumer):
         await self.accept()
 
     async def disconnect(self, close_code):
-        await self.channel_layer.group_discard(self.group_name, self.channel_name)
-
-        # Notify admin user is offline
-        await self.channel_layer.group_send(
-            admin_group(),
-            {
-                "type": "user.presence",
-                "user_id": self.user_id,
-                "status": "offline",
-            },
-        )
+        if hasattr(self, "group_name"):
+            await self.channel_layer.group_discard(self.group_name, self.channel_name)
+    
+        # Notify admin user is offline ONLY if user exists
+        if hasattr(self, "user_id"):
+            await self.channel_layer.group_send(
+                admin_group(),
+                {
+                    "type": "user.presence",
+                    "user_id": self.user_id,
+                    "status": "offline",
+                },
+            )
 
     async def receive(self, text_data=None, bytes_data=None):
         data = json.loads(text_data)
@@ -62,8 +64,15 @@ class ChatConsumer(AsyncWebsocketConsumer):
         chat = await database_sync_to_async(self.get_or_create_chat)()
 
         # Create message (using Signup user, NOT Django user)
+        admin_user = await database_sync_to_async(
+            Signup.objects.filter(user_type="admin").first
+        )()
+        
         message = await database_sync_to_async(self.create_message)(
-            chat, self.signup_user, message_text
+            chat,
+            sender=self.signup_user,
+            receiver=admin_user,
+            text=message_text
         )
 
         payload = {
@@ -100,8 +109,13 @@ class ChatConsumer(AsyncWebsocketConsumer):
         chat, _ = Chat.objects.get_or_create(user=self.signup_user)
         return chat
 
-    def create_message(self, chat, sender, text):
-        return Message.objects.create(chat=chat, sender=sender, text=text)
+    def create_message(self, chat, sender, receiver, text):
+        return Message.objects.create(
+            chat=chat,
+            sender=sender,
+            receiver=receiver,
+            text=text
+        )
 
 
 # ------------------------ ADMIN CONSUMER ---------------------------------
@@ -159,6 +173,7 @@ class AdminConsumer(AsyncWebsocketConsumer):
         message = await database_sync_to_async(Message.objects.create)(
             chat=chat,
             sender=self.admin_user,
+            receiver=signup_user,
             text=message_text
         )
 
