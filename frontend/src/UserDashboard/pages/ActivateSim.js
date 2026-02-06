@@ -361,12 +361,7 @@ function ActivateSim() {
                 });
                 const json = await res.json();
                 if (json.status === 'success') {
-                    message.success(json.message || 'Activation updated');else {
-                if (carrierRequiredFields.includes('email') && !isEmailVerified) {
-                    setError('Please verify your email address first');
-                    return;
-                }
-            }
+                    message.success(json.message || 'Activation updated');
                     // reset edit state
                     setEditingActivationId(null);
                     fetchUserActivations();
