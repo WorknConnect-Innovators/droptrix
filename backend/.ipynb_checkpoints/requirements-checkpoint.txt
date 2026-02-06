@@ -1,0 +1,9 @@
+Django
+PyMySQL
+djangorestframework
+django-cors-headers
+PyJWT
+channels
+channels-redis
+daphne
+whitenoise
