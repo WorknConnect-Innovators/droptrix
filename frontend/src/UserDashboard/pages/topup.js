@@ -4,15 +4,18 @@ import {
     ChevronLeft,
     ChevronRight,
     CircleDollarSign,
+    CircleHelp,
     Clock,
     Delete,
     ListFilterIcon,
+    Phone,
     Plus,
     Search,
 } from "lucide-react";
 import { getCarriersFromBackend } from "../../utilities/getCarriers";
-import { message } from "antd";
+import { message, Spin } from "antd";
 import { useLocation } from "react-router-dom";
+import Pagination from "../../utilities/pagination";
 
 function TopUp() {
     const location = useLocation();
@@ -119,7 +122,10 @@ function TopUp() {
             const data = await res.json();
 
             if (data.status === "success") {
-                setTopUpHistory(data.data);
+                const sortedData = [...data.data].sort(
+                    (a, b) => new Date(b.timestamp) - new Date(a.timestamp)
+                );
+                setTopUpHistory(sortedData);
             }
         } catch (error) {
             console.error(error);
@@ -381,6 +387,9 @@ function TopUp() {
                                 setAmount("");
                                 setPhoneNumber("");
                                 setRephoneNumber("");
+                                setEditingTopupId(null);
+                                setSelectedCarrier(null);
+                                setPayableAmount(0);
                             }}
                             className="w-fit lg:self-auto self-end flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg 
                                    hover:bg-blue-700 transition"
@@ -652,6 +661,7 @@ function TopUp() {
                             <thead className="bg-blue-50 text-gray-600 uppercase text-xs sticky top-0 z-10">
                                 <tr>
                                     <th className="px-10 py-3 text-left">No</th>
+                                    <th className="px-10 py-3 text-left">Time</th>
                                     <th className="px-10 py-3 text-left">Number</th>
                                     <th className="px-10 py-3 text-left">Carrier</th>
                                     <th className="px-10 py-3 text-left">Amount</th>
@@ -663,22 +673,22 @@ function TopUp() {
                             <tbody>
                                 {loading ? (
                                     <tr>
-                                        <td
-                                            colSpan="5"
-                                            className="px-6 py-6 text-center text-gray-500"
-                                        >
-                                            Loading...
+                                        <td colSpan={7} className="h-[40vh] text-gray-500">
+                                            <div className="h-full w-full flex flex-col items-center justify-center gap-4">
+                                                <Spin />
+                                                <span>Loading top up History...</span>
+                                            </div>
                                         </td>
                                     </tr>
                                 ) : currentItems.length > 0 ? (
                                     [...currentItems]
-                                        .reverse()
                                         .map((item, index) => (
                                             <tr
                                                 key={item.id || item.recharge_id || index}
                                                 className="border-t hover:bg-gray-50"
                                             >
-                                                <td className="px-10 py-3 font-semibold">{index <= 8 ? `0${index + 1}` : index + 1}</td>
+                                                <td className="px-10 py-3 font-semibold"> {(currentPage - 1) * itemsPerPage + index + 1}</td>
+                                                <td className="px-10 py-3">{new Date(item.timestamp).toLocaleString()}</td>
                                                 <td className="px-10 py-3">{item.phone_no}</td>
                                                 <td className="px-10 py-3">{item.company_name}</td>
                                                 <td className="px-10 py-3 text-green-600 font-semibold">
@@ -755,7 +765,7 @@ function TopUp() {
                                     <p className='font-semibold text-gray-300' >Loading balance history...</p>
                                 </div>
                             ) : filteredData.length > 0 ? (
-                                filteredData.slice().reverse().map((item, index) => (
+                                filteredData.map((item, index) => (
                                     <div
                                         key={item.id || item.recharge_id || index}
                                         className="border rounded-xl p-5 mb-4 bg-white shadow-sm hover:shadow-lg transition-all duration-200"
@@ -765,27 +775,33 @@ function TopUp() {
                                             {/* Circle Number */}
                                             <div className="flex items-center gap-2">
                                                 <div className="w-9 h-9 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-semibold">
-                                                    {index + 1}
+                                                    {(currentPage - 1) * itemsPerPage + index + 1}
                                                 </div>
                                             </div>
 
                                             {/* Time */}
                                             <div className="flex items-center gap-1 text-gray-500 text-xs">
                                                 <Clock size={14} className="text-gray-400" />
-                                                {item.phone_no}
+                                                {new Date(item.timestamp).toLocaleString()}
                                             </div>
                                         </div>
 
                                         {/* Amount Section */}
-                                        <div className="mt-4 flex items-center gap-1 text-lg font-semibold text-green-600">
-                                            <CircleDollarSign size={20} className="text-green-600" />
-                                            <span className="my-auto">{item.amount}</span>
+                                        <div className="mt-4 flex justify-between items-center gap-1 text-lg">
+                                            <div className="flex items-center gap-1 font-semibold text-gray-500">
+                                                <Phone size={18} />
+                                                <span className="my-auto">{item.phone_no}</span>
+                                            </div>
+                                            <div className="flex items-center gap-1 font-semibold text-green-600">
+                                                <CircleDollarSign size={20} className="text-green-600" />
+                                                <span className="my-auto">{item.amount}</span>
+                                            </div>
                                         </div>
 
                                         {/* Actions + Status */}
                                         <div className="mt-5 flex items-center justify-between">
 
-                                            <p className="text-sm text-gray-600" >{item.company_id}</p>
+                                            <p className="text-sm text-gray-600" >{item.company_name}</p>
 
                                             <div className="flex items-center gap-2">
                                                 <p className={`px-4 py-1 rounded-full w-fit text-white text-sm  ${item.status === "Pending" ? "bg-yellow-600" : item.status === "Approved" ? "bg-green-600" : "bg-red-600"}`} > {item.status}</p>
@@ -849,47 +865,11 @@ function TopUp() {
                             Records: {filteredData.length}
                         </div>
 
-                        {totalPages > 1 && (
-                            <div className="flex items-center gap-2">
-                                <button
-                                    disabled={currentPage === 1}
-                                    onClick={() => setCurrentPage(currentPage - 1)}
-                                    className="w-8 h-8 flex items-center justify-center rounded-md border border-gray-300 
-                                        disabled:opacity-40 hover:bg-gray-100 transition"
-                                >
-                                    <ChevronLeft size={18} className="text-gray-600" />
-                                </button>
-
-                                <div className="flex items-center gap-1">
-                                    {Array.from({ length: totalPages }, (_, i) => i + 1).map(
-                                        (num) => (
-                                            <button
-                                                key={num}
-                                                onClick={() => setCurrentPage(num)}
-                                                className={`w-8 h-8 flex items-center justify-center rounded-md border 
-                                                    text-sm transition shadow-sm
-                                                    ${currentPage === num
-                                                        ? "bg-indigo-100 text-indigo-600 border-indigo-300"
-                                                        : "bg-white text-gray-600 border-gray-300 hover:bg-gray-100"
-                                                    }`}
-                                            >
-                                                {num}
-                                            </button>
-                                        )
-                                    )}
-                                </div>
-
-                                <button
-                                    disabled={currentPage === totalPages}
-                                    onClick={() => setCurrentPage(currentPage + 1)}
-                                    className="w-8 h-8 flex items-center justify-center rounded-md border border-gray-300 
-                                        disabled:opacity-40 hover:bg-gray-100 transition"
-                                >
-                                    <ChevronRight size={18} className="text-gray-600" />
-                                </button>
-                            </div>
-                        )}
-
+                        <Pagination
+                            totalPages={totalPages}
+                            currentPage={currentPage}
+                            onPageChange={setCurrentPage}
+                        />
 
                         {topUpHistory.length > 10 && (
                             <select

@@ -1390,6 +1390,6 @@ class MessagesBySenderAPIView(ListAPIView):
         queryset = Message.objects.all()
 
         if sender_id:
-            queryset = queryset.filter(sender_id=sender_id)
+            queryset = queryset.filter(sender__username=sender_id)
 
         return queryset.select_related("sender", "chat")

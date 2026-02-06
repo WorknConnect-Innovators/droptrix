@@ -196,8 +196,8 @@ function ActivateSim() {
         return sims
             .filter((item) => {
                 // 🔹 Step 1: Apply preFilter (status-based filtering)
-                if (preFilter === "approved" && item.status === "Approved") return false;
-                if (preFilter === "pending" && item.status === "Pending") return false;
+                if (preFilter === "approved" && item.status !== "Approved") return false;
+                if (preFilter === "pending" && item.status !== "Pending") return false;
 
                 return true;
             })
@@ -918,7 +918,7 @@ function ActivateSim() {
 
                                             <div className="flex justify-between text-sm text-gray-600 mb-3">
                                                 <span>Discount ({planDiscount}%)</span>
-                                                <span>- ${(selectedPlanDetails.plan_price * planDiscount / 100).toFixed(2)}</span>
+                                                <span>- ${(selectedPlanDetails.plan_price * planDiscount / 100)?.toFixed(2)}</span>
                                             </div>
 
                                             {/* Divider */}
@@ -962,8 +962,9 @@ function ActivateSim() {
                         <div className="flex-1 overflow-y-auto w-full md:px-0 px-4">
 
                             <table className="w-full  text-sm text-gray-700 lg:inline-table hidden">
-                                <thead className="bg-blue-50 text-gray-600 uppercase text-xs">
+                                <thead className="bg-blue-50 text-gray-600 uppercase text-xs sticky top-0 z-10">
                                     <tr>
+                                        <th className="px-10 py-3 text-left">No</th>
                                         <th className="px-10 py-3 text-left">Date</th>
                                         <th className="px-10 py-3 text-left">SIM Number</th>
                                         <th className="px-10 py-3 text-left">Carrier</th>
@@ -975,8 +976,9 @@ function ActivateSim() {
 
                                 <tbody>
                                     {currentItems.length > 0 ? (
-                                        filteredSims.map((sim) => (
-                                            <tr key={sim.id} className="border-t hover:bg-gray-50 transition">
+                                        currentItems.map((sim, index) => (
+                                            <tr key={index} className="border-t hover:bg-gray-50 transition">
+                                                <td className="px-10 py-3">{(currentPage - 1) * itemsPerPage + index + 1}</td>
                                                 <td className="px-10 py-3">{new Date(sim.timestamp).toLocaleDateString()}</td>
                                                 <td className="px-10 py-3 font-medium">{sim.simNumber}</td>
                                                 <td className="px-10 py-3">{sim.carrier}</td>

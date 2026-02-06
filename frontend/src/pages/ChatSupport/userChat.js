@@ -26,29 +26,28 @@ export default function UserChat() {
     useEffect(() => {
         if (!username) return;
 
-        const userData = JSON.parse(localStorage.getItem("userData"));
-        if (!userData?.id) return;
+        setLoading(true);
 
-        setLoading(false);
-
-        fetch(`${process.env.REACT_APP_API_URL}/api/chat/${userData.id}/`)
+        fetch(
+            `${process.env.REACT_APP_API_URL}/api/messages/?sender_id=${username}`
+        )
             .then(res => res.json())
             .then(data => {
-                if (data.messages) {
-                    const formatted = data.messages.map(m => ({
-                        id: m.message_id,
-                        message: m.text,
-                        sender: m.sender_username,
-                        timestamp: m.timestamp
-                    }));
+                const formatted = data.map(m => ({
+                    id: m.id,
+                    message: m.text,
+                    sender: m.sender.username,
+                    timestamp: m.timestamp
+                }));
 
-                    formatted.forEach(m => receivedIds.current.add(m.id));
-                    setMessages(formatted);
-                }
+                formatted.forEach(m => receivedIds.current.add(m.id));
+                setMessages(formatted);
             })
             .catch(err => console.error("Chat history error", err))
             .finally(() => setLoading(false));
+
     }, [username]);
+
 
     /* ---------------- WEBSOCKET ---------------- */
     useEffect(() => {

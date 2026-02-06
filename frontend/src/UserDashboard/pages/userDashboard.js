@@ -1,13 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { Plus, Smartphone, Wallet, ShoppingBag, Globe2, CreditCard, ArrowUpRight, AlertTriangle, RefreshCcw, Database } from 'lucide-react';
 import {
-    LineChart,
-    Line,
     XAxis,
     YAxis,
     Tooltip,
     ResponsiveContainer,
     CartesianGrid,
+    Area,
+    AreaChart,
+    Brush
 } from "recharts";
 import { Link } from 'react-router-dom';
 
@@ -135,7 +136,12 @@ function UserDashboard() {
         date: new Date(tx.timestamp).toLocaleDateString("en-US", { day: "numeric", month: "short", year: "numeric" })
     })) || [];
 
-    console.log("transaction history", transaction_history);
+    const chartData = balanceHistory.map((item, index) => ({
+        ...item,
+        x: index, // unique X-axis value
+    }));
+
+    console.log("Transaction History:", transaction_history);
     return (
         <div className="space-y-4">
 
@@ -205,30 +211,69 @@ function UserDashboard() {
                 </div>
 
                 {/* Center Panel — Balance Chart */}
-                <div className="bg-white shadow-lg rounded-2xl p-6 col-span-2 h-full">
-                    <h2 className="text-xl font-semibold mb-4">Balance History</h2>
-                    <div className="w-full min-h-96 h-full pb-10">
-                        {balanceHistory.length > 0 ? (
+                <div className="bg-white shadow-lg rounded-2xl col-span-2 h-full">
+                    <h2 className="text-xl font-semibold mb-2 text-center border-b py-3">Balance History</h2>
+                    <div className="w-full min-h-96 h-full pb-20 pr-5">
+                        {chartData.length > 0 ? (
                             <ResponsiveContainer width="100%" height="100%">
-                                <LineChart data={balanceHistory}>
-                                    <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
-                                    <XAxis dataKey="date" stroke="#555" />
-                                    <YAxis stroke="#555" />
-                                    <Tooltip />
-                                    <Line
+                                <AreaChart data={chartData}>
+                                    <defs>
+                                        <linearGradient id="balanceGradient" x1="0" y1="0" x2="0" y2="1">
+                                            <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.4} />
+                                            <stop offset="100%" stopColor="#3b82f6" stopOpacity={0.05} />
+                                        </linearGradient>
+                                    </defs>
+
+                                    <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
+
+                                    <XAxis
+                                        dataKey="x"
+                                        tickFormatter={(value) => chartData[value]?.date}
+                                        stroke="#6b7280"
+                                    />
+
+                                    <YAxis stroke="#6b7280" />
+
+                                    <Tooltip
+                                        contentStyle={{
+                                            backgroundColor: "#0f172a",
+                                            borderRadius: "8px",
+                                            border: "none",
+                                            color: "#fff",
+                                            boxShadow: "0 10px 25px rgba(0,0,0,0.25)",
+                                        }}
+                                        labelFormatter={(value) => chartData[value]?.date}
+                                        formatter={(value) => [`$${value}`, "Balance"]}
+                                    />
+
+                                    <Area
                                         type="monotone"
                                         dataKey="balance"
-                                        stroke="#4f46e5"
+                                        stroke="#3b82f6"
                                         strokeWidth={3}
-                                        dot={{ r: 5, fill: "#4f46e5" }}
-                                        activeDot={{ r: 7 }}
+                                        fill="url(#balanceGradient)"
+                                        activeDot={{ r: 6 }}
                                     />
-                                </LineChart>
+
+                                    {chartData.length > 7 && (
+                                        <Brush
+                                            dataKey="x"
+                                            height={22}
+                                            stroke="#3b82f6"
+                                            travellerWidth={10}
+                                            tickFormatter={(value) => chartData[value]?.date}
+                                        />
+                                    )}
+                                </AreaChart>
                             </ResponsiveContainer>
                         ) : (
-                            <div className="text-gray-400 text-center py-20">No balance history available</div>
+                            <div className="text-gray-400 text-center py-20">
+                                No balance history available
+                            </div>
                         )}
                     </div>
+
+
                 </div>
             </div>
 

@@ -333,7 +333,7 @@ function UserDetails() {
         const comp = Number(adminTopupCompanyDiscount) || 0; // company-level discount only
         // payable = amt * (1 - comp/100)
         const payable = amt * (1 - (comp / 100));
-        setAdminTopupPayable(Number(payable.toFixed(2)));
+        setAdminTopupPayable(Number(payable?.toFixed(2)));
     }, [adminTopupAmount, adminTopupCompanyDiscount]);
 
     // compute payable for admin activation when plan, planDiscount (user) change
@@ -348,7 +348,7 @@ function UserDetails() {
         // prefer explicit planDiscount (admin override) if present, otherwise use user's plan offer
         const totalDiscount = pd > 0 ? pd : uop;
         const payable = price * (1 - (totalDiscount / 100));
-        setAdminActPayable(Number(payable.toFixed(2)));
+        setAdminActPayable(Number(payable?.toFixed(2)));
     }, [adminActPlan, adminActPlans, planDiscount, userPlanOffers]);
 
     // When admin selects a plan, immediately fetch the user's plan offers and set the discount for that plan
@@ -388,7 +388,7 @@ function UserDetails() {
         const charges = (typeof rechargeCharges !== 'undefined' && Number(rechargeCharges) >= 0) ? Number(rechargeCharges) : 7;
         const discount = (typeof rechargeDiscounts !== 'undefined' && Number(rechargeDiscounts) >= 0) ? Number(rechargeDiscounts) : 6;
         const payable = amt * (1 + charges / 100 - discount / 100);
-        setAdminFundPayable(Number(payable.toFixed(2)));
+        setAdminFundPayable(Number(payable?.toFixed(2)));
     }, [adminFundAmount, rechargeCharges, rechargeDiscounts]);
 
     // Cloudinary upload helper (reused from user addFunds flow)

@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from "react";
-import { Search, Plus, X, ListFilterIcon, ChevronRight, ChevronLeft, CircleDollarSign, Clock, Image } from "lucide-react";
-import { message } from "antd";
+import { Search, Plus, X, ListFilterIcon, CircleDollarSign, Clock, Image } from "lucide-react";
+import { message, Spin } from "antd";
 import { useLocation } from "react-router-dom";
 import { loadDiscountCharges } from "../../utilities/discountCharges";
-
+import Pagination from "../../utilities/pagination";
 
 function AddFunds() {
     const location = useLocation();
@@ -73,15 +73,23 @@ function AddFunds() {
     const loadData = async () => {
         setLoading(true);
         try {
-            const res = await fetch(`${process.env.REACT_APP_API_URL}/api/get-user-recharge-data/`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ username: user?.username }),
-            });
+            const res = await fetch(
+                `${process.env.REACT_APP_API_URL}/api/get-user-recharge-data/`,
+                {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ username: user?.username }),
+                }
+            );
+
             const data = await res.json();
 
             if (data.status === "success") {
-                setRechargeHistory(data.data_received);
+                const sortedData = [...data.data_received].sort(
+                    (a, b) => new Date(b.timestamp) - new Date(a.timestamp)
+                );
+
+                setRechargeHistory(sortedData);
             }
         } catch (error) {
             console.error(error);
@@ -327,7 +335,7 @@ function AddFunds() {
                 {/* Scrollable table body */}
                 <div className="flex-1 overflow-y-auto w-full md:px-0 px-4">
 
-                    <table className="w-full  text-sm text-gray-700 md:inline-table hidden">
+                    <table className="w-full text-sm text-gray-700 md:inline-table hidden">
                         <thead className="bg-blue-50 text-gray-600 uppercase text-xs sticky top-0 z-10">
                             <tr>
                                 <th className="px-10 py-3 text-left">No</th>
@@ -341,17 +349,19 @@ function AddFunds() {
                         <tbody>
                             {loading ? (
                                 <tr>
-                                    <td
-                                        colSpan="6"
-                                        className="px-10 py-6 text-center text-gray-500"
-                                    >
-                                        loading...
+                                    <td colSpan={5} className="h-[40vh] text-gray-500">
+                                        <div className="h-full w-full flex flex-col items-center justify-center gap-4">
+                                            <Spin />
+                                            <span>Loading Balance History...</span>
+                                        </div>
                                     </td>
                                 </tr>
                             ) : filteredData.length > 0 ? (
-                                currentItems.slice().reverse().map((item, index) => (
+                                currentItems.map((item, index) => (
                                     <tr key={item.recharge_id} className="border-t hover:bg-gray-50">
-                                        <td className="px-10 py-3 font-semibold">{index <= 8 ? `0${index + 1}` : index + 1}</td>
+                                        <td className="px-10 py-3 font-semibold">
+                                            {(currentPage - 1) * itemsPerPage + index + 1}
+                                        </td>
                                         <td className="px-10 py-3">
                                             {new Date(item.timestamp).toLocaleString()}
                                         </td>
@@ -419,7 +429,7 @@ function AddFunds() {
                                 <p className='font-semibold text-gray-300' >Loading balance history...</p>
                             </div>
                         ) : filteredData.length > 0 ? (
-                            filteredData.slice().reverse().map((item, index) => (
+                            currentItems.map((item, index) => (
                                 <div
                                     key={item.recharge_id}
                                     className="border rounded-xl p-5 mb-4 bg-white shadow-sm hover:shadow-lg transition-all duration-200"
@@ -429,7 +439,7 @@ function AddFunds() {
                                         {/* Circle Number */}
                                         <div className="flex items-center gap-2">
                                             <div className="w-9 h-9 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-semibold">
-                                                {index + 1}
+                                                {(currentPage - 1) * itemsPerPage + index + 1}
                                             </div>
                                         </div>
 
@@ -457,16 +467,9 @@ function AddFunds() {
                                             <span className="my-auto">View Screenshot</span>
                                         </button>
 
-                                        {/* Status Badge */}
-                                        {item.approved ? (
-                                            <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-semibold">
-                                                Approved
-                                            </span>
-                                        ) : (
-                                            <span className="px-3 py-1 bg-yellow-100 text-yellow-700 rounded-full text-xs font-semibold">
-                                                Pending
-                                            </span>
-                                        )}
+                                        <p className={`px-3 py-1 rounded-full w-fit text-white text-sm ${item.status === "Pending" ? "bg-yellow-600" : item.status === "Approved" ? "bg-green-600" : "bg-red-600"}`} > {item.status}</p>
+
+                                        
                                     </div>
                                 </div>
                             ))) : (
@@ -516,48 +519,11 @@ function AddFunds() {
                     </div>
 
                     {/* Pagination */}
-                    {totalPages > 1 && (
-                        <div className="flex items-center gap-2">
-
-                            {/* Left Arrow */}
-                            <button
-                                disabled={currentPage === 1}
-                                onClick={() => setCurrentPage(currentPage - 1)}
-                                className="w-8 h-8 flex items-center justify-center rounded-md border border-gray-300 
-                   disabled:opacity-40 hover:bg-gray-100 transition"
-                            >
-                                <ChevronLeft size={18} className="text-gray-600" />
-                            </button>
-
-                            {/* Page Numbers */}
-                            <div className="flex items-center gap-1">
-                                {Array.from({ length: totalPages }, (_, i) => i + 1).map((num) => (
-                                    <button
-                                        key={num}
-                                        onClick={() => setCurrentPage(num)}
-                                        className={`w-8 h-8 flex items-center justify-center rounded-md border 
-                            text-sm transition shadow-sm
-                            ${currentPage === num
-                                                ? "bg-indigo-100 text-indigo-600 border-indigo-300"
-                                                : "bg-white text-gray-600 border-gray-300 hover:bg-gray-100"
-                                            }`}
-                                    >
-                                        {num}
-                                    </button>
-                                ))}
-                            </div>
-
-                            {/* Right Arrow */}
-                            <button
-                                disabled={currentPage === totalPages}
-                                onClick={() => setCurrentPage(currentPage + 1)}
-                                className="w-8 h-8 flex items-center justify-center rounded-md border border-gray-300 
-                   disabled:opacity-40 hover:bg-gray-100 transition"
-                            >
-                                <ChevronRight size={18} className="text-gray-600" />
-                            </button>
-                        </div>
-                    )}
+                    <Pagination
+                        totalPages={totalPages}
+                        currentPage={currentPage}
+                        onPageChange={setCurrentPage}
+                    />
 
                     {/* 🔥 Fixed dropdown for rows per page */}
                     <select
@@ -650,12 +616,12 @@ function AddFunds() {
                                             <span>$ {newRecharge.amount}</span>
                                         </p>
                                         <p className="flex justify-between mt-1">
-                                            <span>Charges ({(chargesPercentage).toFixed(2)}%):</span>
-                                            <span>+ $ {(newRecharge.amount * (chargesPercentage / 100)).toFixed(2)}</span>
+                                            <span>Charges ({(chargesPercentage)?.toFixed(2)}%):</span>
+                                            <span>+ $ {(newRecharge.amount * (chargesPercentage / 100))?.toFixed(2)}</span>
                                         </p>
                                         <p className="flex justify-between mt-1">
-                                            <span>Discount ({(discountPercentage).toFixed(2)}%):</span>
-                                            <span> - $ {(newRecharge.amount * (discountPercentage / 100)).toFixed(2)}</span>
+                                            <span>Discount ({(discountPercentage)?.toFixed(2)}%):</span>
+                                            <span> - $ {(newRecharge.amount * (discountPercentage / 100))?.toFixed(2)}</span>
                                         </p>
                                         <hr className="my-2" />
                                         <p className="flex justify-between font-semibold">

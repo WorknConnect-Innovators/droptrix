@@ -1,14 +1,15 @@
-import { HomeIcon, LayoutDashboardIcon, LogOutIcon, FolderIcon, UsersIcon, ChevronDown, ChevronRight, CompassIcon, BanknoteArrowUp, CircleDollarSign } from 'lucide-react'
+import { HomeIcon, LogOutIcon, FolderIcon, ChevronDown, ChevronRight, CompassIcon, BanknoteArrowUp, CircleDollarSign } from 'lucide-react'
 import React, { useEffect, useState } from 'react'
-import { FaMoneyBill, FaPlaneSlash, FaSimCard } from 'react-icons/fa'
-import { Link } from 'react-router-dom'
+import { FaPlaneSlash, FaSimCard } from 'react-icons/fa'
+import { Link, useLocation } from 'react-router-dom'
 import { MdOutlineSupportAgent } from "react-icons/md";
 
 function Sidebar() {
+    const location = useLocation()
     const userType = localStorage.getItem("userData") ? JSON.parse(localStorage.getItem("userData")).user_type : null;
     const [userNavLinks, setUserNavLinks] = useState([])
     const [isExpanded, setIsExpanded] = useState(false)
-    const [selectedLink, setSelectedLink] = useState("Home")
+    const [activeRoute, setActiveRoute] = useState("")
     const [openSubmenu, setOpenSubmenu] = useState(false)
 
     const navLinks = [
@@ -86,27 +87,11 @@ function Sidebar() {
         setUserNavLinks(filteredLinks)
     }, [userType])
 
-    // Detect current active route
+    // Detect current active route based on pathname
     useEffect(() => {
-        const getCurrentOutlet = () => {
-            const currentUrl = window.location.href.toLowerCase();
-            switch (true) {
-                case currentUrl.includes("dashboard"):
-                    return "Dashboard";
-                case currentUrl.includes("home"):
-                    return "Home";
-                case currentUrl.includes("projects"):
-                    return "Projects";
-                case currentUrl.includes("settings"):
-                    return "Settings";
-                case currentUrl.includes("users"):
-                    return "Users";
-                default:
-                    return "Home";
-            }
-        };
-        setSelectedLink(getCurrentOutlet());
-    }, []);
+        setActiveRoute(location.pathname)
+        setOpenSubmenu(false)
+    }, [location.pathname])
 
     return (
         <nav
@@ -135,16 +120,15 @@ function Sidebar() {
                         <Link to={link.route}
                             onClick={() => {
                                 if (link.submenu) setOpenSubmenu(!openSubmenu)
-                                else setSelectedLink(link.label)
                             }}
-                            className={`flex items-center justify-between px-6 py-3 rounded-lg cursor-pointer transition-all duration-200
+                            className={`flex items-center justify-between px-6 py-3 rounded-lg cursor-pointer transition-all duration-300 ease-in-out
                 hover:bg-blue-600 hover:text-white text-gray-700 group
-                ${selectedLink === link.label ? 'bg-blue-600 text-white' : ''}`}
+                ${activeRoute === link.route ? 'bg-blue-600 text-white shadow-md' : ''}`}
                         >
-                            <div to={link.route} className="flex items-center gap-x-4">
-                                <div className="group-hover:text-white">{link.icon}</div>
+                            <div className="flex items-center gap-x-4">
+                                <div className={`transition-colors duration-300 ${activeRoute === link.route ? 'text-white' : 'text-gray-700 group-hover:text-white'}`}>{link.icon}</div>
                                 {isExpanded && (
-                                    <span className={`text-base font-medium ${selectedLink === link.label ? 'text-white' : 'text-gray-800'} group-hover:text-white`}>
+                                    <span className={`text-base font-medium transition-colors duration-300 ${activeRoute === link.route ? 'text-white' : 'text-gray-800 group-hover:text-white'}`}>
                                         {link.label}
                                     </span>
                                 )}
@@ -153,23 +137,22 @@ function Sidebar() {
                             {/* Chevron Icon */}
                             {isExpanded && link.submenu && (
                                 openSubmenu ? (
-                                    <ChevronDown size={20} className="text-gray-500 group-hover:text-white transition" />
+                                    <ChevronDown size={20} className={`transition-colors duration-300 ${activeRoute === link.route ? 'text-white' : 'text-gray-500 group-hover:text-white'}`} />
                                 ) : (
-                                    <ChevronRight size={20} className="text-gray-500 group-hover:text-white transition" />
+                                    <ChevronRight size={20} className={`transition-colors duration-300 ${activeRoute === link.route ? 'text-white' : 'text-gray-500 group-hover:text-white'}`} />
                                 )
                             )}
                         </Link>
 
                         {/* Submenu */}
                         {link.submenu && openSubmenu && isExpanded && (
-                            <div className="ml-4 mt-1 flex flex-col gap-y-2">
+                            <div className="ml-4 mt-1 flex flex-col gap-y-2 animate-in fade-in slide-in-from-top-1 duration-300">
                                 {link.submenu.map((sub, subIndex) => (
                                     <Link to={sub.route}
                                         key={subIndex}
-                                        onClick={() => setSelectedLink(sub.label)}
-                                        className={`flex items-center gap-x-3 py-2 px-2 rounded-md cursor-pointer
-                      text-gray-600 hover:bg-blue-100 hover:text-blue-700 transition-all duration-200
-                      ${selectedLink === sub.label ? 'bg-blue-200 text-blue-700 font-medium' : ''}`}
+                                        className={`flex items-center gap-x-3 py-2 px-2 rounded-md cursor-pointer transition-all duration-300 ease-in-out
+                      text-gray-600 hover:bg-blue-100 hover:text-blue-700
+                      ${activeRoute === sub.route ? 'bg-blue-200 text-blue-700 font-medium shadow-sm' : ''}`}
                                     >
                                         {sub.icon}
                                         <span className="text-sm">{sub.label}</span>
@@ -185,12 +168,12 @@ function Sidebar() {
             <div className="mt-auto w-full px-3 pb-4">
                 <div
                     onClick={() => { localStorage.clear(); window.location.href = '/login'; }}
-                    className="flex items-center gap-x-4 px-4 py-3 rounded-xl cursor-pointer transition-all duration-200
+                    className="flex items-center gap-x-4 px-4 py-3 rounded-xl cursor-pointer transition-all duration-300 ease-in-out
           hover:bg-red-600 hover:text-white text-gray-700 group"
                 >
-                    <LogOutIcon size={28} className="group-hover:text-white" />
+                    <LogOutIcon size={28} className="transition-colors duration-300 group-hover:text-white" />
                     {isExpanded && (
-                        <span className="text-base font-medium text-gray-800 group-hover:text-white transition-colors duration-200">
+                        <span className="text-base font-medium transition-colors duration-300 text-gray-800 group-hover:text-white">
                             Logout
                         </span>
                     )}
