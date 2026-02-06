@@ -2,56 +2,55 @@ import json
 from channels.generic.websocket import AsyncWebsocketConsumer
 from channels.db import database_sync_to_async
 from backend_app.models import Chat, Message, Signup
-from django.contrib.auth import get_user_model
-from rest_framework.authtoken.models import Token
 from urllib.parse import parse_qs
 
 
-User = get_user_model()
-
+# ---------------- GROUP HELPERS ----------------
 
 def user_group(user_id):
     return f"user_{user_id}"
 
 
-def admin_group():
-    return "admin"
+def admin_group(admin_id):
+    return f"admin_{admin_id}"
 
+
+# ================= USER SOCKET =================
 
 class ChatConsumer(AsyncWebsocketConsumer):
 
     async def connect(self):
         self.username = self.scope["url_route"]["kwargs"]["username"]
 
-        # Fetch Signup user using username
-        self.signup_user = await database_sync_to_async(self.get_signup_user)(self.username)
-
+        # Get user
+        self.signup_user = await database_sync_to_async(self.get_user)(self.username)
         if not self.signup_user:
             await self.close()
             return
 
         self.user_id = self.signup_user.id
-        self.group_name = user_group(self.user_id)
+        self.user_group_name = user_group(self.user_id)
 
-        await self.channel_layer.group_add(self.group_name, self.channel_name)
-        await self.channel_layer.group_add(admin_group(), self.channel_name)
+        # Get first admin (simple setup)
+        self.admin_user = await database_sync_to_async(self.get_admin)()
+        if not self.admin_user:
+            await self.close()
+            return
+
+        self.admin_group_name = admin_group(self.admin_user.id)
+
+        # Join groups
+        await self.channel_layer.group_add(self.user_group_name, self.channel_name)
+        await self.channel_layer.group_add(self.admin_group_name, self.channel_name)
 
         await self.accept()
 
     async def disconnect(self, close_code):
-        if hasattr(self, "group_name"):
-            await self.channel_layer.group_discard(self.group_name, self.channel_name)
-    
-        # Notify admin user is offline ONLY if user exists
-        if hasattr(self, "user_id"):
-            await self.channel_layer.group_send(
-                admin_group(),
-                {
-                    "type": "user.presence",
-                    "user_id": self.user_id,
-                    "status": "offline",
-                },
-            )
+        if hasattr(self, "user_group_name"):
+            await self.channel_layer.group_discard(self.user_group_name, self.channel_name)
+
+        if hasattr(self, "admin_group_name"):
+            await self.channel_layer.group_discard(self.admin_group_name, self.channel_name)
 
     async def receive(self, text_data=None, bytes_data=None):
         data = json.loads(text_data)
@@ -60,53 +59,55 @@ class ChatConsumer(AsyncWebsocketConsumer):
         if not message_text:
             return
 
-        # Create or get chat
-        chat = await database_sync_to_async(self.get_or_create_chat)()
+        # Get or create chat
+        chat = await database_sync_to_async(self.get_or_create_chat)(self.signup_user)
 
-        # Create message (using Signup user, NOT Django user)
-        admin_user = await database_sync_to_async(
-            Signup.objects.filter(user_type="admin").first
-        )()
-        
+        # Save message
         message = await database_sync_to_async(self.create_message)(
-            chat,
+            chat=chat,
             sender=self.signup_user,
-            receiver=admin_user,
+            receiver=self.admin_user,
             text=message_text
         )
 
         payload = {
-            "type": "chat.message",
-            "message": message_text,
-            "sender": self.username,
-            "sender_id": self.user_id,
+            "message": message.text,
+            "sender": self.signup_user.username,
+            "sender_id": self.signup_user.id,
+            "receiver_id": self.admin_user.id,
             "sender_is_admin": False,
             "timestamp": message.timestamp.isoformat(),
             "message_id": message.id,
             "chat_id": chat.id,
         }
 
-        # Send to user group + admin group
+        # Send to admin + user
         await self.channel_layer.group_send(
-            self.group_name, {"type": "forward.message", "payload": payload}
+            self.admin_group_name,
+            {"type": "forward.message", "payload": payload}
         )
+
         await self.channel_layer.group_send(
-            admin_group(), {"type": "forward.message", "payload": payload}
+            self.user_group_name,
+            {"type": "forward.message", "payload": payload}
         )
 
     async def forward_message(self, event):
         await self.send(text_data=json.dumps(event["payload"]))
 
-    # ----------------- DB HELPERS -----------------
+    # -------- DB HELPERS --------
 
-    def get_signup_user(self, username):
+    def get_user(self, username):
         try:
             return Signup.objects.get(username=username)
         except Signup.DoesNotExist:
             return None
 
-    def get_or_create_chat(self):
-        chat, _ = Chat.objects.get_or_create(user=self.signup_user)
+    def get_admin(self):
+        return Signup.objects.filter(user_type="admin").first()
+
+    def get_or_create_chat(self, user):
+        chat, _ = Chat.objects.get_or_create(user=user)
         return chat
 
     def create_message(self, chat, sender, receiver, text):
@@ -118,12 +119,11 @@ class ChatConsumer(AsyncWebsocketConsumer):
         )
 
 
-# ------------------------ ADMIN CONSUMER ---------------------------------
+# ================= ADMIN SOCKET =================
 
 class AdminConsumer(AsyncWebsocketConsumer):
 
     async def connect(self):
-        # Admin username comes from query OR fixed route
         query = parse_qs(self.scope["query_string"].decode())
         username = query.get("username", [None])[0]
 
@@ -131,20 +131,20 @@ class AdminConsumer(AsyncWebsocketConsumer):
             await self.close()
             return
 
-        # Get admin from Signup table
         self.admin_user = await database_sync_to_async(self.get_admin_user)(username)
-
         if not self.admin_user:
             await self.close()
             return
 
         self.admin_id = self.admin_user.id
+        self.group_name = admin_group(self.admin_id)
 
-        await self.channel_layer.group_add(admin_group(), self.channel_name)
+        await self.channel_layer.group_add(self.group_name, self.channel_name)
         await self.accept()
 
     async def disconnect(self, close_code):
-        await self.channel_layer.group_discard(admin_group(), self.channel_name)
+        if hasattr(self, "group_name"):
+            await self.channel_layer.group_discard(self.group_name, self.channel_name)
 
     async def receive(self, text_data=None, bytes_data=None):
         data = json.loads(text_data)
@@ -155,22 +155,16 @@ class AdminConsumer(AsyncWebsocketConsumer):
         if not message_text or not target_username:
             return
 
-        # Get target Signup user
-        try:
-            signup_user = await database_sync_to_async(Signup.objects.get)(
-                username=target_username
-            )
-        except Signup.DoesNotExist:
+        # Get user
+        signup_user = await database_sync_to_async(self.get_user)(target_username)
+        if not signup_user:
             return
 
         # Get or create chat
-        chat = await database_sync_to_async(Chat.objects.get_or_create)(
-            user=signup_user
-        )
-        chat = chat[0]
+        chat = await database_sync_to_async(self.get_or_create_chat)(signup_user)
 
-        # Create message (sender = ADMIN Signup)
-        message = await database_sync_to_async(Message.objects.create)(
+        # Save message
+        message = await database_sync_to_async(self.create_message)(
             chat=chat,
             sender=self.admin_user,
             receiver=signup_user,
@@ -178,12 +172,12 @@ class AdminConsumer(AsyncWebsocketConsumer):
         )
 
         payload = {
-            "type": "chat.message",
-            "message": message_text,
+            "message": message.text,
             "sender": self.admin_user.username,
-            "sender_id": self.admin_id,
+            "sender_id": self.admin_user.id,
+            "receiver_id": signup_user.id,
             "sender_is_admin": True,
-            "target_username": target_username,
+            "target_username": signup_user.username,
             "timestamp": message.timestamp.isoformat(),
             "message_id": message.id,
             "chat_id": chat.id,
@@ -195,16 +189,34 @@ class AdminConsumer(AsyncWebsocketConsumer):
             {"type": "forward.message", "payload": payload}
         )
 
-        # Echo back to admin
+        # Echo to admin
         await self.send(text_data=json.dumps(payload))
 
     async def forward_message(self, event):
         await self.send(text_data=json.dumps(event["payload"]))
 
-    # -------- DB HELPER --------
+    # -------- DB HELPERS --------
 
     def get_admin_user(self, username):
         try:
             return Signup.objects.get(username=username, user_type="admin")
         except Signup.DoesNotExist:
             return None
+
+    def get_user(self, username):
+        try:
+            return Signup.objects.get(username=username)
+        except Signup.DoesNotExist:
+            return None
+
+    def get_or_create_chat(self, user):
+        chat, _ = Chat.objects.get_or_create(user=user)
+        return chat
+
+    def create_message(self, chat, sender, receiver, text):
+        return Message.objects.create(
+            chat=chat,
+            sender=sender,
+            receiver=receiver,
+            text=text
+        )
