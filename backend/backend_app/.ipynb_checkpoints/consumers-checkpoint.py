@@ -14,7 +14,6 @@ def user_group(user_id):
 def admin_group(admin_id):
     return f"admin_{admin_id}"
 
-
 # ================= USER SOCKET =================
 
 class ChatConsumer(AsyncWebsocketConsumer):
