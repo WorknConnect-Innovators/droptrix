@@ -507,7 +507,7 @@ function TopUp() {
                 <div className="flex flex-col md:h-[67vh] h-[54vh] w-full">
                     <div className="flex-1 overflow-y-auto w-full md:px-20 px-4 py-1 ">
                         <label className="text-lg font-semibold mb-4 text-gray-700">Select Carrier</label>
-                        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6 mt-4 mb-8">
+                        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6 mt-4 mb-8">
                             {loadingCarriers ? (
                                 <div className="dotsLoader"></div>
                             ) : carriers.length === 0 ? (
@@ -535,7 +535,7 @@ function TopUp() {
                                         <img
                                             src={carrier.logo_url}
                                             alt={carrier.name}
-                                            className="w-full h-20 object-contain mb-4"
+                                            className="w-full h-10 object-contain mb-4"
                                         />
                                         <h3
                                             className={`text-lg font-medium text-center ${isSelected ? "text-blue-600 font-semibold" : ""

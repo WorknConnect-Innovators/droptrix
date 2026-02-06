@@ -12,17 +12,17 @@ export const loadDiscountCharges = async (username, type) => {
             const receivedData = data?.data_received || {}
 
             if (type === 'topup') {
-                const result = { charges: Number(receivedData.topup_charges) || '', discount: Number(receivedData.topup_discount) || '' };
+                const result = { charges: Number(receivedData.topup_charges) , discount: Number(receivedData.topup_discount) };
                 return result;
             }
 
             if (type === 'recharge') {
-                const result = { charges: Number(receivedData.recharge_charges) || '', discount: Number(receivedData.recharge_discount) || '' };
+                const result = { charges: Number(receivedData.recharge_charges) , discount: Number(receivedData.recharge_discount) };
                 return result;
             }
 
             if (type === 'sim_activation') {
-                const result = { charges: Number(receivedData.sim_activation_charges) || '', discount: Number(receivedData.sim_activation_discount) || '' };
+                const result = { charges: Number(receivedData.sim_activation_charges) , discount: Number(receivedData.sim_activation_discount) };
                 return result;
             }
         }
