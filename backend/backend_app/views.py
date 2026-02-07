@@ -1286,7 +1286,7 @@ def update_activation(request):
             activation_id = data['activation_id']
             activation_data = Activate_sim.objects.filter(activation_id=activation_id).first()
             balance_data = Account_balance.objects.filter(username=data['username']).first()
-            if activation_data.pending == True:
+            if activation_data.status == 'Pending':
                 activation_data.plan_id = data['plan_id']
                 activation_data.phone_no = data['phone_no']
                 activation_data.emi = data['emi']

@@ -18,33 +18,27 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
     async def connect(self):
         self.username = self.scope["url_route"]["kwargs"]["username"]
-    
-        # Get user
         self.user = await self.get_user(self.username)
         if not self.user:
             await self.close()
             return
-    
-        # Get admin
+
         self.admin = await self.get_admin()
         if not self.admin:
             await self.close()
             return
-    
-        # Get or create chat
+
         self.chat = await self.get_or_create_chat(self.user)
         self.group_name = chat_group(self.chat.id)
-    
+
+        # Join the chat group
         await self.channel_layer.group_add(self.group_name, self.channel_name)
         await self.accept()
-    
-        print(f"{self.username} connected successfully to chat {self.chat.id}")
-    
+
         # Send chat history
-        messages = await self.get_chat_messages_serialized(self.user)
+        messages = await self.get_chat_messages_serialized(self.chat)
         for msg in messages:
             await self.send(text_data=json.dumps(msg))
-
 
     async def receive(self, text_data=None, bytes_data=None):
         data = json.loads(text_data)
@@ -52,20 +46,12 @@ class ChatConsumer(AsyncWebsocketConsumer):
         if not message_text:
             return
 
-        # Create message
-        message = await self.create_message(
-            chat=self.chat,
-            sender=self.user,
-            receiver=self.admin,
-            text=message_text
-        )
+        message = await self.create_message(self.chat, self.user, self.admin, message_text)
 
-        payload = self.serialize_message(message)
-
-        # Send to chat group (so admin gets it too)
+        # Broadcast to chat group (both user & admin)
         await self.channel_layer.group_send(
             self.group_name,
-            {"type": "chat.message", "payload": payload}
+            {"type": "chat.message", "payload": self.serialize_message(message)}
         )
 
     async def chat_message(self, event):
@@ -74,8 +60,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
     async def disconnect(self, close_code):
         await self.channel_layer.group_discard(self.group_name, self.channel_name)
 
-    # ---------- DB ----------
-
+    # -------- DB --------
     @database_sync_to_async
     def get_user(self, username):
         return Signup.objects.filter(username=username).first()
@@ -90,36 +75,34 @@ class ChatConsumer(AsyncWebsocketConsumer):
         return chat
 
     @database_sync_to_async
-    def get_chat_messages_serialized(self, user):
-        chat = Chat.objects.filter(user=user).first()
-        if not chat:
-            return []
-        messages = []
-        for msg in chat.messages.select_related("sender", "receiver").order_by("timestamp"):
-            messages.append({
-                "message": msg.text,
-                "sender_id": msg.sender.id,
-                "receiver_id": msg.receiver.id,
-                "sender_is_admin": msg.sender.user_type == "admin",
-                "timestamp": msg.timestamp.isoformat(),
-                "message_id": msg.id,
-                "chat_id": chat.id,
-            })
-        return messages
-
-    @database_sync_to_async
     def create_message(self, chat, sender, receiver, text):
         return Message.objects.create(chat=chat, sender=sender, receiver=receiver, text=text)
+
+    @database_sync_to_async
+    def get_chat_messages_serialized(self, chat):
+        msgs = chat.messages.select_related("sender", "receiver").all().order_by("timestamp")
+        return [
+            {
+                "message": m.text,
+                "sender_id": m.sender_id,
+                "receiver_id": m.receiver_id,
+                "sender_is_admin": m.sender.user_type == "admin",
+                "timestamp": m.timestamp.isoformat(),
+                "message_id": m.id,
+                "chat_id": chat.id,
+            }
+            for m in msgs
+        ]
 
     def serialize_message(self, message):
         return {
             "message": message.text,
-            "sender_id": message.sender.id,
-            "receiver_id": message.receiver.id,
+            "sender_id": message.sender_id,
+            "receiver_id": message.receiver_id,
             "sender_is_admin": message.sender.user_type == "admin",
             "timestamp": message.timestamp.isoformat(),
             "message_id": message.id,
-            "chat_id": message.chat.id,
+            "chat_id": message.chat_id,
         }
 
 # ================= ADMIN SOCKET =================
