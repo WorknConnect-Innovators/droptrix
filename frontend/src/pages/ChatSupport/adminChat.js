@@ -39,33 +39,43 @@ export default function AdminChat() {
     };
 
 
-    /* ---------------- WebSocket Logic (unchanged) ---------------- */
+    /* ---------------- WebSocket Logic ---------------- */
     useEffect(() => {
         if (!ADMIN_USERNAME) return;
 
+        console.log("🔌 Connecting Admin WebSocket for:", ADMIN_USERNAME);
         ws.current = new WebSocket(
             `ws://127.0.0.1:8000/ws/chat/admin/?username=${ADMIN_USERNAME}`
         );
 
-        ws.current.onopen = () => setIsConnected(true);
+        ws.current.onopen = () => {
+            console.log("✅ Admin WebSocket connected:", ADMIN_USERNAME);
+            setIsConnected(true);
+        };
+
         ws.current.onmessage = (e) => {
-            const data = JSON.parse(e.data);
+            try {
+                const data = JSON.parse(e.data);
+                console.log("📨 Admin message received:", data);
 
-            if (data.status) {
-                setUsers(prev => ({
-                    ...prev,
-                    [data.username]: {
-                        lastMessage: prev[data.username]?.lastMessage || "",
-                        status: data.status
-                    }
-                }));
-                return;
-            }
+                if (data.status) {
+                    setUsers(prev => ({
+                        ...prev,
+                        [data.username]: {
+                            lastMessage: prev[data.username]?.lastMessage || "",
+                            status: data.status
+                        }
+                    }));
+                    return;
+                }
 
-            if (data.type === "chat.message") {
-                const chatUser = data.sender_is_admin
-                    ? data.target_username
-                    : data.sender;
+                // Determine the chat user (the non-admin participant)
+                const chatUser = data.sender_is_admin ? data.receiver : data.sender;
+
+                if (!chatUser) {
+                    console.warn("⚠️ Could not determine chat user from message:", data);
+                    return;
+                }
 
                 setUsers(prev => ({
                     ...prev,
@@ -98,12 +108,25 @@ export default function AdminChat() {
                         timestamp: data.timestamp
                     }];
                 });
-
+            } catch (err) {
+                console.error("❌ Error processing admin message:", err);
             }
         };
 
-        ws.current.onclose = () => setIsConnected(false);
-        return () => ws.current?.close();
+        ws.current.onclose = () => {
+            console.log("❌ Admin WebSocket closed");
+            setIsConnected(false);
+        };
+
+        ws.current.onerror = (e) => {
+            console.error("❌ Admin WebSocket error:", e);
+        };
+
+        return () => {
+            if (ws.current?.readyState === WebSocket.OPEN) {
+                ws.current.close();
+            }
+        };
     }, [ADMIN_USERNAME]);
 
     useEffect(() => {
@@ -141,7 +164,10 @@ export default function AdminChat() {
     }, [ADMIN_USERNAME]);
 
     const sendMessage = () => {
-        if (!input.trim() || !selectedUser || !isConnected) return;
+        if (!input.trim() || !selectedUser || !isConnected) {
+            console.warn("Cannot send message. Connected:", isConnected, "Selected user:", selectedUser);
+            return;
+        }
 
         const optimisticMessage = {
             message: input,
@@ -166,10 +192,15 @@ export default function AdminChat() {
         }));
 
         // ✅ Send to backend
-        ws.current.send(JSON.stringify({
-            message: input,
-            target_username: selectedUser
-        }));
+        try {
+            ws.current.send(JSON.stringify({
+                message: input,
+                target_username: selectedUser
+            }));
+            console.log("📤 Admin message sent to:", selectedUser);
+        } catch (err) {
+            console.error("❌ Failed to send admin message:", err);
+        }
 
         setInput("");
     };
@@ -270,6 +301,7 @@ export default function AdminChat() {
                                 className="flex-1 rounded-xl border px-4 py-2 focus:ring-2 focus:ring-green-500 outline-none"
                                 value={input}
                                 onChange={e => setInput(e.target.value)}
+                                onKeyDown={e => e.key === "Enter" && sendMessage()}
                                 placeholder="Type a message..."
                             />
                             <button

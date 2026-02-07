@@ -681,34 +681,38 @@ function ActivateSim() {
                 isAddingSim && !addingDetails && (
                     <div className="flex flex-col md:h-[67vh] h-[54vh] w-full">
 
-                        <div className="flex-1 overflow-y-auto w-full px-4">
+                        <div className="flex-1 overflow-y-auto w-full md:px-20 px-4">
                             <label className="text-lg font-semibold mb-2 block">Choose Your Carrier</label>
 
-                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6 mt-4 mb-4">
-                                {carriers.map((carrier, index) => {
-                                    const isSelected = selectedCarrier === carrier.company_id;
-                                    return (
-                                        <div
-                                            key={index}
-                                            onClick={() => handleSelectCarrier(carrier)}
-                                            className={`border p-4 rounded-lg shadow transition cursor-pointer 
+                            {carriers.length === 0 ? (
+                                <p className="text-gray-500 italic">No carriers available.</p>
+                            ) : (
+                                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6 mt-4 mb-4">
+                                    {carriers.map((carrier, index) => {
+                                        const isSelected = selectedCarrier === carrier.company_id;
+                                        return (
+                                            <div
+                                                key={index}
+                                                onClick={() => handleSelectCarrier(carrier)}
+                                                className={`border p-4 rounded-lg shadow transition cursor-pointer 
                                         ${isSelected
-                                                    ? "border-blue-500 ring-2 ring-blue-300 bg-blue-50"
-                                                    : "hover:shadow-lg"
-                                                }`}
-                                        >
-                                            <img
-                                                src={carrier.logo_url}
-                                                alt={carrier.name}
-                                                className="w-full h-12 object-contain mb-4"
-                                            />
-                                            <h3 className={`text-lg font-medium text-center ${isSelected ? "text-blue-600 font-semibold" : ""}`}>
-                                                {carrier.name}
-                                            </h3>
-                                        </div>
-                                    );
-                                })}
-                            </div>
+                                                        ? "border-blue-500 ring-2 ring-blue-300 bg-blue-50"
+                                                        : "hover:shadow-lg"
+                                                    }`}
+                                            >
+                                                <img
+                                                    src={carrier.logo_url}
+                                                    alt={carrier.name}
+                                                    className="w-full h-12 object-contain mb-4"
+                                                />
+                                                <h3 className={`text-lg font-medium text-center ${isSelected ? "text-blue-600 font-semibold" : ""}`}>
+                                                    {carrier.name}
+                                                </h3>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            )}
 
                             {selectedCarrier && (
                                 <>
