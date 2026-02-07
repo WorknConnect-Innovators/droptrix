@@ -17,42 +17,67 @@ def admin_group(admin_id):
 class ChatConsumer(AsyncWebsocketConsumer):
 
     async def connect(self):
-        self.username = self.scope["url_route"]["kwargs"]["username"]
-        self.user = await self.get_user(self.username)
-        if not self.user:
+        try:
+            self.username = self.scope["url_route"]["kwargs"]["username"]
+            print(f"✅ User connection attempt: {self.username}")
+            
+            # Accept connection FIRST to prevent timeout
+            await self.accept()
+            print(f"✅ WebSocket accepted for user: {self.username}")
+            
+            self.user = await self.get_user(self.username)
+            if not self.user:
+                print(f"❌ User not found: {self.username}")
+                await self.close()
+                return
+
+            self.admin = await self.get_admin()
+            if not self.admin:
+                print(f"⚠️ No admin found, but allowing connection")
+                self.admin = None
+
+            self.chat = await self.get_or_create_chat(self.user)
+            self.group_name = chat_group(self.chat.id)
+
+            # Join the chat group
+            await self.channel_layer.group_add(self.group_name, self.channel_name)
+
+            # Send chat history
+            messages = await self.get_chat_messages_serialized(self.chat)
+            print(f"📨 Sending {len(messages)} historical messages")
+            for msg in messages:
+                await self.send(text_data=json.dumps(msg))
+        except Exception as e:
+            print(f"❌ Error in ChatConsumer.connect: {e}")
+            import traceback
+            traceback.print_exc()
             await self.close()
-            return
-
-        self.admin = await self.get_admin()
-        if not self.admin:
-            await self.close()
-            return
-
-        self.chat = await self.get_or_create_chat(self.user)
-        self.group_name = chat_group(self.chat.id)
-
-        # Join the chat group
-        await self.channel_layer.group_add(self.group_name, self.channel_name)
-        await self.accept()
-
-        # Send chat history
-        messages = await self.get_chat_messages_serialized(self.chat)
-        for msg in messages:
-            await self.send(text_data=json.dumps(msg))
 
     async def receive(self, text_data=None, bytes_data=None):
-        data = json.loads(text_data)
-        message_text = data.get("message")
-        if not message_text:
-            return
+        try:
+            data = json.loads(text_data)
+            message_text = data.get("message")
+            if not message_text:
+                return
 
-        message = await self.create_message(self.chat, self.user, self.admin, message_text)
+            # Get or fetch admin if not available
+            receiver = self.admin if self.admin else await self.get_admin()
+            if not receiver:
+                print(f"⚠️ No admin available to receive message")
+                return
 
-        # Broadcast to chat group (both user & admin)
-        await self.channel_layer.group_send(
-            self.group_name,
-            {"type": "chat.message", "payload": self.serialize_message(message)}
-        )
+            message = await self.create_message(self.chat, self.user, receiver, message_text)
+            print(f"💾 Message saved: {self.username} -> admin")
+
+            # Broadcast to chat group (both user & admin)
+            await self.channel_layer.group_send(
+                self.group_name,
+                {"type": "chat.message", "payload": self.serialize_message(message)}
+            )
+        except Exception as e:
+            print(f"❌ Error in ChatConsumer.receive: {e}")
+            import traceback
+            traceback.print_exc()
 
     async def chat_message(self, event):
         await self.send(text_data=json.dumps(event["payload"]))
@@ -84,6 +109,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
         return [
             {
                 "message": m.text,
+                "sender": m.sender.username,
                 "sender_id": m.sender_id,
                 "receiver_id": m.receiver_id,
                 "sender_is_admin": m.sender.user_type == "admin",
@@ -97,6 +123,8 @@ class ChatConsumer(AsyncWebsocketConsumer):
     def serialize_message(self, message):
         return {
             "message": message.text,
+            "sender": message.sender.username,
+            "receiver": message.receiver.username,
             "sender_id": message.sender_id,
             "receiver_id": message.receiver_id,
             "sender_is_admin": message.sender.user_type == "admin",
@@ -110,15 +138,34 @@ class ChatConsumer(AsyncWebsocketConsumer):
 class AdminConsumer(AsyncWebsocketConsumer):
 
     async def connect(self):
-        query = parse_qs(self.scope["query_string"].decode())
-        self.username = query.get("username", [None])[0]
+        try:
+            query = parse_qs(self.scope["query_string"].decode())
+            self.username = query.get("username", [None])[0]
+            print(f"✅ Admin connection attempt: {self.username}")
 
-        self.admin = await self.get_admin(self.username)
-        if not self.admin:
+            self.admin = await self.get_admin(self.username)
+            if not self.admin:
+                print(f"❌ Admin not found: {self.username}")
+                await self.close()
+                return
+
+            await self.accept()
+            print(f"✅ WebSocket accepted for admin: {self.username}")
+            
+            # Join all active chat groups so admin can receive messages from all users
+            chats = await self.get_all_chats()
+            self.active_groups = []
+            for chat in chats:
+                group_name = chat_group(chat.id)
+                await self.channel_layer.group_add(group_name, self.channel_name)
+                self.active_groups.append(group_name)
+            print(f"📢 Admin joined {len(self.active_groups)} chat groups")
+            
+        except Exception as e:
+            print(f"❌ Error in AdminConsumer.connect: {e}")
+            import traceback
+            traceback.print_exc()
             await self.close()
-            return
-
-        await self.accept()
 
     async def receive(self, text_data=None, bytes_data=None):
         data = json.loads(text_data)
@@ -134,11 +181,18 @@ class AdminConsumer(AsyncWebsocketConsumer):
         chat = await self.get_or_create_chat(user)
         group_name = chat_group(chat.id)
 
-        # Join group so admin can receive messages as well
-        await self.channel_layer.group_add(group_name, self.channel_name)
+        # Ensure admin is in this group (in case it's a new chat)
+        if not hasattr(self, 'active_groups'):
+            self.active_groups = []
+        
+        if group_name not in self.active_groups:
+            await self.channel_layer.group_add(group_name, self.channel_name)
+            self.active_groups.append(group_name)
+            print(f"📢 Admin joined new chat group: {group_name}")
 
         message = await self.create_message(chat=chat, sender=self.admin, receiver=user, text=message_text)
         payload = self.serialize_message(message)
+        print(f"💾 Admin message saved: {self.admin.username} -> {target_username}")
 
         await self.channel_layer.group_send(
             group_name,
@@ -149,7 +203,11 @@ class AdminConsumer(AsyncWebsocketConsumer):
         await self.send(text_data=json.dumps(event["payload"]))
 
     async def disconnect(self, close_code):
-        pass  # optionally remove from all groups
+        # Remove admin from all chat groups
+        if hasattr(self, 'active_groups'):
+            for group_name in self.active_groups:
+                await self.channel_layer.group_discard(group_name, self.channel_name)
+            print(f"🧹 Admin removed from {len(self.active_groups)} chat groups")
 
     # ---------- DB ----------
 
@@ -165,6 +223,10 @@ class AdminConsumer(AsyncWebsocketConsumer):
     def get_or_create_chat(self, user):
         chat, _ = Chat.objects.get_or_create(user=user)
         return chat
+    
+    @database_sync_to_async
+    def get_all_chats(self):
+        return list(Chat.objects.all())
 
     @database_sync_to_async
     def create_message(self, chat, sender, receiver, text):
@@ -173,6 +235,8 @@ class AdminConsumer(AsyncWebsocketConsumer):
     def serialize_message(self, message):
         return {
             "message": message.text,
+            "sender": message.sender.username,
+            "receiver": message.receiver.username,
             "sender_id": message.sender.id,
             "receiver_id": message.receiver.id,
             "sender_is_admin": message.sender.user_type == "admin",

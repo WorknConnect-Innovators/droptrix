@@ -120,9 +120,10 @@ function TopUp() {
         try {
             const res = await fetch(`${process.env.REACT_APP_API_URL}/api/get-topup/`);
             const data = await res.json();
+            const filteredTopUps = data.data.filter(topup => topup.username === JSON.parse(localStorage.getItem("userData")).username);
 
             if (data.status === "success") {
-                const sortedData = [...data.data].sort(
+                const sortedData = [...filteredTopUps].sort(
                     (a, b) => new Date(b.timestamp) - new Date(a.timestamp)
                 );
                 setTopUpHistory(sortedData);
@@ -717,7 +718,7 @@ function TopUp() {
                                         ))
                                 ) : (
                                     <tr>
-                                        <td colSpan="6" className="py-10">
+                                        <td colSpan="7" className="py-10">
                                             <div className="flex flex-col items-center justify-center text-gray-500">
                                                 {/* Icon */}
                                                 <div className="mb-3">

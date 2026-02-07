@@ -36,7 +36,8 @@ export default function UserChat() {
                 const formatted = data.map(m => ({
                     id: m.id,
                     message: m.text,
-                    sender: m.sender.username,
+                    sender: m.sender_username || m.sender?.username,
+                    sender_is_admin: (m.sender_username || m.sender?.username) !== username,
                     timestamp: m.timestamp
                 }));
 
@@ -53,32 +54,50 @@ export default function UserChat() {
     useEffect(() => {
         if (!username) return;
 
+        console.log("🔌 Connecting WebSocket for:", username);
         ws.current = new WebSocket(`ws://127.0.0.1:8000/ws/chat/${username}/`);
 
-        ws.current.onopen = () => setIsConnected(true);
-
-        ws.current.onmessage = e => {
-            const data = JSON.parse(e.data);
-
-            // Deduplicate
-            if (data.message_id && receivedIds.current.has(data.message_id)) return;
-            if (data.message_id) receivedIds.current.add(data.message_id);
-
-            setMessages(prev => [
-                ...prev.filter(m => !m.temp_id || m.message !== data.message),
-                {
-                    id: data.message_id,
-                    message: data.message,
-                    sender: data.sender,
-                    timestamp: data.timestamp || new Date().toISOString()
-                }
-            ]);
+        ws.current.onopen = () => {
+            console.log("✅ WebSocket connected for user:", username);
+            setIsConnected(true);
         };
 
-        ws.current.onclose = () => setIsConnected(false);
-        ws.current.onerror = e => console.error("WS error", e);
+        ws.current.onmessage = e => {
+            try {
+                const data = JSON.parse(e.data);
+                console.log("📨 Message received:", data);
 
-        return () => ws.current?.close();
+                // Deduplicate
+                if (data.message_id && receivedIds.current.has(data.message_id)) return;
+                if (data.message_id) receivedIds.current.add(data.message_id);
+
+                setMessages(prev => [
+                    ...prev.filter(m => !m.temp_id || m.message !== data.message),
+                    {
+                        id: data.message_id,
+                        message: data.message,
+                        sender: data.sender || (data.sender_is_admin ? "admin" : username),
+                        sender_is_admin: data.sender_is_admin,
+                        timestamp: data.timestamp || new Date().toISOString()
+                    }
+                ]);
+            } catch (err) {
+                console.error("❌ Error processing message:", err);
+            }
+        };
+
+        ws.current.onclose = () => {
+            console.log("❌ WebSocket closed for user:", username);
+            setIsConnected(false);
+        };
+        
+        ws.current.onerror = e => console.error("❌ WS error for user", username, ":", e);
+
+        return () => {
+            if (ws.current?.readyState === WebSocket.OPEN) {
+                ws.current.close();
+            }
+        };
     }, [username]);
 
     /* ---------------- SCROLL ---------------- */
@@ -98,6 +117,7 @@ export default function UserChat() {
                 temp_id: tempId,
                 message: input,
                 sender: username,
+                sender_is_admin: false,
                 timestamp: new Date().toISOString()
             }
         ]);
@@ -175,11 +195,18 @@ export default function UserChat() {
                                         className={`flex flex-col mb-3 max-w-[75%] ${isMe ? "ml-auto items-end" : "mr-auto items-start"
                                             }`}
                                     >
+                                        {/* Admin label */}
+                                        {msg.sender_is_admin && !isMe && (
+                                            <span className="text-xs font-semibold text-green-600 mb-1">Support Team</span>
+                                        )}
+                                        
                                         {/* Message bubble */}
                                         <div
                                             className={`px-3 py-2 rounded-xl text-sm w-fit break-words ${isMe
                                                 ? "bg-blue-600 text-white"
-                                                : "bg-gray-200 text-gray-900"
+                                                : msg.sender_is_admin 
+                                                    ? "bg-green-100 text-gray-900 border border-green-300"
+                                                    : "bg-gray-200 text-gray-900"
                                                 }`}
                                         >
                                             {msg.message}

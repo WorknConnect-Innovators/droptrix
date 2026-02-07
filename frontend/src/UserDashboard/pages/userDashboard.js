@@ -141,7 +141,6 @@ function UserDashboard() {
         x: index, // unique X-axis value
     }));
 
-    console.log("Transaction History:", transaction_history);
     return (
         <div className="space-y-4">
 
