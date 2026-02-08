@@ -1,12 +1,11 @@
 Droptrix Website Reviews
 
 User Dashboard
-- User Account Recharge - All OK
-- User Sim Topup - When I edit top up and decrease amount it needs to add into the total balance but it is decreasing the balance.
-- Verify email issue on signup
-  /api/verify-email/ OK
-- Add Plan Name and Carrier Name (Plan_id, Company_id) in get activation sim
-- Add Carrier name in Get Plans
-- Delete Plan API required
-- Delete Carrier API Required
-- Remove Account Balance manually API Required.
+- User Account Recharge - All OK (Done)
+- User Sim Topup - When I edit top up and decrease amount it needs to add into the total balance but it is decreasing the balance. (Done)
+- Verify email issue on signup - /api/verify-email/ OK (Done)
+- Add Plan Name and Carrier Name (Plan_id, Company_id) in get activation sim (It's already added)
+- Add Carrier name in Get Plans (Done)
+- Delete Plan API required (Done)
+- Delete Carrier API Required (Done)
+- Remove Account Balance manually API Required. (Instructions isn't clear)

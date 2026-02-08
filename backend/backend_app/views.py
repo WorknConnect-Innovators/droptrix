@@ -365,6 +365,20 @@ def get_company_name(request):
 
 
 @csrf_exempt
+def delete_carrier(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            company_id = data['company_id']
+            company_data = Carriers.objects.filter(company_id=company_id).first()
+            company_data.delete()
+            return JsonResponse({'status': 'success', 'Carrier_deleted': company_id})
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+    return JsonResponse({'status': 'error', 'message': 'Invalid request method'}, status=400)
+
+
+@csrf_exempt
 def add_plans(request):
     if request.method == 'POST':
         try:
@@ -402,6 +416,7 @@ def get_plans(request):
             {
                 'plan_id': p.plan_id,
                 'company_id': p.company_id,
+                'carrier_name': Carriers.objects.filter(company_id=p.company_id).first().name,
                 'plan_name': p.plan_name,
                 'popularity': p.popularity,
                 'plan_type': p.plan_type,
@@ -454,6 +469,20 @@ def get_plan_name(request):
             plan_id = data['plan_id']
             plan_name = Plans.objects.filter(plan_id=plan_id).first().plan_name
             return JsonResponse({'status': 'success', 'data_received': plan_name})
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+    return JsonResponse({'status': 'error', 'message': 'Invalid request method'}, status=400)
+
+
+@csrf_exempt
+def delete_plan(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            plan_id = data['plan_id']
+            plan_data = Plans.objects.filter(plan_id=plan_id).first()
+            plan_data.delete()
+            return JsonResponse({'status': 'success', 'Plan_deleted': plan_id})
         except Exception as e:
             return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
     return JsonResponse({'status': 'error', 'message': 'Invalid request method'}, status=400)
@@ -1265,7 +1294,10 @@ def update_recharge(request):
                 aditional_payable_amount = abs(recharge_data.payable_amount - Decimal(str(data['payable_amount'])))
                 if aditional_payable_amount > balance_data.account_balance_amount:
                     return JsonResponse({'status': 'success', 'message': 'Insufficient balance. Please recharge your account.'})
-                balance_data.account_balance_amount -= aditional_payable_amount
+                if data['payable_amount'] <= recharge_data.payable_amount:
+                    balance_data.account_balance_amount += aditional_payable_amount
+                else:
+                    balance_data.account_balance_amount -= aditional_payable_amount
                 balance_data.save()
                 recharge_data.balance_history = balance_data.account_balance_amount
                 recharge_data.payable_amount = data['payable_amount']

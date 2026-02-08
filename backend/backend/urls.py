@@ -81,4 +81,6 @@ urlpatterns = [
     path("api/chat/<int:user_id>/", views.get_user_chat, name="get_user_chat"),
     path("api/admin/chats/", views.get_all_chats, name="get_all_chats"),
     path("api/messages/", MessagesBySenderAPIView.as_view(), name="messages-by-sender"),
+    path("api/plan-delete/", views.delete_plan, name='delete_plan'),
+    path('api/carrier-delete/', views.delete_carrier, name='delete_carrier'),
 ]
