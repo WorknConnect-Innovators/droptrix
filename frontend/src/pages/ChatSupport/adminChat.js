@@ -86,28 +86,33 @@ export default function AdminChat() {
                 }));
 
                 setAllMessages(prev => {
-                    const existingOptimistic = prev.find(m =>
-                        m.optimistic &&
-                        m.message === data.message &&
-                        m.chatUser === chatUser
-                    );
-
-                    if (existingOptimistic) {
-                        return prev.map(m =>
-                            m === existingOptimistic
-                                ? { ...m, optimistic: false, timestamp: data.timestamp }
-                                : m
+                    // 🔁 Replace optimistic message
+                    if (data.client_id) {
+                        const optimisticIndex = prev.findIndex(
+                            m => m.client_id === data.client_id
                         );
+
+                        if (optimisticIndex !== -1) {
+                            const updated = [...prev];
+                            updated[optimisticIndex] = {
+                                ...updated[optimisticIndex],
+                                optimistic: false,
+                                timestamp: data.timestamp,
+                            };
+                            return updated;
+                        }
                     }
 
+                    // 🆕 New incoming message (from user)
                     return [...prev, {
                         message: data.message,
                         sender: data.sender,
                         sender_is_admin: data.sender_is_admin,
-                        chatUser,
+                        chatUser: data.sender_is_admin ? data.receiver : data.sender,
                         timestamp: data.timestamp
                     }];
                 });
+
             } catch (err) {
                 console.error("❌ Error processing admin message:", err);
             }

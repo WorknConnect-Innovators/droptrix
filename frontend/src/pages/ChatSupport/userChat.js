@@ -22,6 +22,11 @@ export default function UserChat() {
         }
     }, []);
 
+    const sortByTime = (msgs) =>
+        msgs.sort(
+            (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+        );
+
     /* ---------------- LOAD HISTORY ---------------- */
     useEffect(() => {
         if (!username) return;
@@ -37,12 +42,14 @@ export default function UserChat() {
                     id: m.id,
                     message: m.text,
                     sender: m.sender_username || m.sender?.username,
-                    sender_is_admin: (m.sender_username || m.sender?.username) !== username,
+                    sender_is_admin:
+                        (m.sender_username || m.sender?.username) !== username,
                     timestamp: m.timestamp
                 }));
 
                 formatted.forEach(m => receivedIds.current.add(m.id));
-                setMessages(formatted);
+
+                setMessages(sortByTime(formatted));
             })
             .catch(err => console.error("Chat history error", err))
             .finally(() => setLoading(false));
@@ -54,43 +61,46 @@ export default function UserChat() {
     useEffect(() => {
         if (!username) return;
 
-        console.log("🔌 Connecting WebSocket for:", username);
         ws.current = new WebSocket(`ws://127.0.0.1:8000/ws/chat/${username}/`);
 
         ws.current.onopen = () => {
-            console.log("✅ WebSocket connected for user:", username);
             setIsConnected(true);
         };
 
         ws.current.onmessage = e => {
             try {
                 const data = JSON.parse(e.data);
-                console.log("📨 Message received:", data);
 
                 // Deduplicate
                 if (data.message_id && receivedIds.current.has(data.message_id)) return;
                 if (data.message_id) receivedIds.current.add(data.message_id);
 
-                setMessages(prev => [
-                    ...prev.filter(m => !m.temp_id || m.message !== data.message),
-                    {
-                        id: data.message_id,
-                        message: data.message,
-                        sender: data.sender || (data.sender_is_admin ? "admin" : username),
-                        sender_is_admin: data.sender_is_admin,
-                        timestamp: data.timestamp || new Date().toISOString()
-                    }
-                ]);
+                setMessages(prev => {
+                    const merged = [
+                        ...prev.filter(
+                            m => !m.temp_id || m.message !== data.message
+                        ),
+                        {
+                            id: data.message_id,
+                            message: data.message,
+                            sender: data.sender,
+                            sender_is_admin: data.sender_is_admin,
+                            timestamp: data.timestamp
+                        }
+                    ];
+
+                    return sortByTime([...merged]); // ← IMPORTANT
+                });
+
             } catch (err) {
                 console.error("❌ Error processing message:", err);
             }
         };
 
         ws.current.onclose = () => {
-            console.log("❌ WebSocket closed for user:", username);
             setIsConnected(false);
         };
-        
+
         ws.current.onerror = e => console.error("❌ WS error for user", username, ":", e);
 
         return () => {
@@ -128,16 +138,18 @@ export default function UserChat() {
 
     /* ---------------- DATE GROUPING ---------------- */
     const groupedMessages = useMemo(() => {
+        const sorted = sortByTime([...messages]); // 👈 ENSURE ORDER
         const groups = {};
 
-        messages.forEach(msg => {
-            const date = new Date(msg.timestamp || Date.now()).toDateString();
+        sorted.forEach(msg => {
+            const date = new Date(msg.timestamp).toDateString();
             if (!groups[date]) groups[date] = [];
             groups[date].push(msg);
         });
 
         return groups;
     }, [messages]);
+
 
     const formatDateLabel = (dateStr) => {
         const date = new Date(dateStr);
@@ -199,12 +211,12 @@ export default function UserChat() {
                                         {msg.sender_is_admin && !isMe && (
                                             <span className="text-xs font-semibold text-green-600 mb-1">Support Team</span>
                                         )}
-                                        
+
                                         {/* Message bubble */}
                                         <div
                                             className={`px-3 py-2 rounded-xl text-sm w-fit break-words ${isMe
                                                 ? "bg-blue-600 text-white"
-                                                : msg.sender_is_admin 
+                                                : msg.sender_is_admin
                                                     ? "bg-green-100 text-gray-900 border border-green-300"
                                                     : "bg-gray-200 text-gray-900"
                                                 }`}

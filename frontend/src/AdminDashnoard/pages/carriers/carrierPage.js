@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Plus, Search, Edit2, Trash2 } from "lucide-react";
+import { message, Spin } from "antd";
+import DeleteConfirmationModal from "../../../components/deleteModal";
 
 function AdminCarrierPage() {
     const [searchTerm, setSearchTerm] = useState("");
@@ -9,6 +11,9 @@ function AdminCarrierPage() {
 
     const [isEditing, setIsEditing] = useState(false);
     const [editId, setEditId] = useState(null);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isloading, setIsLoading] = useState(false);
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
     const defaultFields = {
         emi: true,
@@ -31,6 +36,7 @@ function AdminCarrierPage() {
 
     // Fetch carriers
     const getCarriersFromBackend = async () => {
+        setIsLoading(true);
         try {
             const res = await fetch(
                 `${process.env.REACT_APP_API_URL}/api/get-carriers/`
@@ -42,6 +48,8 @@ function AdminCarrierPage() {
             }
         } catch (error) {
             console.error("Fetch error:", error);
+        } finally {
+            setIsLoading(false);
         }
     };
 
@@ -74,8 +82,10 @@ function AdminCarrierPage() {
 
     // Add or Update carrier
     const handleSaveCarrier = async () => {
+        setIsSubmitting(true);
         if (!carrierForm.name || !carrierForm.description || !carrierForm.logo) {
-            alert("Please fill all fields.");
+            message.error("Please fill all fields.");
+            setIsSubmitting(false);
             return;
         }
 
@@ -121,10 +131,12 @@ function AdminCarrierPage() {
                 resetForm();
                 getCarriersFromBackend();
             } else {
-                alert("Operation failed: " + result.message);
+                message.error("Operation failed: " + result.message);
             }
         } catch (error) {
-            console.error("Save error:", error);
+            message.error("Save error: " + error.message);
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
@@ -141,13 +153,6 @@ function AdminCarrierPage() {
         const uploadedUrl = await handleCloudinaryUpload(file);
         if (uploadedUrl) {
             setCarrierForm((prev) => ({ ...prev, logo: uploadedUrl }));
-        }
-    };
-
-    // Delete (frontend only or add backend delete if needed)
-    const handleDelete = (id) => {
-        if (window.confirm("Delete this carrier?")) {
-            setCarriers((prev) => prev.filter((c) => c.id !== id));
         }
     };
 
@@ -293,10 +298,10 @@ function AdminCarrierPage() {
 
                         <button
                             onClick={handleSaveCarrier}
-                            disabled={uploading}
-                            className="px-5 py-2 bg-blue-600 text-white rounded-lg"
+                            disabled={uploading || isSubmitting}
+                            className={`px-5 py-2 bg-blue-600 text-white rounded-lg ${isSubmitting ? "opacity-50 cursor-not-allowed" : ""}`}
                         >
-                            {isEditing ? "Update Carrier" : "Add Carrier"}
+                            {isSubmitting ? "Submitting..." : isEditing ? "Update Carrier" : "Add Carrier"}
                         </button>
                     </div>
                 </div>
@@ -313,7 +318,15 @@ function AdminCarrierPage() {
                             </tr>
                         </thead>
                         <tbody>
-                            {filteredCarriers.length ? (
+                            {isloading ? (
+                                <tr>
+                                    <td colSpan="4">
+                                        <div className="w-full h-20 flex justify-center items-center">
+                                            <Spin />
+                                        </div>
+                                    </td>
+                                </tr>
+                            ) : filteredCarriers.length ? (
                                 filteredCarriers.map((carrier) => (
                                     <tr key={carrier.id} className="border-t hover:bg-gray-50">
                                         <td className="px-6 py-3">
@@ -327,20 +340,22 @@ function AdminCarrierPage() {
                                         <td className="px-6 py-3">{carrier.name}</td>
                                         <td className="px-6 py-3">{carrier.description}</td>
 
-                                        <td className="px-6 py-3 flex justify-center gap-4">
-                                            <button
-                                                onClick={() => handleEdit(carrier)}
-                                                className="text-blue-600 hover:text-blue-800"
-                                            >
-                                                <Edit2 size={18} />
-                                            </button>
+                                        <td className="px-6 py-3">
+                                            <div className="h-full flex justify-center items-center gap-4">
+                                                <button
+                                                    onClick={() => handleEdit(carrier)}
+                                                    className="text-blue-600 hover:text-blue-800"
+                                                >
+                                                    <Edit2 size={18} />
+                                                </button>
 
-                                            <button
-                                                onClick={() => handleDelete(carrier.id)}
-                                                className="text-red-600 hover:text-red-800"
-                                            >
-                                                <Trash2 size={18} />
-                                            </button>
+                                                <button
+                                                    onClick={() => setIsDeleteModalOpen(true)}
+                                                    className="text-red-600 hover:text-red-800"
+                                                >
+                                                    <Trash2 size={18} />
+                                                </button>
+                                            </div>
                                         </td>
                                     </tr>
                                 ))
@@ -354,6 +369,17 @@ function AdminCarrierPage() {
                         </tbody>
                     </table>
                 </div>
+            )}
+
+            {isDeleteModalOpen && (
+                <DeleteConfirmationModal
+                    message="Are you sure you want to delete this item?"
+                    deleteFn={() => {
+                        // Add your delete logic here
+                        setIsDeleteModalOpen(false);
+                    }}
+                    onCancel={() => setIsDeleteModalOpen(false)}
+                />
             )}
         </div>
     );

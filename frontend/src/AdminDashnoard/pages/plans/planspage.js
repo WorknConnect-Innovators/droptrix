@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Plus, Search, Edit2, Trash2, DeleteIcon } from "lucide-react";
 import { getIDBasedPlans } from "../../../utilities/getPlans";
+import { message, Spin } from "antd";
 
 function AdminPlansPage() {
     const [searchTerm, setSearchTerm] = useState("");
@@ -9,6 +10,8 @@ function AdminPlansPage() {
     const [carriers, setCarriers] = useState([]);
     const [isEditing, setisEditing] = useState(false);
     const [editingPlanId, setEditingPlanId] = useState(null);
+    const [isLoading, setIsLoading] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
     const [newPlan, setNewPlan] = useState({
         company_id: "",
         plan_name: "",
@@ -72,6 +75,7 @@ function AdminPlansPage() {
 
     // ✅ Fetch Plans from Backend
     const getPlansFromBackend = async () => {
+        setIsLoading(true);
         try {
             const res = await fetch(
                 `${process.env.REACT_APP_API_URL}/api/get-plans/`
@@ -87,6 +91,8 @@ function AdminPlansPage() {
         } catch (error) {
             console.error("Error fetching plans:", error);
             setPlans([]); // fallback in case of error
+        } finally {
+            setIsLoading(false);
         }
     };
 
@@ -94,9 +100,9 @@ function AdminPlansPage() {
         getPlansFromBackend();
     }, []);
 
-
     // ✅ Add Plan Function
     const handleAddPlan = async () => {
+        setIsSubmitting(true);
         const {
             company_id,
             plan_name,
@@ -112,7 +118,8 @@ function AdminPlansPage() {
         } = newPlan;
 
         if (!company_id || !plan_name || !plan_duration) {
-            alert("Please fill required fields before adding a plan.");
+            message.error("Please fill required fields before adding a plan.");
+            setIsSubmitting(false);
             return;
         }
         try {
@@ -162,12 +169,16 @@ function AdminPlansPage() {
             }
         } catch (err) {
             console.error("Backend error:", err);
+            message.error("Failed to add plan: " + err.message);
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
     // Update existing plan
     const handleUpdatePlan = async () => {
         if (!editingPlanId) return;
+        setIsSubmitting(true);
 
         const {
             company_id,
@@ -184,7 +195,8 @@ function AdminPlansPage() {
         } = newPlan;
 
         if (!company_id || !plan_name || !plan_duration) {
-            alert("Please fill required fields before updating the plan.");
+            message.error("Please fill required fields before updating the plan.");
+            setIsSubmitting(false);
             return;
         }
 
@@ -237,19 +249,21 @@ function AdminPlansPage() {
                     details: "",
                 });
             } else {
-                alert("Failed to update plan: " + (result.message || "Unknown error"));
+                message.error("Failed to update plan: " + (result.message || "Unknown error"));
             }
         } catch (err) {
             console.error("Update error:", err);
-            alert("Update failed. See console for details.");
+            message.error("Update failed: " + err.message);
+        } finally {
+            setIsSubmitting(false);
         }
     };
-
 
     // ✅ Delete Plan (frontend only)
     const handleDelete = (id) => {
         if (window.confirm("Are you sure you want to delete this plan?")) {
             setPlans((prev) => prev.filter((c) => c.id !== id));
+            message.success("Plan deleted successfully.");
         }
     };
 
@@ -533,21 +547,14 @@ function AdminPlansPage() {
                             >
                                 Cancel
                             </button>
-                            {isEditing ? (
-                                <button
-                                    onClick={handleUpdatePlan}
-                                    className="px-5 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition disabled:bg-gray-400"
-                                >
-                                    Update Plan
-                                </button>
-                            ) : (
-                                <button
-                                    onClick={handleAddPlan}
-                                    className="px-5 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition disabled:bg-gray-400"
-                                >
-                                    Add Plan
-                                </button>
-                            )}
+
+                            <button
+                                disabled={isSubmitting}
+                                onClick={isEditing ? handleUpdatePlan : handleAddPlan}
+                                className="px-5 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                {isSubmitting ? "Submitting..." : isEditing ? "Update Plan" : "Add Plan"}
+                            </button>
 
                         </div>
                     </div>
@@ -564,7 +571,15 @@ function AdminPlansPage() {
                             </tr>
                         </thead>
                         <tbody>
-                            {filteredPlans.length > 0 ? (
+                            {isLoading ? (
+                                <tr>
+                                    <td colSpan="4">
+                                        <div className="w-full h-20 flex justify-center items-center">
+                                            <Spin />
+                                        </div>
+                                    </td>
+                                </tr>
+                            ) : filteredPlans.length > 0 ? (
                                 filteredPlans.map((plan, index) => (
                                     <tr
                                         key={index}
