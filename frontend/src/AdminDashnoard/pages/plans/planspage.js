@@ -565,6 +565,7 @@ function AdminPlansPage() {
                         <thead className="bg-blue-50 text-gray-600 uppercase text-xs">
                             <tr>
                                 <th className="px-6 py-3 text-left">Plan Name</th>
+                                <th className="px-6 py-3 text-left">Carrier</th>
                                 <th className="px-6 py-3 text-left">Price</th>
                                 <th className="px-6 py-3 text-left">Description</th>
                                 <th className="px-6 py-3 text-center">Actions</th>
@@ -573,7 +574,7 @@ function AdminPlansPage() {
                         <tbody>
                             {isLoading ? (
                                 <tr>
-                                    <td colSpan="4">
+                                    <td colSpan="5">
                                         <div className="w-full h-20 flex justify-center items-center">
                                             <Spin />
                                         </div>
@@ -586,6 +587,7 @@ function AdminPlansPage() {
                                         className="border-t hover:bg-gray-50 transition"
                                     >
                                         <td className="px-6 py-3 font-medium">{plan.plan_name}</td>
+                                        <td className="px-6 py-3 font-medium">{plan.carrier_name}</td>
                                         <td className="px-6 py-3">{plan.plan_price}</td>
                                         <td className="px-6 py-3">{plan.details}</td>
                                         <td className="px-6 py-3 flex justify-center gap-3">
@@ -604,7 +606,7 @@ function AdminPlansPage() {
                             ) : (
                                 <tr>
                                     <td
-                                        colSpan="4"
+                                        colSpan="5"
                                         className="px-6 py-6 text-center text-gray-500 italic"
                                     >
                                         No plans found.

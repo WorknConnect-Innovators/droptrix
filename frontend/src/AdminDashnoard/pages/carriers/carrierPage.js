@@ -14,6 +14,8 @@ function AdminCarrierPage() {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isloading, setIsLoading] = useState(false);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+    const [deleteId, setDeleteId] = useState(null);
+    const [isDeleting, setIsDeleting] = useState(false);
 
     const defaultFields = {
         emi: true,
@@ -186,6 +188,37 @@ function AdminCarrierPage() {
         c.name?.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
+    const handleDelete = async () => {
+        setIsDeleting(true);
+        try {
+            const res = await fetch(
+                `${process.env.REACT_APP_API_URL}/api/carrier-delete/`,
+                {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ company_id: deleteId }),
+                }
+            );
+            const result = await res.json();
+
+            if (result.status === "success") {
+                message.success("Carrier deleted successfully.");
+                setIsDeleting(false);
+                setIsDeleteModalOpen(false);
+                setDeleteId(null);
+                setCarriers((prev) => prev.filter((c) => c.company_id !== deleteId));
+            } else {
+                message.error("Delete failed: " + result.message);
+            }
+        } catch (error) {
+            message.error("Delete error: " + error.message);
+        } finally {
+            setIsDeleting(false);
+            setIsDeleteModalOpen(false);
+            setDeleteId(null);
+        }
+    };
+
     return (
         <div>
             {/* Header */}
@@ -350,7 +383,7 @@ function AdminCarrierPage() {
                                                 </button>
 
                                                 <button
-                                                    onClick={() => setIsDeleteModalOpen(true)}
+                                                    onClick={() => { setIsDeleteModalOpen(true); setDeleteId(carrier.company_id); }}
                                                     className="text-red-600 hover:text-red-800"
                                                 >
                                                     <Trash2 size={18} />
@@ -374,11 +407,9 @@ function AdminCarrierPage() {
             {isDeleteModalOpen && (
                 <DeleteConfirmationModal
                     message="Are you sure you want to delete this item?"
-                    deleteFn={() => {
-                        // Add your delete logic here
-                        setIsDeleteModalOpen(false);
-                    }}
+                    deleteFn={handleDelete}
                     onCancel={() => setIsDeleteModalOpen(false)}
+                    isSubmitting={isDeleting}
                 />
             )}
         </div>

@@ -5,6 +5,7 @@ export default function DeleteConfirmationModal({
     message = "Are you sure you want to delete this item?",
     deleteFn,
     onCancel,
+    isSubmitting,
 }) {
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
@@ -55,9 +56,10 @@ export default function DeleteConfirmationModal({
                     <button
                         onClick={deleteFn}
                         className="px-5 py-2 rounded-xl bg-red-600 text-white
-              hover:bg-red-700 active:scale-95 transition font-medium"
+              hover:bg-red-700 active:scale-95 transition font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                        disabled={isSubmitting}
                     >
-                        Delete
+                        {isSubmitting ? "Deleting..." : "Delete"}
                     </button>
                 </div>
             </div>

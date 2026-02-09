@@ -9,3 +9,6 @@ User Dashboard
 - Delete Plan API required (Done)
 - Delete Carrier API Required (Done)
 - Remove Account Balance manually API Required. (Instructions isn't clear)
+
+- I deleted the carrier this cause error in plans due to the mapping of carrier id in plans. We have to make flow either we delete all plans associated with carrier but this also cause the issue in the entries of purcashed plans.
+The best solution is instead of hard delete we do soft delete by inserting the id of is_delete. Rather we give the option of hard delete from which admin can do hard delete that cause all entries delete with foreign key of comapny id
