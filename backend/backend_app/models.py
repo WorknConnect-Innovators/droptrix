@@ -73,6 +73,7 @@ class Carriers(models.Model):
     company_id = models.CharField(max_length=200, unique=True)
     esim_required_fields = models.JSONField(default=list)
     physical_required_fields = models.JSONField(default=list)
+    is_deleted = models.BooleanField(default=False)
 
     def __str__(self):
         return self.name
@@ -93,6 +94,7 @@ class Plans(models.Model):
     tagline2 = models.TextField()
     details = models.TextField()
     live_status = models.BooleanField(default=True)
+    is_deleted = models.BooleanField(default=False)
 
     def __str__(self):
         return self.plan_name

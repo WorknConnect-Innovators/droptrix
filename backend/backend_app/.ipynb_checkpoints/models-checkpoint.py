@@ -42,13 +42,28 @@ class Chat(models.Model):
 
 class Message(models.Model):
     chat = models.ForeignKey(Chat, related_name="messages", on_delete=models.CASCADE)
-    sender = models.ForeignKey(Signup, on_delete=models.CASCADE)
+
+    sender = models.ForeignKey(
+        Signup,
+        related_name="sent_messages",
+        on_delete=models.CASCADE
+    )
+
+    receiver = models.ForeignKey(
+        Signup,
+        related_name="received_messages",
+        on_delete=models.CASCADE
+    )
+
     text = models.TextField()
     timestamp = models.DateTimeField(auto_now_add=True)
     read = models.BooleanField(default=False)
 
     class Meta:
         ordering = ["timestamp"]
+
+    def __str__(self):
+        return f"{self.sender} → {self.receiver}"
 
 
 class Carriers(models.Model):
@@ -58,6 +73,7 @@ class Carriers(models.Model):
     company_id = models.CharField(max_length=200, unique=True)
     esim_required_fields = models.JSONField(default=list)
     physical_required_fields = models.JSONField(default=list)
+    is_deleted = models.BooleanField(default=False)
 
     def __str__(self):
         return self.name
@@ -78,6 +94,7 @@ class Plans(models.Model):
     tagline2 = models.TextField()
     details = models.TextField()
     live_status = models.BooleanField(default=True)
+    is_deleted = models.BooleanField(default=False)
 
     def __str__(self):
         return self.plan_name

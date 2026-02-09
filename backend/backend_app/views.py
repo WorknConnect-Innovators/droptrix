@@ -334,21 +334,31 @@ def add_carriers(request):
 
 @csrf_exempt
 def get_carriers(request):
-    if request.method == 'GET':
-        careers_data = Carriers.objects.all()
-        careers_all_data = [
-            {
-                'name': c.name,
-                'description': c.description,
-                'logo_url': c.logo_url,
-                'company_id': c.company_id,
-                'esim_required_fields': c.esim_required_fields,
-                'physical_required_fields': c.physical_required_fields
-            }
-            for c in careers_data
-        ]
-        return JsonResponse({'status': 'success', 'data': careers_all_data})
-    return JsonResponse({'status': 'error', 'message': 'Only GET method is allowed'})
+    if request.method != 'GET':
+        return JsonResponse(
+            {'status': 'error', 'message': 'Only GET method is allowed'},
+            status=405
+        )
+    is_deleted_param = request.GET.get('is_deleted', 'false').lower()
+    is_deleted = is_deleted_param in ['true', '1', 'yes']
+    carriers_qs = Carriers.objects.filter(is_deleted=is_deleted)
+    carriers_data = [
+        {
+            'name': c.name,
+            'description': c.description,
+            'logo_url': c.logo_url,
+            'company_id': c.company_id,
+            'esim_required_fields': c.esim_required_fields,
+            'physical_required_fields': c.physical_required_fields,
+            'is_deleted': c.is_deleted
+        }
+        for c in carriers_qs
+    ]
+    return JsonResponse({
+        'status': 'success',
+        'is_deleted': is_deleted,
+        'data': carriers_data
+    })
 
 
 @csrf_exempt
@@ -371,7 +381,8 @@ def delete_carrier(request):
             data = json.loads(request.body)
             company_id = data['company_id']
             company_data = Carriers.objects.filter(company_id=company_id).first()
-            company_data.delete()
+            company_data.is_deleted = True
+            company_data.save()
             return JsonResponse({'status': 'success', 'Carrier_deleted': company_id})
         except Exception as e:
             return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
@@ -410,30 +421,40 @@ def add_plans(request):
 
 @csrf_exempt
 def get_plans(request):
-    if request.method == 'GET':
-        plans_data = Plans.objects.all()
-        plans_all_data = [
-            {
-                'plan_id': p.plan_id,
-                'company_id': p.company_id,
-                'carrier_name': Carriers.objects.filter(company_id=p.company_id).first().name,
-                'plan_name': p.plan_name,
-                'popularity': p.popularity,
-                'plan_type': p.plan_type,
-                'plan_price': p.plan_price,
-                'previous_price': p.previous_price,
-                'plan_duration': p.plan_duration,
-                'plan_feature': p.plan_feature,
-                'off_percentage': p.off_percentage,
-                'tagline1': p.tagline1,
-                'tagline2': p.tagline2,
-                'details': p.details,
-                'live_status': p.live_status
-            }
-            for p in plans_data
-        ]
-        return JsonResponse({'status': 'success', 'data': plans_all_data})
-    return JsonResponse({'status': 'error', 'message': 'Only GET method is allowed'})
+    if request.method != 'GET':
+        return JsonResponse(
+            {'status': 'error', 'message': 'Only GET method is allowed'},
+            status=405
+        )
+    is_deleted_param = request.GET.get('is_deleted', 'false').lower()
+    is_deleted = is_deleted_param in ['true', '1', 'yes']
+    plans_qs = Plans.objects.filter(is_deleted=is_deleted)
+    plans_all_data = []
+    for p in plans_qs:
+        carrier = Carriers.objects.filter(company_id=p.company_id).first()
+        plans_all_data.append({
+            'plan_id': p.plan_id,
+            'company_id': p.company_id,
+            'carrier_name': carrier.name if carrier else None,
+            'plan_name': p.plan_name,
+            'popularity': p.popularity,
+            'plan_type': p.plan_type,
+            'plan_price': p.plan_price,
+            'previous_price': p.previous_price,
+            'plan_duration': p.plan_duration,
+            'plan_feature': p.plan_feature,
+            'off_percentage': p.off_percentage,
+            'tagline1': p.tagline1,
+            'tagline2': p.tagline2,
+            'details': p.details,
+            'live_status': p.live_status,
+            'is_deleted': p.is_deleted
+        })
+    return JsonResponse({
+        'status': 'success',
+        'is_deleted': is_deleted,
+        'data': plans_all_data
+    })
 
 
 @csrf_exempt
@@ -481,7 +502,8 @@ def delete_plan(request):
             data = json.loads(request.body)
             plan_id = data['plan_id']
             plan_data = Plans.objects.filter(plan_id=plan_id).first()
-            plan_data.delete()
+            plan_data.is_deleted = True
+            plan_data.save()
             return JsonResponse({'status': 'success', 'Plan_deleted': plan_id})
         except Exception as e:
             return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
