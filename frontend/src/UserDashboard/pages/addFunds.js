@@ -469,7 +469,7 @@ function AddFunds() {
 
                                         <p className={`px-3 py-1 rounded-full w-fit text-white text-sm ${item.status === "Pending" ? "bg-yellow-600" : item.status === "Approved" ? "bg-green-600" : "bg-red-600"}`} > {item.status}</p>
 
-                                        
+
                                     </div>
                                 </div>
                             ))) : (
@@ -566,7 +566,7 @@ function AddFunds() {
                                 <div>
                                     <input
                                         type="number"
-                                        className="w-full mt-1 border rounded-lg px-3 py-2"
+                                        className={`w-full mt-1 border rounded-lg px-3 py-2 outline-none focus:ring-1 focus:ring-blue-500 ${newRecharge.amount < 0 ? "focus:ring-red-500" : ""}`}
                                         value={newRecharge.amount}
                                         onChange={(e) => {
                                             setNewRecharge({ ...newRecharge, amount: e.target.value, payable_amount: e.target.value * (1 + chargesPercentage / 100 - discountPercentage / 100) })
@@ -574,6 +574,10 @@ function AddFunds() {
                                         }}
                                         placeholder="Enter amount"
                                     />
+
+                                    {newRecharge.amount < 0 && (
+                                        <p className="text-red-400 text-sm mt-1 mr-1">Amount cannot be negative</p>
+                                    )}
 
                                     <div className="flex justify-between mt-6">
                                         <button
@@ -584,10 +588,13 @@ function AddFunds() {
                                         </button>
 
                                         <button
-                                            disabled={!newRecharge.amount}
+                                            disabled={!newRecharge.amount || Number(newRecharge.amount) <= 0}
                                             onClick={() => setStep(2)}
-                                            className={`px-4 py-2 text-gray-700 rounded-lg 
-                                ${newRecharge.amount ? "bg-blue-600 text-white" : "bg-gray-300 text-gray-600"}`}
+                                            className={`px-4 py-2 rounded-lg 
+    ${newRecharge.amount && Number(newRecharge.amount) > 0
+                                                    ? "bg-blue-600 text-white"
+                                                    : "bg-gray-300 text-gray-600"
+                                                }`}
                                         >
                                             Next
                                         </button>

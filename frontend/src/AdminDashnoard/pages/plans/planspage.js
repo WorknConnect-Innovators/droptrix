@@ -564,8 +564,8 @@ function AdminPlansPage() {
                     <table className="min-w-full text-sm text-gray-700">
                         <thead className="bg-blue-50 text-gray-600 uppercase text-xs">
                             <tr>
-                                <th className="px-6 py-3 text-left">Plan Name</th>
-                                <th className="px-6 py-3 text-left">Carrier</th>
+                                <th className="px-6 py-3 text-left whitespace-nowrap">Plan Name</th>
+                                <th className="px-6 py-3 text-left whitespace-nowrap">Carrier</th>
                                 <th className="px-6 py-3 text-left">Price</th>
                                 <th className="px-6 py-3 text-left">Description</th>
                                 <th className="px-6 py-3 text-center">Actions</th>
@@ -586,9 +586,9 @@ function AdminPlansPage() {
                                         key={index}
                                         className="border-t hover:bg-gray-50 transition"
                                     >
-                                        <td className="px-6 py-3 font-medium">{plan.plan_name}</td>
-                                        <td className="px-6 py-3 font-medium">{plan.carrier_name}</td>
-                                        <td className="px-6 py-3">{plan.plan_price}</td>
+                                        <td className="px-6 py-3 font-medium whitespace-nowrap">{plan.plan_name}</td>
+                                        <td className="px-6 py-3 font-medium whitespace-nowrap">{plan.carrier_name}</td>
+                                        <td className="px-6 py-3">{plan.plan_price} $</td>
                                         <td className="px-6 py-3">{plan.details}</td>
                                         <td className="px-6 py-3 flex justify-center gap-3">
                                             <button onClick={() => handleEditingToggle(plan.plan_id)} className="text-blue-600 hover:text-blue-800">

@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react'
-import { Search, ListFilterIcon, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Search, ListFilterIcon, ChevronLeft, ChevronRight, Loader } from 'lucide-react'
 import { message } from 'antd'
+import { getCarriersFromBackend } from '../../../utilities/getCarriers'
+import { companyBasedPlans } from '../../../utilities/getPlans'
 
 export default function UserChargesBulk() {
   const [users, setUsers] = useState([])
@@ -19,9 +21,25 @@ export default function UserChargesBulk() {
   const [selectedUsers, setSelectedUsers] = useState(new Set())
   const [selectAllOnPage, setSelectAllOnPage] = useState(false)
 
-  const [charges, setCharges] = useState({ topup: '', recharge: '', sim_activation: '' })
-  const [discounts, setDiscounts] = useState({ topup: '', recharge: '', sim_activation: '' })
-  const [saving, setSaving] = useState(false)
+  // Recharge charges & discounts
+  const [rechargeCharges, setRechargeCharges] = useState('')
+  const [rechargeDiscounts, setRechargeDiscounts] = useState('')
+  const [savingRecharge, setSavingRecharge] = useState(false)
+
+  // Carrier/Topup discounts
+  const [carriers, setCarriers] = useState([])
+  const [loadingCarriers, setLoadingCarriers] = useState(false)
+  const [selectedCarrier, setSelectedCarrier] = useState('')
+  const [carrierDiscounts, setCarrierDiscounts] = useState('')
+  const [savingCarrier, setSavingCarrier] = useState(false)
+
+  // Plan/Activation discounts
+  const [plansCarrier, setPlansCarrier] = useState('')
+  const [plansData, setPlansData] = useState([])
+  const [loadingPlans, setLoadingPlans] = useState(false)
+  const [selectedPlan, setSelectedPlan] = useState('')
+  const [planDiscount, setPlanDiscount] = useState('')
+  const [savingPlan, setSavingPlan] = useState(false)
 
   const loadUsers = async () => {
     try {
@@ -31,7 +49,39 @@ export default function UserChargesBulk() {
     } catch (err) { console.error(err) }
   }
 
-  useEffect(() => { loadUsers() }, [])
+  const loadCarriers = async () => {
+    setLoadingCarriers(true)
+    try {
+      const result = await getCarriersFromBackend()
+      setCarriers(result)
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setLoadingCarriers(false)
+    }
+  }
+
+  useEffect(() => {
+    loadUsers()
+    loadCarriers()
+  }, [])
+
+  useEffect(() => {
+    if (plansCarrier) {
+      const getPlans = async () => {
+        setLoadingPlans(true)
+        try {
+          const result = await companyBasedPlans(plansCarrier)
+          setPlansData(result)
+        } catch (err) {
+          console.error(err)
+        } finally {
+          setLoadingPlans(false)
+        }
+      }
+      getPlans()
+    }
+  }, [plansCarrier])
 
   const filtered = React.useMemo(() => {
     return users.filter(u => {
@@ -69,57 +119,202 @@ export default function UserChargesBulk() {
     setSelectAllOnPage(!selectAllOnPage)
   }
 
-  const applyBulk = async () => {
-    if (selectedUsers.size === 0) { message.error('Select at least one user'); return }
-    const t = Number(charges.topup)
-    const r = Number(charges.recharge)
-    const s = Number(charges.sim_activation)
-    const dt = Number(discounts.topup)
-    const dr = Number(discounts.recharge)
-    const ds = Number(discounts.sim_activation)
-    if (isNaN(t) || isNaN(r) || isNaN(s) || isNaN(dt) || isNaN(dr) || isNaN(ds)) { message.error('Enter valid numeric tax rates and discounts'); return }
+  const applyRechargeCharges = async () => {
+    if (selectedUsers.size === 0) {
+      message.error('Select at least one user')
+      return
+    }
 
-    setSaving(true)
+    const Dr = Number(rechargeDiscounts)
+    const Cr = Number(rechargeCharges)
+
+    if (isNaN(Dr) || isNaN(Cr)) {
+      message.error('Please enter valid numeric values for charges and discounts')
+      return
+    }
+
+    setSavingRecharge(true)
     try {
       const usernames = Array.from(selectedUsers)
-      const payload = {
-        usernames,
-        topup_charges: t,
-        recharge_charges: r,
-        sim_activation_charges: s,
-        topup_discount: dt,
-        recharge_discount: dr,
-        sim_activation_discount: ds
-      }
-      const res = await fetch(`${process.env.REACT_APP_API_URL}/api/update-charges-discount/`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
-      })
-      const data = await res.json()
-      if (data.status === 'success') {
-        // save discounts locally per user until backend supports discount fields
-        try {
-          const stored = JSON.parse(localStorage.getItem('user_discounts') || '{}')
-          usernames.forEach(u => { stored[u] = discounts })
-          localStorage.setItem('user_discounts', JSON.stringify(stored))
-        } catch (err) { /* ignore localStorage errors */ }
+      let successCount = 0
+      let failCount = 0
 
-        message.success('Applied charges to selected users')
-        setSelectedUsers(new Set())
-        setSelectAllOnPage(false)
-        loadUsers()
-      } else {
-        message.error(data.message || 'Failed to apply charges')
+      for (const username of usernames) {
+        try {
+          const payload = {
+            usernames: [username],
+            recharge_charges: Cr,
+            recharge_discount: Dr,
+          }
+          const res = await fetch(`${process.env.REACT_APP_API_URL}/api/update-charges-discount/`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          })
+          const data = await res.json()
+          if (data.status === 'success') {
+            successCount++
+          } else {
+            failCount++
+          }
+        } catch (err) {
+          failCount++
+          console.error(err)
+        }
       }
-    } catch (err) { console.error(err); message.error('Server error') }
-    finally { setSaving(false) }
+
+      if (successCount > 0) {
+        message.success(`Recharge charges applied to ${successCount} user(s)`)
+      }
+      if (failCount > 0) {
+        message.warning(`Failed for ${failCount} user(s)`)
+      }
+
+      setSelectedUsers(new Set())
+      setSelectAllOnPage(false)
+      loadUsers()
+    } catch (err) {
+      console.error(err)
+      message.error('Server error')
+    } finally {
+      setSavingRecharge(false)
+    }
+  }
+
+  const applyCarrierDiscount = async () => {
+    if (selectedUsers.size === 0) {
+      message.error('Select at least one user')
+      return
+    }
+
+    if (!selectedCarrier) {
+      message.error('Please select a carrier')
+      return
+    }
+
+    const discount = Number(carrierDiscounts)
+    if (isNaN(discount)) {
+      message.error('Please enter a valid discount percentage')
+      return
+    }
+
+    setSavingCarrier(true)
+    try {
+      const usernames = Array.from(selectedUsers)
+      let successCount = 0
+      let failCount = 0
+
+      for (const username of usernames) {
+        try {
+          const payload = {
+            username: username,
+            company_id: selectedCarrier,
+            discount_percentage: discount,
+          }
+          const res = await fetch(`${process.env.REACT_APP_API_URL}/api/add-company-offer/`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          })
+          const data = await res.json()
+          if (data.status === 'success') {
+            successCount++
+          } else {
+            failCount++
+          }
+        } catch (err) {
+          failCount++
+          console.error(err)
+        }
+      }
+
+      if (successCount > 0) {
+        message.success(`Carrier discount applied to ${successCount} user(s)`)
+      }
+      if (failCount > 0) {
+        message.warning(`Failed for ${failCount} user(s)`)
+      }
+
+      setSelectedUsers(new Set())
+      setSelectAllOnPage(false)
+    } catch (err) {
+      console.error(err)
+      message.error('Server error')
+    } finally {
+      setSavingCarrier(false)
+    }
+  }
+
+  const applyPlanDiscount = async () => {
+    if (selectedUsers.size === 0) {
+      message.error('Select at least one user')
+      return
+    }
+
+    if (!selectedPlan) {
+      message.error('Please select a plan')
+      return
+    }
+
+    const discount = Number(planDiscount)
+    if (isNaN(discount)) {
+      message.error('Please enter a valid discount percentage')
+      return
+    }
+
+    setSavingPlan(true)
+    try {
+      const usernames = Array.from(selectedUsers)
+      let successCount = 0
+      let failCount = 0
+
+      for (const username of usernames) {
+        try {
+          const payload = {
+            username: username,
+            plan_id: selectedPlan,
+            discount_percentage: discount,
+          }
+          const res = await fetch(`${process.env.REACT_APP_API_URL}/api/add-user-offer/`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          })
+          const data = await res.json()
+          if (data.status === 'success') {
+            successCount++
+          } else {
+            failCount++
+          }
+        } catch (err) {
+          failCount++
+          console.error(err)
+        }
+      }
+
+      if (successCount > 0) {
+        message.success(`Plan discount applied to ${successCount} user(s)`)
+      }
+      if (failCount > 0) {
+        message.warning(`Failed for ${failCount} user(s)`)
+      }
+
+      setSelectedUsers(new Set())
+      setSelectAllOnPage(false)
+    } catch (err) {
+      console.error(err)
+      message.error('Server error')
+    } finally {
+      setSavingPlan(false)
+    }
   }
 
   return (
     <div className="bg-white shadow-lg rounded-lg py-4 overflow-hidden">
       <div className="px-4 mb-4 flex items-center justify-between">
         <div>
-          <h2 className="text-lg font-bold">Bulk User Charges</h2>
-          <p className="text-sm text-gray-500">Select multiple users and apply taxes & discounts in one go</p>
+          <h2 className="text-lg font-bold">Bulk User Charges & Discounts</h2>
+          <p className="text-sm text-gray-500">Select multiple users and apply charges & discounts in one go</p>
         </div>
 
         <div className="flex items-center gap-3">
@@ -171,37 +366,172 @@ export default function UserChargesBulk() {
           </table>
         </div>
 
-        <div className="mt-4 grid md:grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <div className="text-sm font-semibold">Charges to apply (Tax rates %)</div>
-            <div className="grid grid-cols-3 gap-2">
-              <input placeholder="Topup %" value={charges.topup} onChange={e => setCharges({...charges, topup: e.target.value})} className="w-full border rounded-md px-3 py-2" />
-              <input placeholder="Recharge %" value={charges.recharge} onChange={e => setCharges({...charges, recharge: e.target.value})} className="w-full border rounded-md px-3 py-2" />
-              <input placeholder="SIM Activation %" value={charges.sim_activation} onChange={e => setCharges({...charges, sim_activation: e.target.value})} className="w-full border rounded-md px-3 py-2" />
-            </div>
+        <div className="mt-4 flex items-center justify-between border-b pb-4">
+          <div className="text-sm text-gray-700">
+            <span className="font-semibold">Selected Users: </span>
+            <span className="text-indigo-600">{selectedUsers.size}</span>
           </div>
 
-          <div className="space-y-2">
-            <div className="text-sm font-semibold">Discounts to apply (optional %)</div>
-            <div className="grid grid-cols-3 gap-2">
-              <input placeholder="Topup %" value={discounts.topup} onChange={e => setDiscounts({...discounts, topup: e.target.value})} className="w-full border rounded-md px-3 py-2" />
-              <input placeholder="Recharge %" value={discounts.recharge} onChange={e => setDiscounts({...discounts, recharge: e.target.value})} className="w-full border rounded-md px-3 py-2" />
-              <input placeholder="SIM Activation %" value={discounts.sim_activation} onChange={e => setDiscounts({...discounts, sim_activation: e.target.value})} className="w-full border rounded-md px-3 py-2" />
-            </div>
+          <div className="flex items-center gap-2">
+            <button disabled={currentPage === 1} onClick={() => setCurrentPage(currentPage - 1)} className="px-2 py-1 border rounded disabled:opacity-50"><ChevronLeft size={16} /></button>
+            <div className="text-sm">{currentPage} / {totalPages}</div>
+            <button disabled={currentPage === totalPages} onClick={() => setCurrentPage(currentPage + 1)} className="px-2 py-1 border rounded disabled:opacity-50"><ChevronRight size={16} /></button>
           </div>
         </div>
 
-        <div className="flex items-center justify-between mt-4">
-          <div className="flex items-center gap-2">
-            <button onClick={applyBulk} disabled={saving} className="bg-indigo-600 text-white px-4 py-2 rounded">{saving ? 'Applying...' : 'Apply to selected users'}</button>
-            <div className="text-sm text-gray-500">Selected: {selectedUsers.size}</div>
+        {/* Section 1: Recharge Charges & Discounts */}
+        <div className="mt-6 border rounded-lg p-4 bg-gray-50">
+          <h3 className="text-md font-semibold mb-3 text-gray-800">1. Recharge Charges & Discounts</h3>
+          <p className="text-xs text-gray-500 mb-3">Apply recharge charges and discounts to selected users</p>
+          
+          <div className="grid md:grid-cols-2 gap-4 mb-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Recharge Charges (%)</label>
+              <input 
+                type="number" 
+                placeholder="Enter charge percentage" 
+                value={rechargeCharges} 
+                onChange={e => setRechargeCharges(e.target.value)} 
+                className="w-full border rounded-md px-3 py-2" 
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Recharge Discounts (%)</label>
+              <input 
+                type="number" 
+                placeholder="Enter discount percentage" 
+                value={rechargeDiscounts} 
+                onChange={e => setRechargeDiscounts(e.target.value)} 
+                className="w-full border rounded-md px-3 py-2" 
+              />
+            </div>
           </div>
 
-          <div className="flex items-center gap-2">
-            <button disabled={currentPage === 1} onClick={() => setCurrentPage(currentPage - 1)} className="px-2 py-1 border rounded"><ChevronLeft size={16} /></button>
-            <div className="text-sm">{currentPage} / {totalPages}</div>
-            <button disabled={currentPage === totalPages} onClick={() => setCurrentPage(currentPage + 1)} className="px-2 py-1 border rounded"><ChevronRight size={16} /></button>
+          <button 
+            onClick={applyRechargeCharges} 
+            disabled={savingRecharge || selectedUsers.size === 0} 
+            className="bg-indigo-600 text-white px-4 py-2 rounded disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+          >
+            {savingRecharge && <Loader className="animate-spin" size={16} />}
+            {savingRecharge ? 'Applying...' : 'Apply Recharge Charges'}
+          </button>
+        </div>
+
+        {/* Section 2: Carrier/Topup Discounts */}
+        <div className="mt-6 border rounded-lg p-4 bg-gray-50">
+          <h3 className="text-md font-semibold mb-3 text-gray-800">2. Carrier/Topup Discounts</h3>
+          <p className="text-xs text-gray-500 mb-3">Apply carrier-specific discounts for topup to selected users</p>
+          
+          <div className="grid md:grid-cols-2 gap-4 mb-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Select Carrier</label>
+              {loadingCarriers ? (
+                <div className="flex items-center gap-2 text-gray-500">
+                  <Loader className="animate-spin" size={16} />
+                  <span className="text-sm">Loading carriers...</span>
+                </div>
+              ) : (
+                <select 
+                  value={selectedCarrier} 
+                  onChange={e => setSelectedCarrier(e.target.value)} 
+                  className="w-full border rounded-md px-3 py-2"
+                >
+                  <option value="">-- Select Carrier --</option>
+                  {carriers.map(c => (
+                    <option key={c.company_id} value={c.company_id}>{c.name}</option>
+                  ))}
+                </select>
+              )}
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Carrier Discount (%)</label>
+              <input 
+                type="number" 
+                placeholder="Enter discount percentage" 
+                value={carrierDiscounts} 
+                onChange={e => setCarrierDiscounts(e.target.value)} 
+                className="w-full border rounded-md px-3 py-2" 
+              />
+            </div>
           </div>
+
+          <button 
+            onClick={applyCarrierDiscount} 
+            disabled={savingCarrier || selectedUsers.size === 0 || !selectedCarrier} 
+            className="bg-green-600 text-white px-4 py-2 rounded disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+          >
+            {savingCarrier && <Loader className="animate-spin" size={16} />}
+            {savingCarrier ? 'Applying...' : 'Apply Carrier Discount'}
+          </button>
+        </div>
+
+        {/* Section 3: Plan/Activation Discounts */}
+        <div className="mt-6 border rounded-lg p-4 bg-gray-50">
+          <h3 className="text-md font-semibold mb-3 text-gray-800">3. Plan/Activation Discounts</h3>
+          <p className="text-xs text-gray-500 mb-3">Apply plan-specific discounts for activation to selected users</p>
+          
+          <div className="grid md:grid-cols-3 gap-4 mb-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Select Carrier</label>
+              {loadingCarriers ? (
+                <div className="flex items-center gap-2 text-gray-500">
+                  <Loader className="animate-spin" size={16} />
+                  <span className="text-sm">Loading...</span>
+                </div>
+              ) : (
+                <select 
+                  value={plansCarrier} 
+                  onChange={e => setPlansCarrier(e.target.value)} 
+                  className="w-full border rounded-md px-3 py-2"
+                >
+                  <option value="">-- Select Carrier --</option>
+                  {carriers.map(c => (
+                    <option key={c.company_id} value={c.company_id}>{c.name}</option>
+                  ))}
+                </select>
+              )}
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Select Plan</label>
+              {loadingPlans ? (
+                <div className="flex items-center gap-2 text-gray-500">
+                  <Loader className="animate-spin" size={16} />
+                  <span className="text-sm">Loading plans...</span>
+                </div>
+              ) : (
+                <select 
+                  value={selectedPlan} 
+                  onChange={e => setSelectedPlan(e.target.value)} 
+                  className="w-full border rounded-md px-3 py-2"
+                  disabled={!plansCarrier}
+                >
+                  <option value="">-- Select Plan --</option>
+                  {plansData.map(p => (
+                    <option key={p.plan_id} value={p.plan_id}>{p.plan_name}</option>
+                  ))}
+                </select>
+              )}
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Plan Discount (%)</label>
+              <input 
+                type="number" 
+                placeholder="Enter discount percentage" 
+                value={planDiscount} 
+                onChange={e => setPlanDiscount(e.target.value)} 
+                className="w-full border rounded-md px-3 py-2" 
+              />
+            </div>
+          </div>
+
+          <button 
+            onClick={applyPlanDiscount} 
+            disabled={savingPlan || selectedUsers.size === 0 || !selectedPlan} 
+            className="bg-purple-600 text-white px-4 py-2 rounded disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+          >
+            {savingPlan && <Loader className="animate-spin" size={16} />}
+            {savingPlan ? 'Applying...' : 'Apply Plan Discount'}
+          </button>
         </div>
       </div>
     </div>

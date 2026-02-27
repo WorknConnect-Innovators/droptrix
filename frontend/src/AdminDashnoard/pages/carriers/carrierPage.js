@@ -370,7 +370,7 @@ function AdminCarrierPage() {
                                             />
                                         </td>
 
-                                        <td className="px-6 py-3">{carrier.name}</td>
+                                        <td className="px-6 py-3 whitespace-nowrap">{carrier.name}</td>
                                         <td className="px-6 py-3">{carrier.description}</td>
 
                                         <td className="px-6 py-3">

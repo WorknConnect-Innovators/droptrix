@@ -12,3 +12,7 @@ User Dashboard
 
 - I deleted the carrier this cause error in plans due to the mapping of carrier id in plans. We have to make flow either we delete all plans associated with carrier but this also cause the issue in the entries of purcashed plans.
 The best solution is instead of hard delete we do soft delete by inserting the id of is_delete. Rather we give the option of hard delete from which admin can do hard delete that cause all entries delete with foreign key of comapny id
+
+- In SuperAdmin, Add the payment account details. Superadmin allows to add multiple accounts and also set high priority account that shows at first.
+- In SuperAdmin, Add default charges, Discounts of Recharge, Topup and sim Activations that will managed and automatically added in user account.
+- In all approval cases, take approval person username as signature, also check the status if it is other than pending then fails the request and send the current status in response.

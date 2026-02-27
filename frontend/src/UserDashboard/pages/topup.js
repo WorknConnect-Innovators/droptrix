@@ -1,16 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
 import {
     BanknoteArrowUp,
-    ChevronLeft,
-    ChevronRight,
     CircleDollarSign,
-    CircleHelp,
     Clock,
     Delete,
     ListFilterIcon,
     Phone,
     Plus,
     Search,
+    Radio
 } from "lucide-react";
 import { getCarriersFromBackend } from "../../utilities/getCarriers";
 import { message, Spin } from "antd";
@@ -506,149 +504,156 @@ function TopUp() {
             {/* Table */}
             {isAddingTopUp ? (
                 <div className="flex flex-col md:h-[67vh] h-[54vh] w-full">
-                    <div className="flex-1 overflow-y-auto w-full md:px-20 px-4 py-1 ">
-                        <label className="text-lg font-semibold mb-4 text-gray-700">Select Carrier</label>
-                        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6 mt-4 mb-8">
-                            {loadingCarriers ? (
-                                <div className="dotsLoader"></div>
-                            ) : carriers.length === 0 ? (
-                                <div className="text-gray-500 col-span-full">No carriers available.</div>
-                            ) : carriers.map((carrier, index) => {
-                                const isSelected = selectedCarrier === carrier.company_id;
-                                return (
-                                    <div
-                                        key={index}
-                                        onClick={() => { if (!editingTopupId) handleSelect(carrier); }}
-                                        className={`border p-4 rounded-lg shadow transition 
+                    {carriers.length === 0 && !loadingCarriers ? (
+                        <div className="flex flex-col gap-2 px-4 items-center justify-center h-full">
+                            <p className="text-gray-500">Sorry! Currently we are out of service.</p>
+                        </div>
+                    ) : (
+                        <div className="flex-1 overflow-y-auto w-full md:px-20 px-4 py-1 ">
+                            <label className="text-lg font-semibold mb-4 text-gray-700">Select Carrier</label>
+                            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6 mt-4 mb-8">
+                                {loadingCarriers ? (
+                                    <div className="dotsLoader"></div>
+                                ) : carriers.length === 0 ? (
+                                    <div className="text-gray-500 col-span-full">No carriers available.</div>
+                                ) : carriers.map((carrier, index) => {
+                                    const isSelected = selectedCarrier === carrier.company_id;
+                                    return (
+                                        <div
+                                            key={index}
+                                            onClick={() => { if (!editingTopupId) handleSelect(carrier); }}
+                                            className={`border p-4 rounded-lg shadow transition 
                                         ${isSelected
-                                                ? "border-blue-500 ring-2 ring-blue-300 bg-blue-50 cursor-default"
-                                                : editingTopupId ? "opacity-60 cursor-not-allowed" : "cursor-pointer hover:shadow-lg"
-                                            }`}
-                                    >
-                                        <input
-                                            type="radio"
-                                            name="carrier"
-                                            checked={isSelected}
-                                            onChange={() => { if (!editingTopupId) handleSelect(carrier); }}
-                                            disabled={!!editingTopupId}
-                                            className="hidden"
-                                        />
-                                        <img
-                                            src={carrier.logo_url}
-                                            alt={carrier.name}
-                                            className="w-full h-10 object-contain mb-4"
-                                        />
-                                        <h3
-                                            className={`text-lg font-medium text-center ${isSelected ? "text-blue-600 font-semibold" : ""
+                                                    ? "border-blue-500 ring-2 ring-blue-300 bg-blue-50 cursor-default"
+                                                    : editingTopupId ? "opacity-60 cursor-not-allowed" : "cursor-pointer hover:shadow-lg"
                                                 }`}
                                         >
-                                            {carrier.name}
-                                        </h3>
-                                    </div>
-                                );
-                            })}
-                        </div>
-
-                        {/* Top-Up Form */}
-                        <form
-                            onSubmit={handleSubmit}
-                            className="border p-6 rounded-lg shadow-md bg-white gap-5 grid grid-cols-4"
-                        >
-                            <div className="md:col-span-3 col-span-full">
-                                <label className="block font-medium mb-2 text-gray-700">
-                                    Select Amount ($)
-                                </label>
-                                <input
-                                    type="number"
-                                    min="5"
-                                    max="200"
-                                    step="5"
-                                    value={amount}
-                                    onChange={handleAmountChange}
-                                    className="w-full border rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
-                                    placeholder="Enter amount (5 - 200)"
-                                />
-                                <p className="text-gray-500 text-sm mt-1">
-                                    Only multiples of 5 are allowed (5, 10, 15, ..., 200)
-                                </p>
+                                            <input
+                                                type="radio"
+                                                name="carrier"
+                                                checked={isSelected}
+                                                onChange={() => { if (!editingTopupId) handleSelect(carrier); }}
+                                                disabled={!!editingTopupId}
+                                                className="hidden"
+                                            />
+                                            <img
+                                                src={carrier.logo_url}
+                                                alt={carrier.name}
+                                                className="w-full h-10 object-contain mb-4"
+                                            />
+                                            <h3
+                                                className={`text-lg font-medium text-center ${isSelected ? "text-blue-600 font-semibold" : ""
+                                                    }`}
+                                            >
+                                                {carrier.name}
+                                            </h3>
+                                        </div>
+                                    );
+                                })}
                             </div>
 
-                            <div className="md:col-span-2 col-span-full">
-                                <label className="block font-medium mb-2 text-gray-700">
-                                    Phone Number
-                                </label>
-                                <input
-                                    type="tel"
-                                    value={phoneNumber}
-                                    onChange={handlePhoneChange}
-                                    className="w-full border rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
-                                    placeholder="Enter 10-digit number"
-                                />
-                            </div>
-
-                            <div className="md:col-span-2 col-span-full">
-                                <label className="block font-medium mb-2 text-gray-700">
-                                    Re-enter Phone Number
-                                </label>
-                                <input
-                                    type="tel"
-                                    value={rephoneNumber}
-                                    onChange={handleRePhoneChange}
-                                    className="w-full border rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
-                                    placeholder="Enter 10-digit number"
-                                />
-                            </div>
-
-                            {error && (
-                                <div className="text-red-600 bg-red-50 border border-red-200 p-3 rounded-lg col-span-full">
-                                    ⚠️ {error}
+                            {/* Top-Up Form */}
+                            <form
+                                onSubmit={handleSubmit}
+                                className="border p-6 rounded-lg shadow-md bg-white gap-5 grid grid-cols-4"
+                            >
+                                <div className="md:col-span-3 col-span-full">
+                                    <label className="block font-medium mb-2 text-gray-700">
+                                        Select Amount ($)
+                                    </label>
+                                    <input
+                                        type="number"
+                                        min="5"
+                                        max="200"
+                                        step="5"
+                                        value={amount}
+                                        onChange={handleAmountChange}
+                                        className="w-full border rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                                        placeholder="Enter amount (5 - 200)"
+                                    />
+                                    <p className="text-gray-500 text-sm mt-1">
+                                        Only multiples of 5 are allowed (5, 10, 15, ..., 200)
+                                    </p>
                                 </div>
-                            )}
 
-                            {(amount !== 0 || amount !== '') && (
-                                <div className="bg-gray-50 col-span-full w-full p-5 rounded-xl shadow-sm border mt-4">
-                                    <h3 className="text-lg font-semibold text-gray-700 mb-3">Amount Summary</h3>
-
-                                    <div className="flex justify-between text-sm text-gray-600 mb-2">
-                                        <span>Base Amount</span>
-                                        <span>Rs. {amount}</span>
-                                    </div>
-
-                                    <div className="flex justify-between text-sm text-gray-600 mb-3">
-                                        <span>Discount ({discountPercentage}%)</span>
-                                        <span>- Rs. {(amount * discountPercentage / 100)?.toFixed(2)}</span>
-                                    </div>
-
-                                    {/* Divider */}
-                                    <div className="border-t my-3"></div>
-
-                                    <div className="flex justify-between text-lg font-semibold text-gray-800">
-                                        <span>Total Amount</span>
-                                        <span>
-                                            Rs. {payableAmount}
-                                        </span>
-                                    </div>
+                                <div className="md:col-span-2 col-span-full">
+                                    <label className="block font-medium mb-2 text-gray-700">
+                                        Phone Number
+                                    </label>
+                                    <input
+                                        type="tel"
+                                        value={phoneNumber}
+                                        onChange={handlePhoneChange}
+                                        className="w-full border rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                                        placeholder="Enter 10-digit number"
+                                    />
                                 </div>
-                            )}
 
-                            <div className="col-span-full flex justify-end">
-                                { }
-                                <button
-                                    type="submit"
-                                    disabled={isProcessing}
-                                    className={`w-fit py-2 px-6 rounded-lg font-semibold text-white transition 
+                                <div className="md:col-span-2 col-span-full">
+                                    <label className="block font-medium mb-2 text-gray-700">
+                                        Re-enter Phone Number
+                                    </label>
+                                    <input
+                                        type="tel"
+                                        value={rephoneNumber}
+                                        onChange={handleRePhoneChange}
+                                        className="w-full border rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                                        placeholder="Enter 10-digit number"
+                                    />
+                                </div>
+
+                                {error && (
+                                    <div className="text-red-600 bg-red-50 border border-red-200 p-3 rounded-lg col-span-full">
+                                        ⚠️ {error}
+                                    </div>
+                                )}
+
+                                {(amount !== 0 || amount !== '') && (
+                                    <div className="bg-gray-50 col-span-full w-full p-5 rounded-xl shadow-sm border mt-4">
+                                        <h3 className="text-lg font-semibold text-gray-700 mb-3">Amount Summary</h3>
+
+                                        <div className="flex justify-between text-sm text-gray-600 mb-2">
+                                            <span>Base Amount</span>
+                                            <span>Rs. {amount}</span>
+                                        </div>
+
+                                        <div className="flex justify-between text-sm text-gray-600 mb-3">
+                                            <span>Discount ({discountPercentage}%)</span>
+                                            <span>- Rs. {(amount * discountPercentage / 100)?.toFixed(2)}</span>
+                                        </div>
+
+                                        {/* Divider */}
+                                        <div className="border-t my-3"></div>
+
+                                        <div className="flex justify-between text-lg font-semibold text-gray-800">
+                                            <span>Total Amount</span>
+                                            <span>
+                                                Rs. {payableAmount}
+                                            </span>
+                                        </div>
+                                    </div>
+                                )}
+
+                                <div className="col-span-full flex justify-end">
+                                    { }
+                                    <button
+                                        type="submit"
+                                        disabled={isProcessing}
+                                        className={`w-fit py-2 px-6 rounded-lg font-semibold text-white transition 
                                 ${isProcessing
-                                            ? "bg-blue-300 cursor-not-allowed"
-                                            : "bg-blue-600 hover:bg-blue-700"
-                                        }`}
-                                >
-                                    {isProcessing ? "Processing..." : "Confirm Top-Up"}
-                                </button>
-                            </div>
+                                                ? "bg-blue-300 cursor-not-allowed"
+                                                : "bg-blue-600 hover:bg-blue-700"
+                                            }`}
+                                    >
+                                        {isProcessing ? "Processing..." : "Confirm Top-Up"}
+                                    </button>
+                                </div>
 
 
-                        </form>
-                    </div>
+                            </form>
+                        </div>
+                    )}
+
                     <div className="flex justify-between items-center mt-2 sticky bottom-0 bg-white md:px-8 px-4 pt-3 z-20 border-t">
                         <div className="text-gray-600 text-sm">
                             Available Account Balance: ${availableBalance}
