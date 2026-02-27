@@ -95,6 +95,7 @@ class Plans(models.Model):
     details = models.TextField()
     live_status = models.BooleanField(default=True)
     is_deleted = models.BooleanField(default=False)
+    carrier_deleted = models.BooleanField(default=False)
 
     def __str__(self):
         return self.plan_name

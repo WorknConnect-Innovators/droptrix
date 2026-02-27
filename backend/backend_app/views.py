@@ -381,8 +381,11 @@ def delete_carrier(request):
             data = json.loads(request.body)
             company_id = data['company_id']
             company_data = Carriers.objects.filter(company_id=company_id).first()
+            plan_data = Plans.objects.filter(company_id=company_id).first()
             company_data.is_deleted = True
+            plan_data.carrier_deleted = True
             company_data.save()
+            plan_data.save()
             return JsonResponse({'status': 'success', 'Carrier_deleted': company_id})
         except Exception as e:
             return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
@@ -448,7 +451,8 @@ def get_plans(request):
             'tagline2': p.tagline2,
             'details': p.details,
             'live_status': p.live_status,
-            'is_deleted': p.is_deleted
+            'is_deleted': p.is_deleted,
+            'carrier_deleted': p.carrier_deleted
         })
     return JsonResponse({
         'status': 'success',
@@ -480,6 +484,7 @@ def update_plans(request):
         except Exception as e:
             return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
     return JsonResponse({'status': 'error', 'message': 'Invalid request method'}, status=400)
+
 
 
 @csrf_exempt
