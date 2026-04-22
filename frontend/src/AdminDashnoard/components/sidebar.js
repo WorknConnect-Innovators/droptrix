@@ -1,4 +1,4 @@
-import { HomeIcon, LogOutIcon, FolderIcon, ChevronDown, ChevronRight, CompassIcon, BanknoteArrowUp, CircleDollarSign, Building2, NotepadText, UserCog, UserPlus, Users } from 'lucide-react'
+import { HomeIcon, LogOutIcon, FolderIcon, ChevronDown, ChevronRight, CompassIcon, BanknoteArrowUp, CircleDollarSign, Building2, NotepadText, UserCog, UserPlus, Users, FormInputIcon, CreditCard } from 'lucide-react'
 import React, { useEffect, useState } from 'react'
 import { FaPlaneSlash, FaSimCard } from 'react-icons/fa'
 import { Link, useLocation } from 'react-router-dom'
@@ -76,7 +76,8 @@ function Sidebar() {
                 { label: "Plans", icon: <NotepadText size={20} />, route: "/dashboard/plans" },
                 { label: "Users", icon: <UserCog size={20} />, route: "/dashboard/users" },
                 { label: "Add Admin", icon: <UserPlus size={20} />, route: "/dashboard/add-admin" },
-                { label: "Bulk Charges", icon: <Users size={20} />, route: "/dashboard/user-charges" }
+                { label: "Bulk Charges", icon: <Users size={20} />, route: "/dashboard/user-charges" },
+                { label: "Payment Accounts", icon: <CreditCard size={20} />, route: "/dashboard/payment-accounts" }
             ]
         }
     ]

@@ -27,6 +27,7 @@ import UserChargesBulk from './AdminDashnoard/pages/Taxes/userChargesBulk'
 import UserDetails from './AdminDashnoard/pages/Users/userDetails'
 import UserChat from './pages/ChatSupport/userChat'
 import AdminChat from './pages/ChatSupport/adminChat'
+import PaymentAccounts from './AdminDashnoard/pages/PaymentAccounts.js/accounts'
 
 function App() {
 
@@ -66,6 +67,7 @@ function App() {
           <Route path='user-details' element={<UserDetails />} />
           <Route path='chat-support' element={<UserChat />} />
           <Route path='admin-chat-support' element={<AdminChat />} />
+          <Route path='payment-accounts' element={<PaymentAccounts />} />
         </Route>
       </Routes>
     </Router>

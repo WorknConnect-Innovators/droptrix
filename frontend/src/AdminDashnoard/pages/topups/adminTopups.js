@@ -70,7 +70,6 @@ function AdminTopups() {
 
     const approveTopup = async () => {
         if (!selectedTopup) return;
-        console.log(selectedTopup);
 
         try {
             const res = await fetch(`${process.env.REACT_APP_API_URL}/api/make-topup-complete/`, {
